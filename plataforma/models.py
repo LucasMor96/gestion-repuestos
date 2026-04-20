@@ -5,8 +5,10 @@ from django.contrib.auth.models import User
 class Tecnico(models.Model):
     """Perfil profesional de técnico independiente (US-02)"""
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
+    cuit = models.CharField(max_length=13, unique=True, null=True, blank=True)
     especialidad = models.CharField(max_length=100)
     ubicacion = models.CharField(max_length=200)
+    is_approved = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Técnico"
@@ -19,9 +21,11 @@ class Tecnico(models.Model):
 class Proveedor(models.Model):
     """Perfil de negocio proveedor de repuestos (US-03)"""
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
+    cuit = models.CharField(max_length=13, unique=True, null=True, blank=True)
     nombre_negocio = models.CharField(max_length=150)
     direccion = models.CharField(max_length=255)
     rubro = models.CharField(max_length=100)
+    is_approved = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Proveedor"

@@ -1,0 +1,21 @@
+{% extends "plataforma/base.html" %}
+
+{% block title %}Seleccionar Tipo de Registro{% endblock %}
+
+{% block content %}
+    <h1>Gestión de Repuestos</h1>
+    <h2 class="centered">¿Qué eres?</h2>
+
+    <div class="button-group">
+        <a href="{% url 'registro_tecnico' %}" style="text-decoration: none;">
+            <button type="button">Técnico Independiente</button>
+        </a>
+        <a href="{% url 'registro_proveedor' %}" style="text-decoration: none;">
+            <button type="button">Proveedor de Repuestos</button>
+        </a>
+    </div>
+
+    <div class="link">
+        ¿Ya tienes cuenta? <a href="{% url 'login' %}">Ingresa aquí</a>
+    </div>
+{% endblock %}

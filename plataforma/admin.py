@@ -7,16 +7,28 @@ from .models import (
 
 @admin.register(Tecnico)
 class TecnicoAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'especialidad', 'ubicacion')
+    list_display = ('usuario', 'especialidad', 'ubicacion', 'get_user_active', 'is_approved')
     search_fields = ('usuario__username', 'especialidad')
+    list_filter = ('is_approved', 'usuario__is_active')
     readonly_fields = ('usuario',)
+
+    def get_user_active(self, obj):
+        return obj.usuario.is_active
+    get_user_active.short_description = 'Activo'
+    get_user_active.boolean = True
 
 
 @admin.register(Proveedor)
 class ProveedorAdmin(admin.ModelAdmin):
-    list_display = ('nombre_negocio', 'rubro', 'direccion')
-    search_fields = ('nombre_negocio', 'rubro')
+    list_display = ('nombre_negocio', 'rubro', 'direccion', 'get_user_active', 'is_approved')
+    search_fields = ('nombre_negocio', 'rubro', 'usuario__username')
+    list_filter = ('is_approved', 'usuario__is_active')
     readonly_fields = ('usuario',)
+
+    def get_user_active(self, obj):
+        return obj.usuario.is_active
+    get_user_active.short_description = 'Activo'
+    get_user_active.boolean = True
 
 
 @admin.register(Producto)

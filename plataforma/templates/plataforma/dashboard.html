@@ -1,0 +1,30 @@
+{% extends "plataforma/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <h1>Bienvenido, {{ user.first_name }}!</h1>
+
+    {% if es_tecnico %}
+        <h2>Dashboard de Técnico</h2>
+        <div style="margin-top: 20px;">
+            <p><strong>Especialidad:</strong> {{ perfil.especialidad }}</p>
+            <p><strong>Ubicación:</strong> {{ perfil.ubicacion }}</p>
+            <p><strong>CUIT:</strong> {{ perfil.cuit }}</p>
+        </div>
+    {% elif es_proveedor %}
+        <h2>Dashboard de Proveedor</h2>
+        <div style="margin-top: 20px;">
+            <p><strong>Negocio:</strong> {{ perfil.nombre_negocio }}</p>
+            <p><strong>Rubro:</strong> {{ perfil.rubro }}</p>
+            <p><strong>Dirección:</strong> {{ perfil.direccion }}</p>
+            <p><strong>CUIT:</strong> {{ perfil.cuit }}</p>
+        </div>
+    {% endif %}
+
+    <div style="margin-top: 40px;">
+        <a href="{% url 'logout' %}" style="text-decoration: none;">
+            <button type="button">Cerrar Sesión</button>
+        </a>
+    </div>
+{% endblock %}
