@@ -7,6 +7,8 @@ from .forms import RegistroTecnicoForm, RegistroProveedorForm, LoginForm
 from .models import Tecnico, Proveedor
 
 
+
+
 def registro_tipo(request):
     """Vista para elegir tipo de registro: técnico o proveedor"""
     return render(request, 'plataforma/registro_tipo.html')
@@ -99,3 +101,8 @@ def dashboard(request):
 def espera_aprobacion(request):
     """Vista que muestra mensaje de espera de aprobación"""
     return render(request, 'plataforma/espera_aprobacion.html')
+
+
+def inicio(request):
+    """Vista para la página de aterrizaje (Landing Page)"""
+    return render(request, 'plataforma/inicio.html')

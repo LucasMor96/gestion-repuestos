@@ -1,22 +1,11 @@
 {% extends "plataforma/base.html" %}
-
-{% block title %}Esperando Aprobación{% endblock %}
-
 {% block content %}
-    <h1>Gestión de Repuestos</h1>
-
-    <div class="centered" style="text-align: center; padding: 40px 0;">
-        <h2 style="color: #667eea; margin-bottom: 20px;">⏳ Esperando Aprobación</h2>
-        <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
-            Tu cuenta ha sido registrada correctamente. Ahora debes esperar a que el administrador
-            apruebe tu registro para poder acceder al sistema.
-        </p>
-        <p style="color: #999; font-size: 14px;">
-            Recibirás una notificación cuando tu cuenta sea aprobada.
-        </p>
-
-        <a href="{% url 'login' %}" style="text-decoration: none; display: inline-block; margin-top: 30px;">
-            <button type="button">Volver al Login</button>
-        </a>
+<div class="row justify-content-center py-5">
+    <div class="col-md-6 text-center">
+        <div class="display-1 mb-4 text-warning">⏳</div>
+        <h2 class="fw-bold">Cuenta recibida correctamente</h2>
+        <p class="lead text-muted mb-4">Un administrador revisará tus datos. Te avisaremos por mail cuando puedas ingresar.</p>
+        <a href="{% url 'login' %}" class="btn btn-primary rounded-pill px-5">Volver al Inicio</a>
     </div>
+</div>
 {% endblock %}

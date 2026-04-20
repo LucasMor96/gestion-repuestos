@@ -1,21 +1,24 @@
 {% extends "plataforma/base.html" %}
-
-{% block title %}Seleccionar Tipo de Registro{% endblock %}
-
 {% block content %}
-    <h1>Gestión de Repuestos</h1>
-    <h2 class="centered">¿Qué eres?</h2>
-
-    <div class="button-group">
-        <a href="{% url 'registro_tecnico' %}" style="text-decoration: none;">
-            <button type="button">Técnico Independiente</button>
-        </a>
-        <a href="{% url 'registro_proveedor' %}" style="text-decoration: none;">
-            <button type="button">Proveedor de Repuestos</button>
-        </a>
+<div class="text-center py-5">
+    <h2 class="fw-bold mb-5">Seleccioná tu perfil</h2>
+    <div class="row justify-content-center gap-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 p-5 h-100 bg-white">
+                <div class="display-4 mb-3">🛠️</div>
+                <h4 class="fw-bold">Técnico</h4>
+                <p class="text-muted small">Para gestionar tus pedidos y acceder a crédito con proveedores.</p>
+                <a href="{% url 'registro_tecnico' %}" class="btn btn-outline-primary w-100 rounded-pill fw-bold">Soy Técnico</a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 p-5 h-100 bg-white">
+                <div class="display-4 mb-3">🏪</div>
+                <h4 class="fw-bold">Proveedor</h4>
+                <p class="text-muted small">Para publicar tus productos y asignar créditos a técnicos.</p>
+                <a href="{% url 'registro_proveedor' %}" class="btn btn-primary w-100 rounded-pill fw-bold text-white">Soy Proveedor</a>
+            </div>
+        </div>
     </div>
-
-    <div class="link">
-        ¿Ya tienes cuenta? <a href="{% url 'login' %}">Ingresa aquí</a>
-    </div>
+</div>
 {% endblock %}

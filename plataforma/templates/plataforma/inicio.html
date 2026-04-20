@@ -1,0 +1,27 @@
+{% extends 'plataforma/base.html' %}
+
+{% block content %}
+<div class="row align-items-center py-5">
+    <div class="col-lg-6">
+        <h1 class="display-4 fw-bold lh-1 mb-3">La confianza del taller, <br><span class="text-primary">ahora digital.</span></h1>
+        <p class="lead text-muted mb-4">Conectamos a técnicos profesionales con proveedores locales. Gestioná tu stock, accedé a créditos comerciales y hacé crecer tu negocio.</p>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+            <a href="{% url 'registro_tipo' %}" class="btn btn-primary btn-lg px-4 me-md-2">Comenzar ahora</a>
+            <button class="btn btn-outline-secondary btn-lg px-4">Saber más</button>
+        </div>
+    </div>
+    <div class="col-lg-6 text-center mt-5 mt-lg-0">
+        <div class="p-5 bg-pastel-green border border-success border-opacity-10 rounded-5 shadow-sm">
+            <h5 class="text-success fw-bold">DASHBOARD UI PREVIEW</h5>
+            <div class="bg-white rounded-3 p-3 mt-3 shadow-sm text-start">
+                <div class="mb-2 bg-light rounded" style="height: 10px; width: 40%;"></div>
+                <div class="mb-4 bg-light rounded" style="height: 10px; width: 80%;"></div>
+                <div class="d-flex justify-content-between">
+                    <div class="bg-warning rounded" style="height: 40px; width: 45%;"></div>
+                    <div class="bg-info rounded" style="height: 40px; width: 45%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

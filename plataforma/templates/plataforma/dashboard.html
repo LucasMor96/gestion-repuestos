@@ -1,30 +1,40 @@
 {% extends "plataforma/base.html" %}
-
-{% block title %}Dashboard{% endblock %}
-
 {% block content %}
-    <h1>Bienvenido, {{ user.first_name }}!</h1>
-
-    {% if es_tecnico %}
-        <h2>Dashboard de Técnico</h2>
-        <div style="margin-top: 20px;">
-            <p><strong>Especialidad:</strong> {{ perfil.especialidad }}</p>
-            <p><strong>Ubicación:</strong> {{ perfil.ubicacion }}</p>
-            <p><strong>CUIT:</strong> {{ perfil.cuit }}</p>
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="p-5 bg-pastel-green rounded-4 border border-success border-opacity-10">
+            <h1 class="fw-bold">Bienvenido, {{ user.first_name }}!</h1>
+            <p class="lead">Panel de Control: <strong>{% if es_tecnico %}Técnico Independiente{% else %}Proveedor{% endif %}</strong></p>
         </div>
-    {% elif es_proveedor %}
-        <h2>Dashboard de Proveedor</h2>
-        <div style="margin-top: 20px;">
-            <p><strong>Negocio:</strong> {{ perfil.nombre_negocio }}</p>
-            <p><strong>Rubro:</strong> {{ perfil.rubro }}</p>
-            <p><strong>Dirección:</strong> {{ perfil.direccion }}</p>
-            <p><strong>CUIT:</strong> {{ perfil.cuit }}</p>
-        </div>
-    {% endif %}
-
-    <div style="margin-top: 40px;">
-        <a href="{% url 'logout' %}" style="text-decoration: none;">
-            <button type="button">Cerrar Sesión</button>
-        </a>
     </div>
+    
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-bold mb-3">Información del Perfil</h5>
+            <hr>
+            {% if es_tecnico %}
+                <p class="mb-1 text-muted small">Especialidad</p>
+                <p class="fw-bold">{{ perfil.especialidad }}</p>
+                <p class="mb-1 text-muted small">Ubicación</p>
+                <p class="fw-bold">{{ perfil.ubicacion }}</p>
+            {% else %}
+                <p class="mb-1 text-muted small">Negocio</p>
+                <p class="fw-bold">{{ perfil.nombre_negocio }}</p>
+                <p class="mb-1 text-muted small">Rubro</p>
+                <p class="fw-bold">{{ perfil.rubro }}</p>
+            {% endif %}
+            <p class="mb-1 text-muted small">CUIT</p>
+            <p class="fw-bold">{{ perfil.cuit }}</p>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+            <div class="text-muted">
+                <p>No tenés pedidos activos en este momento.</p>
+                <button class="btn btn-light rounded-pill px-4 mt-2">Ver Historial</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

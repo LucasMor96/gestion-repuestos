@@ -1,125 +1,36 @@
 {% extends "plataforma/base.html" %}
-
-{% block title %}Registro de Proveedor{% endblock %}
-
 {% block content %}
-    <h2>Registro de Proveedor</h2>
-
-    <form method="post">
-        {% csrf_token %}
-
-        <div class="form-group">
-            <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
-            {{ form.first_name }}
-            {% if form.first_name.errors %}
-                <ul class="error-list">
-                    {% for error in form.first_name.errors %}
-                        <li>{{ error }}</li>
+<div class="row justify-content-center py-4">
+    <div class="col-md-8 col-lg-7">
+        <div class="card shadow border-0 rounded-4 p-4">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">Registro de Proveedor</h2>
+                <p class="text-muted">Digitalizá tu negocio y gestioná tus créditos</p>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    {% for field in form %}
+                    <div class="{% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'password1' or field.name == 'password2' %}col-md-6{% else %}col-12{% endif %} mb-3">
+                        <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
+                        <input type="{{ field.field.widget.input_type }}" 
+                               name="{{ field.name }}" 
+                               class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}" 
+                               placeholder="{{ field.label }}">
+                        {% if field.errors %}
+                            <div class="text-danger small mt-1">{{ field.errors|first }}</div>
+                        {% endif %}
+                    </div>
                     {% endfor %}
-                </ul>
-            {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill shadow-sm mt-3 fw-bold">
+                    REGISTRAR MI NEGOCIO
+                </button>
+            </form>
+            <div class="text-center mt-4">
+                <p class="small">¿Ya sos parte? <a href="{% url 'login' %}" class="text-primary fw-bold text-decoration-none">Iniciá sesión</a></p>
+            </div>
         </div>
-
-        <div class="form-group">
-            <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
-            {{ form.last_name }}
-            {% if form.last_name.errors %}
-                <ul class="error-list">
-                    {% for error in form.last_name.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
-            {{ form.email }}
-            {% if form.email.errors %}
-                <ul class="error-list">
-                    {% for error in form.email.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.cuit.id_for_label }}">{{ form.cuit.label }}</label>
-            {{ form.cuit }}
-            {% if form.cuit.errors %}
-                <ul class="error-list">
-                    {% for error in form.cuit.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.nombre_negocio.id_for_label }}">{{ form.nombre_negocio.label }}</label>
-            {{ form.nombre_negocio }}
-            {% if form.nombre_negocio.errors %}
-                <ul class="error-list">
-                    {% for error in form.nombre_negocio.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.direccion.id_for_label }}">{{ form.direccion.label }}</label>
-            {{ form.direccion }}
-            {% if form.direccion.errors %}
-                <ul class="error-list">
-                    {% for error in form.direccion.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.rubro.id_for_label }}">{{ form.rubro.label }}</label>
-            {{ form.rubro }}
-            {% if form.rubro.errors %}
-                <ul class="error-list">
-                    {% for error in form.rubro.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
-            {{ form.password1 }}
-            {% if form.password1.errors %}
-                <ul class="error-list">
-                    {% for error in form.password1.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
-            {{ form.password2 }}
-            {% if form.password2.errors %}
-                <ul class="error-list">
-                    {% for error in form.password2.errors %}
-                        <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </div>
-
-        <button type="submit">Registrarse</button>
-    </form>
-
-    <div class="link">
-        ¿Ya tienes cuenta? <a href="{% url 'login' %}">Ingresa aquí</a>
     </div>
+</div>
 {% endblock %}
