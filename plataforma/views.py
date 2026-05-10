@@ -1,3 +1,6 @@
+from math import radians, sin, cos, sqrt, atan2
+
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -6,8 +9,9 @@ from django.contrib.auth.models import User
 from .forms import (
     RegistroTecnicoForm, RegistroProveedorForm, LoginForm,
     EditarPerfilTecnicoForm, EditarPerfilProveedorForm,
+    ProductoForm,
 )
-from .models import Tecnico, Proveedor
+from .models import Tecnico, Proveedor, Producto
 
 
 def _solo_staff(request):
@@ -257,3 +261,182 @@ def solicitar_info(request, tipo, pk):
         perfil.save()
         messages.success(request, f'Nota guardada para {perfil.usuario.get_full_name()}. El usuario la verá al intentar ingresar.')
     return redirect('panel_moderacion')
+
+
+def _haversine(lat1, lon1, lat2, lon2):
+    """Distancia en km entre dos coordenadas (fórmula de Haversine)."""
+    R = 6371
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    return R * 2 * atan2(sqrt(a), sqrt(1 - a))
+
+
+@login_required(login_url='login')
+def buscar_repuestos(request):
+    """Búsqueda de repuestos por nombre, modelo o categoría (US-04)"""
+    query = request.GET.get('q', '').strip()
+    categoria_sel = request.GET.get('categoria', '').strip()
+    orden = request.GET.get('orden', '')
+    lat_str = request.GET.get('lat', '')
+    lng_str = request.GET.get('lng', '')
+
+    try:
+        productos = Producto.objects.filter(disponible=True).select_related('proveedor')
+
+        if query:
+            productos = productos.filter(
+                Q(nombre__icontains=query) |
+                Q(modelo__icontains=query) |
+                Q(categoria__icontains=query)
+            )
+
+        if categoria_sel:
+            productos = productos.filter(categoria__icontains=categoria_sel)
+
+        if orden == 'precio_asc':
+            productos = productos.order_by('precio')
+        elif orden == 'precio_desc':
+            productos = productos.order_by('-precio')
+
+        categorias = (
+            Producto.objects
+            .filter(disponible=True)
+            .values_list('categoria', flat=True)
+            .distinct()
+            .order_by('categoria')
+        )
+
+        productos_lista = list(productos)
+
+        if orden == 'distancia' and lat_str and lng_str:
+            user_lat = float(lat_str)
+            user_lng = float(lng_str)
+
+            for p in productos_lista:
+                prov = p.proveedor
+                if prov.latitud is not None and prov.longitud is not None:
+                    p.distancia_km = round(_haversine(user_lat, user_lng, prov.latitud, prov.longitud), 1)
+                else:
+                    p.distancia_km = None
+
+            productos_lista.sort(key=lambda p: p.distancia_km if p.distancia_km is not None else float('inf'))
+
+        context = {
+            'productos': productos_lista,
+            'query': query,
+            'categoria_sel': categoria_sel,
+            'orden': orden,
+            'categorias': categorias,
+            'lat': lat_str,
+            'lng': lng_str,
+        }
+    except Exception:
+        messages.error(request, 'Ocurrió un error al realizar la búsqueda. Intentá de nuevo.')
+        context = {
+            'productos': [],
+            'query': query,
+            'categoria_sel': categoria_sel,
+            'orden': orden,
+            'categorias': [],
+            'lat': lat_str,
+            'lng': lng_str,
+        }
+
+    return render(request, 'plataforma/buscar_repuestos.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Catálogo de productos – US-06 (solo proveedores)
+# ---------------------------------------------------------------------------
+
+def _get_proveedor_o_403(request):
+    """Devuelve el perfil Proveedor del usuario o None si no corresponde."""
+    if not hasattr(request.user, 'proveedor'):
+        messages.error(request, 'Esta sección es solo para proveedores.')
+        return None
+    return request.user.proveedor
+
+
+@login_required(login_url='login')
+def catalogo_proveedor(request):
+    """Lista los productos propios del proveedor."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    productos = proveedor.productos.all().order_by('nombre')
+    return render(request, 'plataforma/catalogo_proveedor.html', {'productos': productos})
+
+
+@login_required(login_url='login')
+def agregar_producto(request):
+    """Crea un nuevo producto en el catálogo."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = ProductoForm(request.POST)
+        if form.is_valid():
+            producto = form.save(commit=False)
+            producto.proveedor = proveedor
+            producto.save()
+            messages.success(request, f'Producto "{producto.nombre}" publicado en el catálogo.')
+            return redirect('catalogo_proveedor')
+    else:
+        form = ProductoForm()
+
+    return render(request, 'plataforma/producto_form.html', {'form': form, 'accion': 'Agregar'})
+
+
+@login_required(login_url='login')
+def editar_producto(request, pk):
+    """Edita un producto existente."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
+
+    if request.method == 'POST':
+        form = ProductoForm(request.POST, instance=producto)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Producto "{producto.nombre}" actualizado.')
+            return redirect('catalogo_proveedor')
+    else:
+        form = ProductoForm(instance=producto)
+
+    return render(request, 'plataforma/producto_form.html', {'form': form, 'accion': 'Editar', 'producto': producto})
+
+
+@login_required(login_url='login')
+def eliminar_producto(request, pk):
+    """Elimina un producto tras confirmación POST."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
+
+    if request.method == 'POST':
+        nombre = producto.nombre
+        producto.delete()
+        messages.success(request, f'Producto "{nombre}" eliminado del catálogo.')
+    return redirect('catalogo_proveedor')
+
+
+@login_required(login_url='login')
+def toggle_disponibilidad(request, pk):
+    """Activa o desactiva la visibilidad de un producto sin editar el resto."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
+    producto.disponible = not producto.disponible
+    producto.save(update_fields=['disponible'])
+    estado = 'visible' if producto.disponible else 'oculto'
+    messages.success(request, f'"{producto.nombre}" ahora está {estado} en el catálogo.')
+    return redirect('catalogo_proveedor')

@@ -48,6 +48,8 @@ class Proveedor(models.Model):
     horarios = models.CharField(max_length=200, blank=True)
     logo = models.ImageField(upload_to='proveedores/logos/', blank=True, null=True)
     imagen = models.ImageField(upload_to='proveedores/imagenes/', blank=True, null=True)
+    latitud = models.FloatField(null=True, blank=True)
+    longitud = models.FloatField(null=True, blank=True)
     estado = models.CharField(max_length=15, choices=ESTADO_USUARIO_CHOICES, default='pendiente')
     nota_admin = models.TextField(blank=True)
     is_approved = models.BooleanField(default=False)
@@ -72,8 +74,11 @@ class Producto(models.Model):
     """Catálogo de productos del proveedor (US-06)"""
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name="productos")
     nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True)
+    modelo = models.CharField(max_length=100, blank=True)
     categoria = models.CharField(max_length=100)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
+    stock = models.PositiveIntegerField(default=0)
     disponible = models.BooleanField(default=True)
 
     class Meta:

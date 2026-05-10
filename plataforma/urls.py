@@ -16,6 +16,16 @@ urlpatterns = [
     path('perfil/tecnico/<int:pk>/', views.perfil_tecnico, name='perfil_tecnico'),
     path('perfil/proveedor/<int:pk>/', views.perfil_proveedor, name='perfil_proveedor'),
 
+    # Búsqueda
+    path('buscar/', views.buscar_repuestos, name='buscar_repuestos'),
+
+    # Catálogo del proveedor (US-06)
+    path('catalogo/', views.catalogo_proveedor, name='catalogo_proveedor'),
+    path('catalogo/agregar/', views.agregar_producto, name='agregar_producto'),
+    path('catalogo/editar/<int:pk>/', views.editar_producto, name='editar_producto'),
+    path('catalogo/eliminar/<int:pk>/', views.eliminar_producto, name='eliminar_producto'),
+    path('catalogo/toggle/<int:pk>/', views.toggle_disponibilidad, name='toggle_disponibilidad'),
+
     # Moderación (solo staff)
     path('moderacion/', views.panel_moderacion, name='panel_moderacion'),
     path('moderacion/aprobar/<str:tipo>/<int:pk>/', views.aprobar_usuario, name='aprobar_usuario'),

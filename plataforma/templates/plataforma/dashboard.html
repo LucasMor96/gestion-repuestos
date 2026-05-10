@@ -7,7 +7,12 @@
                 <h1 class="fw-bold">Bienvenido, {{ user.first_name }}!</h1>
                 <p class="lead mb-0">Panel de Control: <strong>{% if es_tecnico %}Técnico Independiente{% else %}Proveedor{% endif %}</strong></p>
             </div>
-            <a href="{% url 'editar_perfil' %}" class="btn btn-primary rounded-pill px-4">Editar perfil</a>
+            <div class="d-flex gap-2">
+                {% if es_proveedor %}
+                    <a href="{% url 'catalogo_proveedor' %}" class="btn btn-outline-primary rounded-pill px-4">Mi catálogo</a>
+                {% endif %}
+                <a href="{% url 'editar_perfil' %}" class="btn btn-primary rounded-pill px-4">Editar perfil</a>
+            </div>
         </div>
     </div>
 

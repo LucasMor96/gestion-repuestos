@@ -1,0 +1,186 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Buscar Repuestos{% endblock %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold">Buscar Repuestos</h2>
+        <p class="text-muted">Encontrá repuestos por nombre, modelo o categoría.</p>
+    </div>
+</div>
+
+<!-- FILTROS -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <form method="get" id="formBusqueda">
+        <input type="hidden" name="lat" id="inputLat" value="{{ lat }}">
+        <input type="hidden" name="lng" id="inputLng" value="{{ lng }}">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-bold small text-secondary">Buscar</label>
+                <input type="text" name="q" value="{{ query }}"
+                       class="form-control rounded-pill border-2"
+                       placeholder="Nombre, modelo o categoría...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold small text-secondary">Categoría</label>
+                <select name="categoria" class="form-select rounded-pill border-2">
+                    <option value="">Todas las categorías</option>
+                    {% for cat in categorias %}
+                        <option value="{{ cat }}" {% if cat == categoria_sel %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small text-secondary">Ordenar por</label>
+                <select name="orden" id="selectOrden" class="form-select rounded-pill border-2">
+                    <option value="" {% if not orden %}selected{% endif %}>Relevancia</option>
+                    <option value="precio_asc" {% if orden == 'precio_asc' %}selected{% endif %}>Precio ↑</option>
+                    <option value="precio_desc" {% if orden == 'precio_desc' %}selected{% endif %}>Precio ↓</option>
+                    <option value="distancia" {% if orden == 'distancia' %}selected{% endif %}>Distancia</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary rounded-pill px-4 flex-grow-1 fw-bold">Buscar</button>
+                {% if query or categoria_sel or orden %}
+                    <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Limpiar">✕</a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- RESULTADO DISTANCIA: botón geolocalización -->
+{% if orden == 'distancia' and not lat %}
+<div class="alert alert-info rounded-4 d-flex align-items-center gap-3 mb-4">
+    <span>Para ordenar por distancia necesitamos tu ubicación.</span>
+    <button class="btn btn-sm btn-primary rounded-pill" id="btnGeo">Usar mi ubicación</button>
+</div>
+{% endif %}
+
+<!-- RESUMEN -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted small">
+        {% if productos %}
+            {{ productos|length }} resultado{% if productos|length != 1 %}s{% endif %}
+            {% if query %}para "<strong>{{ query }}</strong>"{% endif %}
+        {% endif %}
+    </span>
+</div>
+
+<!-- RESULTADOS -->
+{% if productos %}
+<div class="row g-3">
+    {% for producto in productos %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <!-- Encabezado: nombre + badge stock -->
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="fw-bold mb-0">{{ producto.nombre }}</h5>
+                    {% if producto.stock > 5 %}
+                        <span class="badge bg-success rounded-pill ms-2">Stock: {{ producto.stock }}</span>
+                    {% elif producto.stock > 0 %}
+                        <span class="badge bg-warning text-dark rounded-pill ms-2">Últimas {{ producto.stock }}</span>
+                    {% else %}
+                        <span class="badge bg-danger rounded-pill ms-2">Sin stock</span>
+                    {% endif %}
+                </div>
+
+                {% if producto.modelo %}
+                    <p class="text-muted small mb-1">Modelo: <strong>{{ producto.modelo }}</strong></p>
+                {% endif %}
+                <p class="text-muted small mb-2">
+                    <span class="badge bg-light text-dark border">{{ producto.categoria }}</span>
+                </p>
+
+                <p class="fs-4 fw-bold text-primary mb-3">${{ producto.precio }}</p>
+
+                <!-- Proveedor -->
+                <div class="border-top pt-3">
+                    <p class="small fw-bold mb-0">{{ producto.proveedor.nombre_negocio }}</p>
+                    <p class="text-muted small mb-0">{{ producto.proveedor.direccion }}</p>
+                    {% if producto.proveedor.horarios %}
+                        <p class="text-muted small mb-0">{{ producto.proveedor.horarios }}</p>
+                    {% endif %}
+                    {% if producto.distancia_km is not None %}
+                        <p class="text-muted small mb-0">
+                            <span class="text-success fw-bold">{{ producto.distancia_km }} km</span> de distancia
+                        </p>
+                    {% elif orden == 'distancia' %}
+                        <p class="text-muted small mb-0">Distancia no disponible</p>
+                    {% endif %}
+                    {% if producto.proveedor.calificacion_promedio %}
+                        <p class="text-warning small mb-0">{{ producto.proveedor.calificacion_promedio }} ★</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 px-4 pb-4">
+                <a href="{% url 'perfil_proveedor' producto.proveedor.pk %}"
+                   class="btn btn-outline-primary btn-sm rounded-pill w-100">Ver proveedor</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <div class="display-4 text-muted mb-3">🔍</div>
+    <h4 class="fw-bold text-muted">
+        {% if query or categoria_sel %}
+            No se encontraron repuestos para tu búsqueda.
+        {% else %}
+            Ingresá un término para comenzar a buscar.
+        {% endif %}
+    </h4>
+    {% if query or categoria_sel %}
+        <p class="text-muted">Probá con otro nombre, modelo o categoría.</p>
+        <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary rounded-pill px-4 mt-2">Ver todos</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<script>
+(function () {
+    const selectOrden = document.getElementById('selectOrden');
+    const btnGeo = document.getElementById('btnGeo');
+    const form = document.getElementById('formBusqueda');
+    const inputLat = document.getElementById('inputLat');
+    const inputLng = document.getElementById('inputLng');
+
+    function pedirUbicacion(cb) {
+        if (!navigator.geolocation) {
+            alert('Tu navegador no soporta geolocalización.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            pos => cb(pos.coords.latitude, pos.coords.longitude),
+            () => alert('No se pudo obtener tu ubicación. Verificá los permisos del navegador.')
+        );
+    }
+
+    // Al cambiar el orden a distancia: solicitar geolocalización antes de enviar
+    selectOrden.addEventListener('change', function () {
+        if (this.value === 'distancia') {
+            pedirUbicacion(function (lat, lng) {
+                inputLat.value = lat;
+                inputLng.value = lng;
+                form.submit();
+            });
+        }
+    });
+
+    // Botón explícito de geolocalización (visible si orden=distancia sin coords)
+    if (btnGeo) {
+        btnGeo.addEventListener('click', function () {
+            pedirUbicacion(function (lat, lng) {
+                inputLat.value = lat;
+                inputLng.value = lng;
+                form.submit();
+            });
+        });
+    }
+})();
+</script>
+
+{% endblock %}

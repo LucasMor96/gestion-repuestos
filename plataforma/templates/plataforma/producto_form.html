@@ -1,0 +1,67 @@
+{% extends "plataforma/base.html" %}
+{% block title %}{{ accion }} producto{% endblock %}
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow border-0 rounded-4 p-4">
+            <div class="mb-4">
+                <h2 class="fw-bold">{{ accion }} producto</h2>
+                <p class="text-muted">
+                    {% if accion == 'Agregar' %}
+                        Completá los datos para publicar el producto en el catálogo.
+                    {% else %}
+                        Modificá los datos del producto. Los cambios se reflejan de inmediato en las búsquedas.
+                    {% endif %}
+                </p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div class="mb-3">
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                        <!-- Disponible: toggle especial -->
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="{{ field.name }}" id="{{ field.id_for_label }}"
+                                   {% if field.value %}checked{% endif %}
+                                   style="width:3em;height:1.5em;">
+                            <label class="form-check-label fw-bold ms-2" for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                            </label>
+                        </div>
+                        <p class="text-muted small mt-1">Desactivá para ocultar temporalmente el producto del catálogo.</p>
+                    {% elif field.field.widget.input_type == 'textarea' %}
+                        <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
+                        <textarea name="{{ field.name }}"
+                                  class="form-control border-2 rounded-3 {% if field.errors %}is-invalid{% endif %}"
+                                  rows="3"
+                                  placeholder="{{ field.label }}">{{ field.value|default_if_none:'' }}</textarea>
+                    {% else %}
+                        <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
+                        <input type="{{ field.field.widget.input_type }}"
+                               name="{{ field.name }}"
+                               value="{{ field.value|default_if_none:'' }}"
+                               class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
+                               placeholder="{{ field.label }}">
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="text-danger small mt-1">{{ field.errors|first }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary flex-grow-1 py-3 rounded-pill fw-bold">
+                        {% if accion == 'Agregar' %}Publicar producto{% else %}Guardar cambios{% endif %}
+                    </button>
+                    <a href="{% url 'catalogo_proveedor' %}" class="btn btn-outline-secondary py-3 rounded-pill px-4">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
