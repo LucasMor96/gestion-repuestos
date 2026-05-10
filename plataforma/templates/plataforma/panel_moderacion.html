@@ -1,0 +1,391 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Panel de Moderación{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="fw-bold">Panel de Moderación</h1>
+    <p class="text-muted">Revisá y gestioná los usuarios registrados en la plataforma.</p>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="modTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pendientes">
+            Pendientes
+            {% with total=tecnicos_pendientes.count|add:proveedores_pendientes.count %}
+            {% if total %}<span class="badge bg-warning text-dark ms-1">{{ total }}</span>{% endif %}
+            {% endwith %}
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#activos">
+            Activos
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#inactivos">
+            Rechazados / Suspendidos
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- PENDIENTES -->
+    <div class="tab-pane fade show active" id="pendientes">
+        {% if not tecnicos_pendientes and not proveedores_pendientes %}
+            <div class="text-center py-5 text-muted">
+                <p class="fs-5">No hay usuarios pendientes de aprobación.</p>
+            </div>
+        {% endif %}
+
+        {% if tecnicos_pendientes %}
+        <h5 class="fw-bold mb-3 text-secondary">Técnicos</h5>
+        <div class="table-responsive mb-4">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th><th>Email</th><th>CUIT</th><th>Especialidad</th><th>Nota</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tecnicos_pendientes %}
+                    <tr>
+                        <td class="fw-bold">{{ t.usuario.get_full_name }}</td>
+                        <td>{{ t.usuario.email }}</td>
+                        <td>{{ t.cuit }}</td>
+                        <td>{{ t.especialidad }}</td>
+                        <td>
+                            {% if t.nota_admin %}
+                                <span class="badge bg-info text-dark">{{ t.nota_admin|truncatechars:30 }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'aprobar_usuario' 'tecnico' t.pk %}"
+                               class="btn btn-success btn-sm rounded-pill me-1"
+                               onclick="return confirm('¿Aprobar a {{ t.usuario.get_full_name }}?')">Aprobar</a>
+                            <button class="btn btn-danger btn-sm rounded-pill me-1"
+                                    data-bs-toggle="modal" data-bs-target="#rechazarT{{ t.pk }}">Rechazar</button>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill"
+                                    data-bs-toggle="modal" data-bs-target="#infoT{{ t.pk }}">Pedir info</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if proveedores_pendientes %}
+        <h5 class="fw-bold mb-3 text-secondary">Proveedores</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Negocio</th><th>Email</th><th>CUIT</th><th>Rubro</th><th>Nota</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in proveedores_pendientes %}
+                    <tr>
+                        <td class="fw-bold">{{ p.nombre_negocio }}</td>
+                        <td>{{ p.usuario.email }}</td>
+                        <td>{{ p.cuit }}</td>
+                        <td>{{ p.rubro }}</td>
+                        <td>
+                            {% if p.nota_admin %}
+                                <span class="badge bg-info text-dark">{{ p.nota_admin|truncatechars:30 }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'aprobar_usuario' 'proveedor' p.pk %}"
+                               class="btn btn-success btn-sm rounded-pill me-1"
+                               onclick="return confirm('¿Aprobar a {{ p.nombre_negocio }}?')">Aprobar</a>
+                            <button class="btn btn-danger btn-sm rounded-pill me-1"
+                                    data-bs-toggle="modal" data-bs-target="#rechazarP{{ p.pk }}">Rechazar</button>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill"
+                                    data-bs-toggle="modal" data-bs-target="#infoP{{ p.pk }}">Pedir info</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ACTIVOS -->
+    <div class="tab-pane fade" id="activos">
+        {% if not tecnicos_activos and not proveedores_activos %}
+            <div class="text-center py-5 text-muted"><p class="fs-5">No hay usuarios activos.</p></div>
+        {% endif %}
+
+        {% if tecnicos_activos %}
+        <h5 class="fw-bold mb-3 text-secondary">Técnicos activos</h5>
+        <div class="table-responsive mb-4">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr><th>Nombre</th><th>Email</th><th>Especialidad</th><th>Calificación</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for t in tecnicos_activos %}
+                    <tr>
+                        <td class="fw-bold">{{ t.usuario.get_full_name }}</td>
+                        <td>{{ t.usuario.email }}</td>
+                        <td>{{ t.especialidad }}</td>
+                        <td>{% if t.calificacion_promedio %}{{ t.calificacion_promedio }} ★{% else %}-{% endif %}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm rounded-pill"
+                                    data-bs-toggle="modal" data-bs-target="#suspenderT{{ t.pk }}">Suspender</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if proveedores_activos %}
+        <h5 class="fw-bold mb-3 text-secondary">Proveedores activos</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr><th>Negocio</th><th>Email</th><th>Rubro</th><th>Calificación</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for p in proveedores_activos %}
+                    <tr>
+                        <td class="fw-bold">{{ p.nombre_negocio }}</td>
+                        <td>{{ p.usuario.email }}</td>
+                        <td>{{ p.rubro }}</td>
+                        <td>{% if p.calificacion_promedio %}{{ p.calificacion_promedio }} ★{% else %}-{% endif %}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm rounded-pill"
+                                    data-bs-toggle="modal" data-bs-target="#suspenderP{{ p.pk }}">Suspender</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- INACTIVOS -->
+    <div class="tab-pane fade" id="inactivos">
+        {% if not tecnicos_inactivos and not proveedores_inactivos %}
+            <div class="text-center py-5 text-muted"><p class="fs-5">No hay usuarios rechazados ni suspendidos.</p></div>
+        {% endif %}
+
+        {% if tecnicos_inactivos %}
+        <h5 class="fw-bold mb-3 text-secondary">Técnicos</h5>
+        <div class="table-responsive mb-4">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Motivo</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for t in tecnicos_inactivos %}
+                    <tr>
+                        <td class="fw-bold">{{ t.usuario.get_full_name }}</td>
+                        <td>{{ t.usuario.email }}</td>
+                        <td>
+                            <span class="badge {% if t.estado == 'rechazado' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                {{ t.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="text-muted small">{{ t.nota_admin|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'aprobar_usuario' 'tecnico' t.pk %}"
+                               class="btn btn-success btn-sm rounded-pill"
+                               onclick="return confirm('¿Reactivar a {{ t.usuario.get_full_name }}?')">Reactivar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if proveedores_inactivos %}
+        <h5 class="fw-bold mb-3 text-secondary">Proveedores</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr><th>Negocio</th><th>Email</th><th>Estado</th><th>Motivo</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for p in proveedores_inactivos %}
+                    <tr>
+                        <td class="fw-bold">{{ p.nombre_negocio }}</td>
+                        <td>{{ p.usuario.email }}</td>
+                        <td>
+                            <span class="badge {% if p.estado == 'rechazado' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                {{ p.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="text-muted small">{{ p.nota_admin|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'aprobar_usuario' 'proveedor' p.pk %}"
+                               class="btn btn-success btn-sm rounded-pill"
+                               onclick="return confirm('¿Reactivar a {{ p.nombre_negocio }}?')">Reactivar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- MODALES - Técnicos pendientes -->
+{% for t in tecnicos_pendientes %}
+<div class="modal fade" id="rechazarT{{ t.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+            <form method="post" action="{% url 'rechazar_usuario' 'tecnico' t.pk %}">
+                {% csrf_token %}
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Rechazar a {{ t.usuario.get_full_name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small text-muted">Motivo del rechazo (visible para el usuario)</label>
+                    <textarea name="nota" class="form-control rounded-3" rows="3"
+                              placeholder="Ej: Documentación incompleta o inválida."></textarea>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Confirmar rechazo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="infoT{{ t.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+            <form method="post" action="{% url 'solicitar_info' 'tecnico' t.pk %}">
+                {% csrf_token %}
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Solicitar info a {{ t.usuario.get_full_name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small text-muted">Indicá qué información necesitás</label>
+                    <textarea name="nota" class="form-control rounded-3" rows="3"
+                              placeholder="Ej: Por favor adjuntá foto del DNI.">{{ t.nota_admin }}</textarea>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Guardar nota</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- MODALES - Proveedores pendientes -->
+{% for p in proveedores_pendientes %}
+<div class="modal fade" id="rechazarP{{ p.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+            <form method="post" action="{% url 'rechazar_usuario' 'proveedor' p.pk %}">
+                {% csrf_token %}
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Rechazar a {{ p.nombre_negocio }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small text-muted">Motivo del rechazo (visible para el usuario)</label>
+                    <textarea name="nota" class="form-control rounded-3" rows="3"
+                              placeholder="Ej: Documentación incompleta."></textarea>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Confirmar rechazo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="infoP{{ p.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+            <form method="post" action="{% url 'solicitar_info' 'proveedor' p.pk %}">
+                {% csrf_token %}
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Solicitar info a {{ p.nombre_negocio }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small text-muted">Indicá qué información necesitás</label>
+                    <textarea name="nota" class="form-control rounded-3" rows="3"
+                              placeholder="Ej: Por favor adjuntá habilitación comercial.">{{ p.nota_admin }}</textarea>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Guardar nota</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- MODALES - Suspender técnicos activos -->
+{% for t in tecnicos_activos %}
+<div class="modal fade" id="suspenderT{{ t.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+            <form method="post" action="{% url 'suspender_usuario' 'tecnico' t.pk %}">
+                {% csrf_token %}
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Suspender a {{ t.usuario.get_full_name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small text-muted">Motivo de la suspensión (visible para el usuario)</label>
+                    <textarea name="nota" class="form-control rounded-3" rows="3"
+                              placeholder="Ej: Comportamiento irregular detectado."></textarea>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning rounded-pill px-4">Confirmar suspensión</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- MODALES - Suspender proveedores activos -->
+{% for p in proveedores_activos %}
+<div class="modal fade" id="suspenderP{{ p.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4">
+            <form method="post" action="{% url 'suspender_usuario' 'proveedor' p.pk %}">
+                {% csrf_token %}
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Suspender a {{ p.nombre_negocio }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label small text-muted">Motivo de la suspensión (visible para el usuario)</label>
+                    <textarea name="nota" class="form-control rounded-3" rows="3"
+                              placeholder="Ej: Comportamiento irregular detectado."></textarea>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning rounded-pill px-4">Confirmar suspensión</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

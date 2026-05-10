@@ -1,0 +1,90 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Perfil de {{ tecnico.usuario.get_full_name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 p-5">
+            <div class="d-flex align-items-center gap-4 mb-4">
+                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center"
+                     style="width:80px;height:80px;font-size:2rem;">
+                    🔧
+                </div>
+                <div>
+                    <h2 class="fw-bold mb-0">{{ tecnico.usuario.get_full_name }}</h2>
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill">
+                        Técnico Independiente
+                    </span>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <p class="text-muted small mb-1">Especialidad</p>
+                    <p class="fw-bold fs-5">{{ tecnico.especialidad }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="text-muted small mb-1">Ubicación</p>
+                    <p class="fw-bold fs-5">{{ tecnico.ubicacion }}</p>
+                </div>
+                {% if tecnico.telefono %}
+                <div class="col-md-6">
+                    <p class="text-muted small mb-1">Teléfono</p>
+                    <p class="fw-bold">{{ tecnico.telefono }}</p>
+                </div>
+                {% endif %}
+                <div class="col-md-6">
+                    <p class="text-muted small mb-1">Calificación promedio</p>
+                    {% if tecnico.calificacion_promedio %}
+                        <p class="fw-bold text-warning fs-5">{{ tecnico.calificacion_promedio }} / 5 ★</p>
+                    {% else %}
+                        <p class="text-muted">Sin calificaciones aún</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% with pedidos=tecnico.pedidos.all %}
+            {% if pedidos %}
+            <hr class="mt-4">
+            <h5 class="fw-bold mb-3">Historial de compras</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle small">
+                    <thead class="text-muted">
+                        <tr>
+                            <th>Producto</th><th>Proveedor</th><th>Monto</th><th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pedidos %}
+                        <tr>
+                            <td>{{ p.producto.nombre }}</td>
+                            <td>{{ p.proveedor.nombre_negocio }}</td>
+                            <td>${{ p.monto_total }}</td>
+                            <td><span class="badge bg-secondary">{{ p.get_estado_display }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            {% with calificaciones=tecnico.calificaciones_recibidas.all %}
+            {% if calificaciones %}
+            <hr class="mt-4">
+            <h5 class="fw-bold mb-3">Calificaciones recibidas</h5>
+            {% for c in calificaciones %}
+            <div class="border rounded-3 p-3 mb-2">
+                <div class="d-flex justify-content-between">
+                    <span class="text-warning fw-bold">Puntualidad {{ c.puntualidad }}/5 · Trato {{ c.trato }}/5</span>
+                    <span class="text-muted small">por {{ c.proveedor.nombre_negocio }}</span>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+{% endblock %}

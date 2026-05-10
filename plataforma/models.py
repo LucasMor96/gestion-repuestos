@@ -1,5 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Avg
+
+
+ESTADO_USUARIO_CHOICES = [
+    ('pendiente', 'Pendiente'),
+    ('aprobado', 'Aprobado'),
+    ('rechazado', 'Rechazado'),
+    ('suspendido', 'Suspendido'),
+]
 
 
 class Tecnico(models.Model):
@@ -7,8 +16,19 @@ class Tecnico(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
     cuit = models.CharField(max_length=13, unique=True, null=True, blank=True)
     especialidad = models.CharField(max_length=100)
+    telefono = models.CharField(max_length=20, blank=True)
     ubicacion = models.CharField(max_length=200)
+    estado = models.CharField(max_length=15, choices=ESTADO_USUARIO_CHOICES, default='pendiente')
+    nota_admin = models.TextField(blank=True)
     is_approved = models.BooleanField(default=False)
+
+    @property
+    def calificacion_promedio(self):
+        calificaciones = self.calificaciones_recibidas.all()
+        if not calificaciones.exists():
+            return None
+        result = calificaciones.aggregate(avg_p=Avg('puntualidad'), avg_t=Avg('trato'))
+        return round((result['avg_p'] + result['avg_t']) / 2, 1)
 
     class Meta:
         verbose_name = "Técnico"
@@ -25,7 +45,20 @@ class Proveedor(models.Model):
     nombre_negocio = models.CharField(max_length=150)
     direccion = models.CharField(max_length=255)
     rubro = models.CharField(max_length=100)
+    horarios = models.CharField(max_length=200, blank=True)
+    logo = models.ImageField(upload_to='proveedores/logos/', blank=True, null=True)
+    imagen = models.ImageField(upload_to='proveedores/imagenes/', blank=True, null=True)
+    estado = models.CharField(max_length=15, choices=ESTADO_USUARIO_CHOICES, default='pendiente')
+    nota_admin = models.TextField(blank=True)
     is_approved = models.BooleanField(default=False)
+
+    @property
+    def calificacion_promedio(self):
+        calificaciones = self.calificaciones_recibidas.all()
+        if not calificaciones.exists():
+            return None
+        result = calificaciones.aggregate(avg=Avg('estrellas'))
+        return round(result['avg'], 1)
 
     class Meta:
         verbose_name = "Proveedor"

@@ -1,0 +1,76 @@
+{% extends "plataforma/base.html" %}
+{% block title %}{{ proveedor.nombre_negocio }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 p-5">
+            <div class="d-flex align-items-center gap-4 mb-4">
+                {% if proveedor.logo %}
+                    <img src="{{ proveedor.logo.url }}" alt="Logo"
+                         class="rounded-3 border" style="width:80px;height:80px;object-fit:cover;">
+                {% else %}
+                    <div class="bg-light rounded-3 d-flex align-items-center justify-content-center"
+                         style="width:80px;height:80px;font-size:2rem;">🏪</div>
+                {% endif %}
+                <div>
+                    <h2 class="fw-bold mb-0">{{ proveedor.nombre_negocio }}</h2>
+                    <span class="badge bg-warning bg-opacity-20 text-dark px-3 py-1 rounded-pill">
+                        {{ proveedor.rubro }}
+                    </span>
+                    {% if proveedor.calificacion_promedio %}
+                        <span class="ms-2 text-warning fw-bold">{{ proveedor.calificacion_promedio }} ★</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if proveedor.imagen %}
+            <img src="{{ proveedor.imagen.url }}" alt="Local"
+                 class="img-fluid rounded-3 mb-4" style="max-height:250px;object-fit:cover;width:100%;">
+            {% endif %}
+
+            <hr>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <p class="text-muted small mb-1">Dirección</p>
+                    <p class="fw-bold">{{ proveedor.direccion }}</p>
+                </div>
+                {% if proveedor.horarios %}
+                <div class="col-md-6">
+                    <p class="text-muted small mb-1">Horarios de atención</p>
+                    <p class="fw-bold">{{ proveedor.horarios }}</p>
+                </div>
+                {% endif %}
+                <div class="col-md-6">
+                    <p class="text-muted small mb-1">Calificación promedio</p>
+                    {% if proveedor.calificacion_promedio %}
+                        <p class="fw-bold text-warning fs-5">{{ proveedor.calificacion_promedio }} / 5 ★</p>
+                    {% else %}
+                        <p class="text-muted">Sin calificaciones aún</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% with calificaciones=proveedor.calificaciones_recibidas.all %}
+            {% if calificaciones %}
+            <hr class="mt-4">
+            <h5 class="fw-bold mb-3">Opiniones de técnicos</h5>
+            {% for c in calificaciones %}
+            <div class="border rounded-3 p-3 mb-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="text-warning fw-bold">{{ c.estrellas }} / 5 ★</span>
+                        {% if c.comentario %}
+                            <p class="mb-0 text-muted small mt-1">{{ c.comentario }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="text-muted small">{{ c.tecnico.usuario.get_full_name }}</span>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+{% endblock %}

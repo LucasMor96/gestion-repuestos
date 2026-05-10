@@ -2,12 +2,15 @@
 {% block content %}
 <div class="row">
     <div class="col-12 mb-4">
-        <div class="p-5 bg-pastel-green rounded-4 border border-success border-opacity-10">
-            <h1 class="fw-bold">Bienvenido, {{ user.first_name }}!</h1>
-            <p class="lead">Panel de Control: <strong>{% if es_tecnico %}Técnico Independiente{% else %}Proveedor{% endif %}</strong></p>
+        <div class="p-5 bg-pastel-green rounded-4 border border-success border-opacity-10 d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="fw-bold">Bienvenido, {{ user.first_name }}!</h1>
+                <p class="lead mb-0">Panel de Control: <strong>{% if es_tecnico %}Técnico Independiente{% else %}Proveedor{% endif %}</strong></p>
+            </div>
+            <a href="{% url 'editar_perfil' %}" class="btn btn-primary rounded-pill px-4">Editar perfil</a>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <div class="card border-0 shadow-sm rounded-4 p-4">
             <h5 class="fw-bold mb-3">Información del Perfil</h5>
@@ -15,13 +18,38 @@
             {% if es_tecnico %}
                 <p class="mb-1 text-muted small">Especialidad</p>
                 <p class="fw-bold">{{ perfil.especialidad }}</p>
+                {% if perfil.telefono %}
+                    <p class="mb-1 text-muted small">Teléfono</p>
+                    <p class="fw-bold">{{ perfil.telefono }}</p>
+                {% endif %}
                 <p class="mb-1 text-muted small">Ubicación</p>
                 <p class="fw-bold">{{ perfil.ubicacion }}</p>
+                {% if perfil.calificacion_promedio %}
+                    <p class="mb-1 text-muted small">Calificación promedio</p>
+                    <p class="fw-bold text-warning">{{ perfil.calificacion_promedio }} / 5</p>
+                {% else %}
+                    <p class="text-muted small">Sin calificaciones aún</p>
+                {% endif %}
             {% else %}
+                {% if perfil.logo %}
+                    <img src="{{ perfil.logo.url }}" alt="Logo" class="img-fluid rounded-3 mb-3" style="max-height:80px;">
+                {% endif %}
                 <p class="mb-1 text-muted small">Negocio</p>
                 <p class="fw-bold">{{ perfil.nombre_negocio }}</p>
                 <p class="mb-1 text-muted small">Rubro</p>
                 <p class="fw-bold">{{ perfil.rubro }}</p>
+                <p class="mb-1 text-muted small">Dirección</p>
+                <p class="fw-bold">{{ perfil.direccion }}</p>
+                {% if perfil.horarios %}
+                    <p class="mb-1 text-muted small">Horarios</p>
+                    <p class="fw-bold">{{ perfil.horarios }}</p>
+                {% endif %}
+                {% if perfil.calificacion_promedio %}
+                    <p class="mb-1 text-muted small">Calificación promedio</p>
+                    <p class="fw-bold text-warning">{{ perfil.calificacion_promedio }} ★</p>
+                {% else %}
+                    <p class="text-muted small">Sin calificaciones aún</p>
+                {% endif %}
             {% endif %}
             <p class="mb-1 text-muted small">CUIT</p>
             <p class="fw-bold">{{ perfil.cuit }}</p>
@@ -29,12 +57,89 @@
     </div>
 
     <div class="col-md-8">
-        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
-            <div class="text-muted">
-                <p>No tenés pedidos activos en este momento.</p>
-                <button class="btn btn-light rounded-pill px-4 mt-2">Ver Historial</button>
+        {% if es_tecnico %}
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <h5 class="fw-bold mb-3">Historial de Compras</h5>
+                <hr>
+                {% with pedidos=perfil.pedidos.all %}
+                {% if pedidos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle small">
+                            <thead class="text-muted">
+                                <tr>
+                                    <th>#</th><th>Producto</th><th>Proveedor</th><th>Monto</th><th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in pedidos %}
+                                <tr>
+                                    <td>{{ p.id }}</td>
+                                    <td>{{ p.producto.nombre }}</td>
+                                    <td>{{ p.proveedor.nombre_negocio }}</td>
+                                    <td>${{ p.monto_total }}</td>
+                                    <td><span class="badge bg-secondary">{{ p.get_estado_display }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-3">No tenés pedidos activos en este momento.</p>
+                {% endif %}
+                {% endwith %}
             </div>
-        </div>
+            {% with calificaciones=perfil.calificaciones_recibidas.all %}
+            {% if calificaciones %}
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3">Mis Calificaciones</h5>
+                <hr>
+                {% for c in calificaciones %}
+                <div class="border-bottom pb-2 mb-2">
+                    <span class="text-warning fw-bold">Puntualidad {{ c.puntualidad }}/5 · Trato {{ c.trato }}/5</span>
+                    <span class="text-muted small ms-2">por {{ c.proveedor.nombre_negocio }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+        {% else %}
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <h5 class="fw-bold mb-3">Pedidos Recibidos</h5>
+                <hr>
+                {% with pedidos=perfil.pedidos_recibidos.all %}
+                {% if pedidos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle small">
+                            <thead class="text-muted">
+                                <tr>
+                                    <th>#</th><th>Producto</th><th>Técnico</th><th>Monto</th><th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in pedidos %}
+                                <tr>
+                                    <td>{{ p.id }}</td>
+                                    <td>{{ p.producto.nombre }}</td>
+                                    <td>{{ p.tecnico.usuario.get_full_name }}</td>
+                                    <td>${{ p.monto_total }}</td>
+                                    <td><span class="badge bg-secondary">{{ p.get_estado_display }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-3">No tenés pedidos recibidos aún.</p>
+                {% endif %}
+                {% endwith %}
+            </div>
+            {% if perfil.imagen %}
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3">Imagen del local</h5>
+                <img src="{{ perfil.imagen.url }}" alt="Local" class="img-fluid rounded-3">
+            </div>
+            {% endif %}
+        {% endif %}
     </div>
 </div>
 {% endblock %}

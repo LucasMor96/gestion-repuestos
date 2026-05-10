@@ -2,10 +2,28 @@
 {% block content %}
 <div class="row justify-content-center py-5">
     <div class="col-md-6 text-center">
-        <div class="display-1 mb-4 text-warning">⏳</div>
-        <h2 class="fw-bold">Cuenta recibida correctamente</h2>
-        <p class="lead text-muted mb-4">Un administrador revisará tus datos. Te avisaremos por mail cuando puedas ingresar.</p>
-        <a href="{% url 'login' %}" class="btn btn-primary rounded-pill px-5">Volver al Inicio</a>
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="display-1 mb-4 text-danger">✗</div>
+                    <h2 class="fw-bold text-danger">Solicitud rechazada</h2>
+                    <p class="lead text-muted mb-4">{{ message }}</p>
+                {% elif message.tags == 'warning' %}
+                    <div class="display-1 mb-4 text-warning">⚠</div>
+                    <h2 class="fw-bold">Cuenta suspendida</h2>
+                    <p class="lead text-muted mb-4">{{ message }}</p>
+                {% else %}
+                    <div class="display-1 mb-4 text-warning">⏳</div>
+                    <h2 class="fw-bold">Cuenta recibida correctamente</h2>
+                    <p class="lead text-muted mb-4">Un administrador revisará tus datos y te notificará el resultado cuando intentes ingresar.</p>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="display-1 mb-4 text-warning">⏳</div>
+            <h2 class="fw-bold">Cuenta pendiente de aprobación</h2>
+            <p class="lead text-muted mb-4">Un administrador revisará tus datos. Intentá ingresar más tarde.</p>
+        {% endif %}
+        <a href="{% url 'login' %}" class="btn btn-primary rounded-pill px-5">Volver al inicio</a>
     </div>
 </div>
 {% endblock %}
