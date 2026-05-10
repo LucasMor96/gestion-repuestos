@@ -8,8 +8,12 @@
                 <p class="lead mb-0">Panel de Control: <strong>{% if es_tecnico %}Técnico Independiente{% else %}Proveedor{% endif %}</strong></p>
             </div>
             <div class="d-flex gap-2">
+                {% if es_tecnico %}
+                    <a href="{% url 'mis_pedidos' %}" class="btn btn-outline-primary rounded-pill px-4">Mis pedidos</a>
+                {% endif %}
                 {% if es_proveedor %}
                     <a href="{% url 'catalogo_proveedor' %}" class="btn btn-outline-primary rounded-pill px-4">Mi catálogo</a>
+                    <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-secondary rounded-pill px-4">Pedidos recibidos</a>
                 {% endif %}
                 <a href="{% url 'editar_perfil' %}" class="btn btn-primary rounded-pill px-4">Editar perfil</a>
             </div>
@@ -64,7 +68,10 @@
     <div class="col-md-8">
         {% if es_tecnico %}
             <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
-                <h5 class="fw-bold mb-3">Historial de Compras</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Historial de Compras</h5>
+                    <a href="{% url 'mis_pedidos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">Ver todos</a>
+                </div>
                 <hr>
                 {% with pedidos=perfil.pedidos.all %}
                 {% if pedidos %}
@@ -109,7 +116,10 @@
             {% endwith %}
         {% else %}
             <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
-                <h5 class="fw-bold mb-3">Pedidos Recibidos</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Pedidos Recibidos</h5>
+                    <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">Ver todos</a>
+                </div>
                 <hr>
                 {% with pedidos=perfil.pedidos_recibidos.all %}
                 {% if pedidos %}

@@ -1,0 +1,109 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Pedidos Recibidos{% endblock %}
+{% block content %}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold">Pedidos Recibidos</h2>
+        <p class="text-muted mb-0">Solicitudes de repuestos enviadas por técnicos.</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'catalogo_proveedor' %}" class="btn btn-outline-primary rounded-pill px-4">
+            Mi catálogo
+        </a>
+    </div>
+</div>
+
+{% if pedidos_pendientes_count > 0 %}
+<div class="alert alert-warning rounded-4 d-flex align-items-center gap-3 mb-4">
+    <span class="fs-4">🔔</span>
+    <div>
+        <strong>Tenés {{ pedidos_pendientes_count }} pedido{{ pedidos_pendientes_count|pluralize }} pendiente{{ pedidos_pendientes_count|pluralize }}.</strong>
+        Revisalos y respondé para no demorar a los técnicos.
+    </div>
+</div>
+{% endif %}
+
+{% if pedidos %}
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted" style="font-size: .8rem; text-transform: uppercase; letter-spacing: .05em;">
+                <tr>
+                    <th class="ps-4 py-3">#</th>
+                    <th class="py-3">Producto</th>
+                    <th class="py-3">Técnico</th>
+                    <th class="py-3">Cant.</th>
+                    <th class="py-3">Entrega</th>
+                    <th class="py-3">Monto</th>
+                    <th class="py-3">Estado</th>
+                    <th class="py-3">Fecha</th>
+                    <th class="pe-4 py-3">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pedido in pedidos %}
+                <tr {% if pedido.estado == 'pendiente' %}class="table-warning"{% endif %}>
+                    <td class="ps-4 text-muted small">{{ pedido.id }}</td>
+                    <td>
+                        <strong>{{ pedido.producto.nombre }}</strong>
+                        {% if pedido.notas %}
+                            <br><small class="text-muted">Nota: {{ pedido.notas|truncatechars:40 }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="small">
+                        <span class="fw-bold">{{ pedido.tecnico.usuario.get_full_name }}</span>
+                        <br><span class="text-muted">{{ pedido.tecnico.especialidad }}</span>
+                    </td>
+                    <td>{{ pedido.cantidad }}</td>
+                    <td class="text-muted small">{{ pedido.get_forma_entrega_display }}</td>
+                    <td class="fw-bold text-primary">${{ pedido.monto_total }}</td>
+                    <td>
+                        {% if pedido.estado == 'pendiente' %}
+                            <span class="badge bg-warning text-dark rounded-pill">Pendiente</span>
+                        {% elif pedido.estado == 'aceptado' %}
+                            <span class="badge bg-success rounded-pill">Aceptado</span>
+                        {% elif pedido.estado == 'rechazado' %}
+                            <span class="badge bg-danger rounded-pill">Rechazado</span>
+                        {% elif pedido.estado == 'completado' %}
+                            <span class="badge bg-info text-dark rounded-pill">Completado</span>
+                        {% elif pedido.estado == 'cancelado' %}
+                            <span class="badge bg-secondary rounded-pill">Cancelado</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    <td class="pe-4">
+                        <a href="{% url 'detalle_pedido_proveedor' pedido.pk %}"
+                           class="btn btn-sm rounded-pill px-3 {% if pedido.estado == 'pendiente' %}btn-primary fw-bold{% else %}btn-outline-secondary{% endif %}">
+                            {% if pedido.estado == 'pendiente' %}Gestionar{% else %}Ver detalle{% endif %}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Leyenda de estados -->
+<div class="d-flex gap-3 mt-3 flex-wrap">
+    <small class="text-muted">Estados:</small>
+    <span class="badge bg-warning text-dark rounded-pill">Pendiente</span>
+    <span class="badge bg-success rounded-pill">Aceptado</span>
+    <span class="badge bg-danger rounded-pill">Rechazado</span>
+    <span class="badge bg-info text-dark rounded-pill">Completado</span>
+    <span class="badge bg-secondary rounded-pill">Cancelado</span>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <div class="display-4 text-muted mb-3">📬</div>
+    <h4 class="fw-bold text-muted">No tenés pedidos recibidos aún</h4>
+    <p class="text-muted">Cuando un técnico solicite un repuesto de tu catálogo, aparecerá aquí.</p>
+    <a href="{% url 'catalogo_proveedor' %}" class="btn btn-outline-primary rounded-pill px-5 mt-2">
+        Ver mi catálogo
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}

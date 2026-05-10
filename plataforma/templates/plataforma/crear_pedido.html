@@ -1,0 +1,156 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Solicitar Repuesto{% endblock %}
+{% block content %}
+
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{% url 'buscar_repuestos' %}">Buscar repuestos</a></li>
+                <li class="breadcrumb-item active">Solicitar pedido</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold">Solicitar Repuesto</h2>
+        <p class="text-muted">Completá los datos para enviar tu pedido al proveedor.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Info del producto -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <h6 class="text-muted fw-bold text-uppercase small mb-3">Repuesto seleccionado</h6>
+            <h4 class="fw-bold mb-1">{{ producto.nombre }}</h4>
+            {% if producto.modelo %}
+                <p class="text-muted small mb-2">Modelo: <strong>{{ producto.modelo }}</strong></p>
+            {% endif %}
+            <span class="badge bg-light text-dark border mb-3">{{ producto.categoria }}</span>
+
+            {% if producto.descripcion %}
+                <p class="text-muted small mb-3">{{ producto.descripcion }}</p>
+            {% endif %}
+
+            <p class="fs-2 fw-bold text-primary mb-0">${{ producto.precio }}</p>
+            <p class="text-muted small mb-3">por unidad</p>
+
+            {% if producto.stock > 5 %}
+                <span class="badge bg-success rounded-pill mb-3">Stock disponible: {{ producto.stock }}</span>
+            {% elif producto.stock > 0 %}
+                <span class="badge bg-warning text-dark rounded-pill mb-3">Últimas {{ producto.stock }} unidades</span>
+            {% endif %}
+
+            <hr>
+            <p class="fw-bold mb-0">{{ producto.proveedor.nombre_negocio }}</p>
+            <p class="text-muted small mb-1">{{ producto.proveedor.direccion }}</p>
+            {% if producto.proveedor.horarios %}
+                <p class="text-muted small mb-0">{{ producto.proveedor.horarios }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Formulario del pedido -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-bold mb-3">Datos del pedido</h5>
+            <hr>
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- Cantidad -->
+                <div class="mb-4">
+                    <label for="{{ form.cantidad.id_for_label }}" class="form-label fw-bold">
+                        {{ form.cantidad.label }}
+                    </label>
+                    <input type="number"
+                           name="{{ form.cantidad.html_name }}"
+                           id="{{ form.cantidad.id_for_label }}"
+                           class="form-control border-2 {% if form.cantidad.errors %}is-invalid{% endif %}"
+                           min="1" max="{{ producto.stock }}"
+                           value="{{ form.cantidad.value|default:1 }}"
+                           style="max-width: 160px;">
+                    {% for error in form.cantidad.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Forma de entrega -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">{{ form.forma_entrega.label }}</label>
+                    <div class="d-flex gap-4 mt-1">
+                        {% for value, text in form.fields.forma_entrega.choices %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio"
+                                   name="forma_entrega"
+                                   id="entrega_{{ value }}"
+                                   value="{{ value }}"
+                                   {% if form.forma_entrega.value == value %}checked
+                                   {% elif forloop.first and not form.forma_entrega.value %}checked{% endif %}>
+                            <label class="form-check-label" for="entrega_{{ value }}">{{ text }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.forma_entrega.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Notas -->
+                <div class="mb-4">
+                    <label for="{{ form.notas.id_for_label }}" class="form-label fw-bold">
+                        {{ form.notas.label }}
+                    </label>
+                    <textarea name="{{ form.notas.html_name }}"
+                              id="{{ form.notas.id_for_label }}"
+                              class="form-control {% if form.notas.errors %}is-invalid{% endif %}"
+                              rows="3"
+                              placeholder="Instrucciones especiales, dirección de entrega, etc.">{{ form.notas.value|default:'' }}</textarea>
+                    {% for error in form.notas.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- Resumen de monto (dinámico) -->
+                <div class="alert alert-light border rounded-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Total estimado:</span>
+                        <span id="montoTotal" class="text-primary fw-bold fs-4"></span>
+                    </div>
+                    <p class="text-muted small mb-0 mt-1">
+                        Precio unitario: ${{ producto.precio }} × <span id="cantDisplay">1</span> unidad(es)
+                    </p>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold">
+                        Enviar pedido
+                    </button>
+                    <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const precioData = document.querySelector('input[name="cantidad"]').dataset;
+    const precioStr = '{{ producto.precio }}';
+    const precioUnit = parseFloat(precioStr.replace(',', '.')) || 0;
+    const inputCant = document.querySelector('input[name="cantidad"]');
+    const spanTotal = document.getElementById('montoTotal');
+    const spanCant = document.getElementById('cantDisplay');
+
+    function actualizar() {
+        const cant = parseInt(inputCant.value) || 0;
+        spanTotal.textContent = '$' + (precioUnit * cant).toFixed(2);
+        spanCant.textContent = cant;
+    }
+
+    inputCant.addEventListener('input', actualizar);
+    actualizar();
+})();
+</script>
+
+{% endblock %}

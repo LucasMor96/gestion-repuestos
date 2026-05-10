@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Tecnico, Proveedor, Producto
+from .models import Tecnico, Proveedor, Producto, Pedido
 
 
 class RegistroTecnicoForm(UserCreationForm):
@@ -174,3 +174,69 @@ class ProductoForm(forms.ModelForm):
         if precio is not None and precio <= 0:
             raise forms.ValidationError('El precio debe ser mayor a cero.')
         return precio
+
+
+class GestionarPedidoForm(forms.Form):
+    """Formulario para que el proveedor acepte, rechace o proponga alternativa (US-08)"""
+    ACCION_CHOICES = [
+        ('aceptar', 'Aceptar pedido'),
+        ('rechazar', 'Rechazar pedido'),
+        ('alternativa', 'Proponer alternativa'),
+    ]
+    accion = forms.ChoiceField(
+        choices=ACCION_CHOICES,
+        widget=forms.RadioSelect,
+        label='Acción',
+    )
+    respuesta = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'Motivo del rechazo o descripción de la alternativa que proponés...',
+        }),
+        required=False,
+        label='Mensaje para el técnico',
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        accion = cleaned_data.get('accion')
+        respuesta = (cleaned_data.get('respuesta') or '').strip()
+        if accion == 'alternativa' and not respuesta:
+            raise forms.ValidationError(
+                'Debés describir la alternativa que proponés al técnico.'
+            )
+        return cleaned_data
+
+
+class PedidoForm(forms.ModelForm):
+    """Formulario para que un técnico solicite un repuesto (US-07)"""
+
+    class Meta:
+        model = Pedido
+        fields = ('cantidad', 'forma_entrega', 'notas')
+        labels = {
+            'cantidad': 'Cantidad',
+            'forma_entrega': 'Forma de entrega',
+            'notas': 'Notas adicionales (opcional)',
+        }
+        widgets = {
+            'notas': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Instrucciones especiales, dirección de entrega, etc.',
+            }),
+        }
+
+    def __init__(self, *args, stock=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._stock = stock
+        self.fields['cantidad'].widget.attrs.update({'min': 1, 'class': 'form-control rounded-pill border-2'})
+        if stock is not None:
+            self.fields['cantidad'].widget.attrs['max'] = stock
+
+    def clean_cantidad(self):
+        cantidad = self.cleaned_data.get('cantidad')
+        if cantidad is not None and cantidad <= 0:
+            raise forms.ValidationError('La cantidad debe ser mayor a cero.')
+        if self._stock is not None and cantidad is not None and cantidad > self._stock:
+            raise forms.ValidationError(f'Solo hay {self._stock} unidades disponibles en stock.')
+        return cantidad

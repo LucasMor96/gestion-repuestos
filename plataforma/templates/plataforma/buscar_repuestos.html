@@ -115,8 +115,17 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-0 px-4 pb-4">
+                {% if es_tecnico and producto.stock > 0 %}
+                <div class="d-flex gap-2">
+                    <a href="{% url 'perfil_proveedor' producto.proveedor.pk %}"
+                       class="btn btn-outline-primary btn-sm rounded-pill flex-grow-1">Ver proveedor</a>
+                    <a href="{% url 'crear_pedido' producto.pk %}"
+                       class="btn btn-primary btn-sm rounded-pill flex-grow-1 fw-bold">Solicitar</a>
+                </div>
+                {% else %}
                 <a href="{% url 'perfil_proveedor' producto.proveedor.pk %}"
                    class="btn btn-outline-primary btn-sm rounded-pill w-100">Ver proveedor</a>
+                {% endif %}
             </div>
         </div>
     </div>

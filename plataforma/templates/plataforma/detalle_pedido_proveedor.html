@@ -1,0 +1,221 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Pedido #{{ pedido.id }}{% endblock %}
+{% block content %}
+
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{% url 'pedidos_recibidos' %}">Pedidos recibidos</a></li>
+                <li class="breadcrumb-item active">Pedido #{{ pedido.id }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-3">
+            <h2 class="fw-bold mb-0">Pedido #{{ pedido.id }}</h2>
+            {% if pedido.estado == 'pendiente' %}
+                <span class="badge bg-warning text-dark fs-6 rounded-pill">Pendiente de respuesta</span>
+            {% elif pedido.estado == 'aceptado' %}
+                <span class="badge bg-success fs-6 rounded-pill">Aceptado</span>
+            {% elif pedido.estado == 'rechazado' %}
+                <span class="badge bg-danger fs-6 rounded-pill">Rechazado</span>
+            {% elif pedido.estado == 'completado' %}
+                <span class="badge bg-info text-dark fs-6 rounded-pill">Completado</span>
+            {% elif pedido.estado == 'cancelado' %}
+                <span class="badge bg-secondary fs-6 rounded-pill">Cancelado por técnico</span>
+            {% endif %}
+        </div>
+        <p class="text-muted small mt-1 mb-0">Recibido el {{ pedido.fecha_creacion|date:"d/m/Y \a \l\a\s H:i" }}</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Detalle del pedido -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <h6 class="text-muted fw-bold text-uppercase small mb-3">Detalle del pedido</h6>
+
+            <p class="text-muted small mb-1">Producto</p>
+            <p class="fw-bold mb-1">{{ pedido.producto.nombre }}</p>
+            {% if pedido.producto.modelo %}
+                <p class="text-muted small mb-2">Modelo: {{ pedido.producto.modelo }}</p>
+            {% endif %}
+            <span class="badge bg-light text-dark border mb-3">{{ pedido.producto.categoria }}</span>
+
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    <p class="text-muted small mb-1">Cantidad</p>
+                    <p class="fw-bold mb-0">{{ pedido.cantidad }} unidad{{ pedido.cantidad|pluralize }}</p>
+                </div>
+                <div class="col-6">
+                    <p class="text-muted small mb-1">Forma de entrega</p>
+                    <p class="fw-bold mb-0">{{ pedido.get_forma_entrega_display }}</p>
+                </div>
+            </div>
+
+            <p class="text-muted small mb-1">Monto total</p>
+            <p class="fs-3 fw-bold text-primary mb-3">${{ pedido.monto_total }}</p>
+
+            {% if pedido.notas %}
+            <div class="alert alert-light border rounded-3 mb-0">
+                <p class="text-muted small fw-bold mb-1">Nota del técnico:</p>
+                <p class="mb-0 small">{{ pedido.notas }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Respuesta anterior (si ya fue gestionado) -->
+        {% if pedido.respuesta_proveedor %}
+        <div class="card border-0 shadow-sm rounded-4 p-4 border-start border-4 border-primary">
+            <h6 class="text-muted fw-bold text-uppercase small mb-2">Tu respuesta enviada</h6>
+            <p class="mb-0">{{ pedido.respuesta_proveedor }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Info del técnico + formulario de gestión -->
+    <div class="col-md-7">
+        <!-- Tarjeta técnico -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <h6 class="text-muted fw-bold text-uppercase small mb-3">Información del técnico</h6>
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <p class="text-muted small mb-1">Nombre</p>
+                    <p class="fw-bold mb-0">{{ pedido.tecnico.usuario.get_full_name }}</p>
+                </div>
+                <div class="col-sm-6">
+                    <p class="text-muted small mb-1">Especialidad</p>
+                    <p class="fw-bold mb-0">{{ pedido.tecnico.especialidad }}</p>
+                </div>
+                {% if pedido.tecnico.telefono %}
+                <div class="col-sm-6">
+                    <p class="text-muted small mb-1">Teléfono</p>
+                    <p class="fw-bold mb-0">{{ pedido.tecnico.telefono }}</p>
+                </div>
+                {% endif %}
+                <div class="col-sm-6">
+                    <p class="text-muted small mb-1">Ubicación</p>
+                    <p class="fw-bold mb-0">{{ pedido.tecnico.ubicacion }}</p>
+                </div>
+                {% if pedido.tecnico.cuit %}
+                <div class="col-sm-6">
+                    <p class="text-muted small mb-1">CUIT</p>
+                    <p class="fw-bold mb-0">{{ pedido.tecnico.cuit }}</p>
+                </div>
+                {% endif %}
+                {% if pedido.tecnico.calificacion_promedio %}
+                <div class="col-sm-6">
+                    <p class="text-muted small mb-1">Calificación</p>
+                    <p class="fw-bold text-warning mb-0">{{ pedido.tecnico.calificacion_promedio }} / 5 ★</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Formulario de gestión (solo si está pendiente) -->
+        {% if pedido.estado == 'pendiente' %}
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-bold mb-3">Responder al técnico</h5>
+            <hr>
+            <form method="post" action="{% url 'gestionar_pedido' pedido.pk %}" id="formGestion">
+                {% csrf_token %}
+
+                <!-- Opciones de acción -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">¿Qué querés hacer con este pedido?</label>
+                    <div class="d-flex flex-column gap-2 mt-2">
+                        <div class="form-check p-3 border rounded-3 cursor-pointer" id="opcion-aceptar">
+                            <input class="form-check-input" type="radio" name="accion"
+                                   id="accion_aceptar" value="aceptar" checked>
+                            <label class="form-check-label fw-bold text-success" for="accion_aceptar">
+                                ✓ Aceptar pedido
+                                <span class="text-muted fw-normal small d-block">El técnico será notificado de que su pedido fue confirmado.</span>
+                            </label>
+                        </div>
+                        <div class="form-check p-3 border rounded-3" id="opcion-rechazar">
+                            <input class="form-check-input" type="radio" name="accion"
+                                   id="accion_rechazar" value="rechazar">
+                            <label class="form-check-label fw-bold text-danger" for="accion_rechazar">
+                                ✕ Rechazar pedido
+                                <span class="text-muted fw-normal small d-block">Podés indicar el motivo en el campo de abajo.</span>
+                            </label>
+                        </div>
+                        <div class="form-check p-3 border rounded-3" id="opcion-alternativa">
+                            <input class="form-check-input" type="radio" name="accion"
+                                   id="accion_alternativa" value="alternativa">
+                            <label class="form-check-label fw-bold text-primary" for="accion_alternativa">
+                                ↔ Proponer alternativa
+                                <span class="text-muted fw-normal small d-block">Sugerí un producto o condición alternativa al técnico.</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campo de respuesta -->
+                <div class="mb-4" id="campoRespuesta">
+                    <label for="id_respuesta" class="form-label fw-bold">
+                        Mensaje para el técnico
+                        <span id="labelObligatorio" class="text-danger small" style="display:none;">*obligatorio</span>
+                    </label>
+                    <textarea name="respuesta" id="id_respuesta" class="form-control" rows="3"
+                              placeholder="Escribí aquí tu mensaje, motivo o alternativa..."></textarea>
+                    <p class="text-muted small mt-1" id="hintRespuesta">Opcional al aceptar o rechazar.</p>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold" id="btnSubmit">
+                        Confirmar acción
+                    </button>
+                    <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                        Volver
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        {% else %}
+        <!-- Pedido ya gestionado -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+            <div class="display-4 text-muted mb-2">
+                {% if pedido.estado == 'aceptado' %}✅
+                {% elif pedido.estado == 'rechazado' %}❌
+                {% elif pedido.estado == 'completado' %}🎉
+                {% else %}🚫{% endif %}
+            </div>
+            <h5 class="fw-bold">Este pedido ya fue {{ pedido.get_estado_display|lower }}</h5>
+            <p class="text-muted small">Última actualización: {{ pedido.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+            <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-primary rounded-pill px-4 mt-2">
+                Volver a pedidos
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function () {
+    const radios = document.querySelectorAll('input[name="accion"]');
+    const campoRespuesta = document.getElementById('campoRespuesta');
+    const hintRespuesta = document.getElementById('hintRespuesta');
+    const labelObligatorio = document.getElementById('labelObligatorio');
+    const textarea = document.getElementById('id_respuesta');
+
+    const opciones = {
+        aceptar: { placeholder: 'Opcional: agregá un mensaje o instrucción para el técnico.', hint: 'Opcional al aceptar.', required: false },
+        rechazar: { placeholder: 'Opcional: indicá el motivo del rechazo.', hint: 'Opcional al rechazar.', required: false },
+        alternativa: { placeholder: 'Describí la alternativa que proponés (producto similar, otro modelo, etc.)', hint: 'Obligatorio al proponer alternativa.', required: true },
+    };
+
+    function actualizarFormulario() {
+        const seleccionado = document.querySelector('input[name="accion"]:checked')?.value || 'aceptar';
+        const cfg = opciones[seleccionado];
+        textarea.placeholder = cfg.placeholder;
+        hintRespuesta.textContent = cfg.hint;
+        labelObligatorio.style.display = cfg.required ? 'inline' : 'none';
+    }
+
+    radios.forEach(r => r.addEventListener('change', actualizarFormulario));
+    actualizarFormulario();
+})();
+</script>
+
+{% endblock %}

@@ -114,6 +114,7 @@ class Pedido(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     notas = models.TextField(blank=True, null=True)
+    respuesta_proveedor = models.TextField(blank=True, null=True)
 
     class Meta:
         verbose_name = "Pedido"

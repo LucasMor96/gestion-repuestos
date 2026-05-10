@@ -28,6 +28,18 @@
                 {% if user.is_authenticated %}
                     <span class="me-3 text-muted small">Hola, {{ user.first_name }}</span>
                     <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-2">Buscar repuestos</a>
+                    {% if user.tecnico %}
+                        <a href="{% url 'mis_pedidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-2">Mis pedidos</a>
+                    {% elif user.proveedor %}
+                        <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-2 position-relative">
+                            Pedidos
+                            {% if pedidos_pendientes_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size:.65rem;">
+                                    {{ pedidos_pendientes_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
                     {% if user.is_staff %}
                         <a href="{% url 'panel_moderacion' %}" class="btn btn-outline-warning btn-sm rounded-pill px-3 me-2">Moderación</a>
                     {% endif %}

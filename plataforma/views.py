@@ -6,12 +6,14 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+
 from .forms import (
     RegistroTecnicoForm, RegistroProveedorForm, LoginForm,
     EditarPerfilTecnicoForm, EditarPerfilProveedorForm,
-    ProductoForm,
+    ProductoForm, PedidoForm, GestionarPedidoForm,
 )
-from .models import Tecnico, Proveedor, Producto
+from .models import Tecnico, Proveedor, Producto, Pedido
 
 
 def _solo_staff(request):
@@ -330,6 +332,7 @@ def buscar_repuestos(request):
             'categorias': categorias,
             'lat': lat_str,
             'lng': lng_str,
+            'es_tecnico': hasattr(request.user, 'tecnico'),
         }
     except Exception:
         messages.error(request, 'Ocurrió un error al realizar la búsqueda. Intentá de nuevo.')
@@ -341,6 +344,7 @@ def buscar_repuestos(request):
             'categorias': [],
             'lat': lat_str,
             'lng': lng_str,
+            'es_tecnico': hasattr(request.user, 'tecnico'),
         }
 
     return render(request, 'plataforma/buscar_repuestos.html', context)
@@ -356,6 +360,14 @@ def _get_proveedor_o_403(request):
         messages.error(request, 'Esta sección es solo para proveedores.')
         return None
     return request.user.proveedor
+
+
+def _get_tecnico_o_403(request):
+    """Devuelve el perfil Tecnico del usuario o None si no corresponde."""
+    if not hasattr(request.user, 'tecnico'):
+        messages.error(request, 'Esta sección es solo para técnicos.')
+        return None
+    return request.user.tecnico
 
 
 @login_required(login_url='login')
@@ -440,3 +452,200 @@ def toggle_disponibilidad(request, pk):
     estado = 'visible' if producto.disponible else 'oculto'
     messages.success(request, f'"{producto.nombre}" ahora está {estado} en el catálogo.')
     return redirect('catalogo_proveedor')
+
+
+# ---------------------------------------------------------------------------
+# Pedidos de repuestos – US-07 / US-08
+# ---------------------------------------------------------------------------
+
+def _notificar_proveedor_nuevo_pedido(pedido):
+    """Envía email al proveedor cuando llega un nuevo pedido."""
+    send_mail(
+        subject=f'[Repuestos] Nuevo pedido #{pedido.id} — {pedido.producto.nombre}',
+        message=(
+            f'Hola {pedido.proveedor.usuario.first_name},\n\n'
+            f'Recibiste un nuevo pedido en la plataforma:\n\n'
+            f'  Producto : {pedido.producto.nombre}\n'
+            f'  Cantidad : {pedido.cantidad}\n'
+            f'  Monto    : ${pedido.monto_total}\n'
+            f'  Entrega  : {pedido.get_forma_entrega_display()}\n'
+            f'  Técnico  : {pedido.tecnico.usuario.get_full_name()}\n'
+            f'  Teléfono : {pedido.tecnico.telefono or "No informado"}\n\n'
+            f'Ingresá a la plataforma para aceptar o rechazar el pedido.\n'
+        ),
+        from_email='noreply@gestion-repuestos.com',
+        recipient_list=[pedido.proveedor.usuario.email],
+        fail_silently=True,
+    )
+
+
+def _notificar_tecnico_estado(pedido):
+    """Envía email al técnico cuando el proveedor cambia el estado de su pedido."""
+    send_mail(
+        subject=f'[Repuestos] Pedido #{pedido.id} — {pedido.get_estado_display()}',
+        message=(
+            f'Hola {pedido.tecnico.usuario.first_name},\n\n'
+            f'Tu pedido fue actualizado:\n\n'
+            f'  Producto  : {pedido.producto.nombre}\n'
+            f'  Estado    : {pedido.get_estado_display()}\n'
+            f'  Proveedor : {pedido.proveedor.nombre_negocio}\n'
+            + (f'  Mensaje   : {pedido.respuesta_proveedor}\n' if pedido.respuesta_proveedor else '')
+            + '\nIngresá a la plataforma para ver el detalle de tus pedidos.\n'
+        ),
+        from_email='noreply@gestion-repuestos.com',
+        recipient_list=[pedido.tecnico.usuario.email],
+        fail_silently=True,
+    )
+
+
+@login_required(login_url='login')
+def crear_pedido(request, producto_pk):
+    """Técnico envía una solicitud de compra de un repuesto al proveedor."""
+    tecnico = _get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('buscar_repuestos')
+
+    producto = get_object_or_404(Producto, pk=producto_pk, disponible=True)
+
+    if request.method == 'POST':
+        form = PedidoForm(request.POST, stock=producto.stock)
+        if form.is_valid():
+            try:
+                pedido = form.save(commit=False)
+                pedido.tecnico = tecnico
+                pedido.proveedor = producto.proveedor
+                pedido.producto = producto
+                pedido.monto_total = producto.precio * form.cleaned_data['cantidad']
+                pedido.estado = 'pendiente'
+                pedido.save()
+                _notificar_proveedor_nuevo_pedido(pedido)
+                messages.success(
+                    request,
+                    f'Pedido #{pedido.id} enviado correctamente. '
+                    f'{producto.proveedor.nombre_negocio} recibirá tu solicitud.'
+                )
+                return redirect('mis_pedidos')
+            except Exception:
+                messages.error(request, 'Ocurrió un error al procesar el pedido. Intentá de nuevo.')
+    else:
+        form = PedidoForm(stock=producto.stock)
+
+    return render(request, 'plataforma/crear_pedido.html', {'form': form, 'producto': producto})
+
+
+@login_required(login_url='login')
+def mis_pedidos(request):
+    """Lista completa de pedidos del técnico."""
+    tecnico = _get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    pedidos = tecnico.pedidos.select_related('producto', 'proveedor').all()
+    return render(request, 'plataforma/mis_pedidos.html', {'pedidos': pedidos})
+
+
+@login_required(login_url='login')
+def cancelar_pedido(request, pk):
+    """Técnico cancela un pedido en estado pendiente."""
+    tecnico = _get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(Pedido, pk=pk, tecnico=tecnico)
+
+    if request.method == 'POST':
+        if pedido.estado != 'pendiente':
+            messages.error(request, 'Solo podés cancelar pedidos en estado pendiente.')
+        else:
+            pedido.estado = 'cancelado'
+            pedido.save()
+            messages.success(request, f'Pedido #{pedido.id} cancelado correctamente.')
+
+    return redirect('mis_pedidos')
+
+
+@login_required(login_url='login')
+def pedidos_recibidos(request):
+    """Panel de pedidos recibidos para el proveedor."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    pedidos = proveedor.pedidos_recibidos.select_related('producto', 'tecnico__usuario').all()
+    return render(request, 'plataforma/pedidos_recibidos.html', {'pedidos': pedidos})
+
+
+@login_required(login_url='login')
+def detalle_pedido_proveedor(request, pk):
+    """Detalle de un pedido recibido, con información del técnico y formulario de gestión."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(
+        Pedido.objects.select_related('producto', 'tecnico__usuario'),
+        pk=pk,
+        proveedor=proveedor,
+    )
+    form = GestionarPedidoForm()
+    return render(request, 'plataforma/detalle_pedido_proveedor.html', {
+        'pedido': pedido,
+        'form': form,
+    })
+
+
+@login_required(login_url='login')
+def gestionar_pedido(request, pk):
+    """Proveedor acepta, rechaza o propone alternativa para un pedido pendiente."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(Pedido, pk=pk, proveedor=proveedor)
+
+    if request.method != 'POST':
+        return redirect('detalle_pedido_proveedor', pk=pk)
+
+    if pedido.estado != 'pendiente':
+        messages.error(request, 'Solo podés gestionar pedidos en estado pendiente.')
+        return redirect('detalle_pedido_proveedor', pk=pk)
+
+    form = GestionarPedidoForm(request.POST)
+    if not form.is_valid():
+        for error in form.non_field_errors():
+            messages.error(request, error)
+        return redirect('detalle_pedido_proveedor', pk=pk)
+
+    accion = form.cleaned_data['accion']
+    respuesta = (form.cleaned_data['respuesta'] or '').strip()
+
+    try:
+        if accion == 'aceptar':
+            pedido.estado = 'aceptado'
+            pedido.respuesta_proveedor = respuesta or None
+            pedido.save()
+            _notificar_tecnico_estado(pedido)
+            messages.success(request, f'Pedido #{pedido.id} aceptado. El técnico fue notificado.')
+
+        elif accion == 'rechazar':
+            pedido.estado = 'rechazado'
+            pedido.respuesta_proveedor = respuesta or None
+            pedido.save()
+            _notificar_tecnico_estado(pedido)
+            messages.success(request, f'Pedido #{pedido.id} rechazado. El técnico fue notificado.')
+
+        elif accion == 'alternativa':
+            pedido.estado = 'rechazado'
+            pedido.respuesta_proveedor = f'Alternativa propuesta: {respuesta}'
+            pedido.save()
+            _notificar_tecnico_estado(pedido)
+            messages.success(
+                request,
+                f'Alternativa enviada al técnico para el pedido #{pedido.id}.'
+            )
+
+    except Exception:
+        messages.error(request, 'Ocurrió un error al procesar la acción. Intentá de nuevo.')
+        return redirect('detalle_pedido_proveedor', pk=pk)
+
+    return redirect('pedidos_recibidos')

@@ -26,6 +26,14 @@ urlpatterns = [
     path('catalogo/eliminar/<int:pk>/', views.eliminar_producto, name='eliminar_producto'),
     path('catalogo/toggle/<int:pk>/', views.toggle_disponibilidad, name='toggle_disponibilidad'),
 
+    # Pedidos de repuestos – US-07 / US-08
+    path('pedidos/', views.mis_pedidos, name='mis_pedidos'),
+    path('pedidos/crear/<int:producto_pk>/', views.crear_pedido, name='crear_pedido'),
+    path('pedidos/cancelar/<int:pk>/', views.cancelar_pedido, name='cancelar_pedido'),
+    path('pedidos/recibidos/', views.pedidos_recibidos, name='pedidos_recibidos'),
+    path('pedidos/detalle/<int:pk>/', views.detalle_pedido_proveedor, name='detalle_pedido_proveedor'),
+    path('pedidos/gestionar/<int:pk>/', views.gestionar_pedido, name='gestionar_pedido'),
+
     # Moderación (solo staff)
     path('moderacion/', views.panel_moderacion, name='panel_moderacion'),
     path('moderacion/aprobar/<str:tipo>/<int:pk>/', views.aprobar_usuario, name='aprobar_usuario'),
