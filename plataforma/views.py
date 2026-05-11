@@ -549,18 +549,100 @@ def crear_pedido(request, producto_pk):
 
 @login_required(login_url='login')
 def mis_pedidos(request):
-    """Lista completa de pedidos del técnico."""
+    """Historial de pedidos del técnico con filtros por fecha y proveedor."""
     tecnico = _get_tecnico_o_403(request)
     if tecnico is None:
         return redirect('dashboard')
 
-    pedidos = (
-        tecnico.pedidos
-        .select_related('producto', 'proveedor')
-        .annotate(ya_calificado=Exists(CalificacionProveedor.objects.filter(pedido=OuterRef('pk'))))
-        .all()
-    )
-    return render(request, 'plataforma/mis_pedidos.html', {'pedidos': pedidos})
+    fecha_desde = request.GET.get('fecha_desde', '').strip()
+    fecha_hasta = request.GET.get('fecha_hasta', '').strip()
+    proveedor_id = request.GET.get('proveedor', '').strip()
+
+    try:
+        pedidos_qs = (
+            tecnico.pedidos
+            .select_related('producto', 'proveedor')
+            .annotate(ya_calificado=Exists(CalificacionProveedor.objects.filter(pedido=OuterRef('pk'))))
+        )
+
+        if fecha_desde:
+            pedidos_qs = pedidos_qs.filter(fecha_creacion__date__gte=fecha_desde)
+        if fecha_hasta:
+            pedidos_qs = pedidos_qs.filter(fecha_creacion__date__lte=fecha_hasta)
+        if proveedor_id:
+            pedidos_qs = pedidos_qs.filter(proveedor_id=proveedor_id)
+
+        pedidos = pedidos_qs.order_by('-fecha_creacion')
+        proveedores = Proveedor.objects.filter(pedidos_recibidos__tecnico=tecnico).distinct().order_by('nombre_negocio')
+        hay_filtros = bool(fecha_desde or fecha_hasta or proveedor_id)
+
+    except Exception:
+        messages.error(request, 'Ocurrió un error al cargar tu historial de pedidos. Intentá de nuevo.')
+        pedidos = []
+        proveedores = []
+        hay_filtros = False
+        fecha_desde = fecha_hasta = proveedor_id = ''
+
+    return render(request, 'plataforma/mis_pedidos.html', {
+        'pedidos': pedidos,
+        'proveedores': proveedores,
+        'hay_filtros': hay_filtros,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'proveedor_id_sel': proveedor_id,
+    })
+
+
+@login_required(login_url='login')
+def exportar_historial(request):
+    """Descarga el historial de pedidos del técnico como CSV."""
+    import csv
+    from django.http import HttpResponse
+
+    tecnico = _get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    fecha_desde = request.GET.get('fecha_desde', '').strip()
+    fecha_hasta = request.GET.get('fecha_hasta', '').strip()
+    proveedor_id = request.GET.get('proveedor', '').strip()
+
+    try:
+        pedidos_qs = tecnico.pedidos.select_related('producto', 'proveedor')
+
+        if fecha_desde:
+            pedidos_qs = pedidos_qs.filter(fecha_creacion__date__gte=fecha_desde)
+        if fecha_hasta:
+            pedidos_qs = pedidos_qs.filter(fecha_creacion__date__lte=fecha_hasta)
+        if proveedor_id:
+            pedidos_qs = pedidos_qs.filter(proveedor_id=proveedor_id)
+
+        pedidos = pedidos_qs.order_by('-fecha_creacion')
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="historial_pedidos.csv"'
+        response.write('﻿')  # BOM para compatibilidad con Excel
+
+        writer = csv.writer(response)
+        writer.writerow(['#', 'Producto', 'Proveedor', 'Cantidad', 'Entrega', 'Monto ($)', 'Estado', 'Fecha'])
+
+        for pedido in pedidos:
+            writer.writerow([
+                pedido.id,
+                pedido.producto.nombre,
+                pedido.proveedor.nombre_negocio,
+                pedido.cantidad,
+                pedido.get_forma_entrega_display(),
+                pedido.monto_total,
+                pedido.get_estado_display(),
+                pedido.fecha_creacion.strftime('%d/%m/%Y'),
+            ])
+
+        return response
+
+    except Exception:
+        messages.error(request, 'No se pudo generar el archivo de exportación. Intentá de nuevo.')
+        return redirect('mis_pedidos')
 
 
 @login_required(login_url='login')

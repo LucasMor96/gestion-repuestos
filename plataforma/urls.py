@@ -26,8 +26,9 @@ urlpatterns = [
     path('catalogo/eliminar/<int:pk>/', views.eliminar_producto, name='eliminar_producto'),
     path('catalogo/toggle/<int:pk>/', views.toggle_disponibilidad, name='toggle_disponibilidad'),
 
-    # Pedidos de repuestos – US-07 / US-08
+    # Pedidos de repuestos – US-07 / US-08 / US-09
     path('pedidos/', views.mis_pedidos, name='mis_pedidos'),
+    path('pedidos/exportar/', views.exportar_historial, name='exportar_historial'),
     path('pedidos/crear/<int:producto_pk>/', views.crear_pedido, name='crear_pedido'),
     path('pedidos/cancelar/<int:pk>/', views.cancelar_pedido, name='cancelar_pedido'),
     path('pedidos/recibidos/', views.pedidos_recibidos, name='pedidos_recibidos'),
