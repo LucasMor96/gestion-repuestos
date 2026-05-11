@@ -73,10 +73,22 @@
                     </td>
                     <td class="text-muted small">{{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</td>
                     <td class="pe-4">
-                        <a href="{% url 'detalle_pedido_proveedor' pedido.pk %}"
-                           class="btn btn-sm rounded-pill px-3 {% if pedido.estado == 'pendiente' %}btn-primary fw-bold{% else %}btn-outline-secondary{% endif %}">
-                            {% if pedido.estado == 'pendiente' %}Gestionar{% else %}Ver detalle{% endif %}
-                        </a>
+                        <div class="d-flex flex-column gap-1 align-items-start">
+                            <a href="{% url 'detalle_pedido_proveedor' pedido.pk %}"
+                               class="btn btn-sm rounded-pill px-3 {% if pedido.estado == 'pendiente' %}btn-primary fw-bold{% else %}btn-outline-secondary{% endif %}">
+                                {% if pedido.estado == 'pendiente' %}Gestionar{% else %}Ver detalle{% endif %}
+                            </a>
+                            {% if pedido.estado == 'completado' %}
+                                {% if not pedido.ya_calificado %}
+                                <a href="{% url 'calificar_tecnico' pedido.pk %}"
+                                   class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold">
+                                    Calificar ★
+                                </a>
+                                {% else %}
+                                <span class="text-success small fw-bold">✓ Calificado</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

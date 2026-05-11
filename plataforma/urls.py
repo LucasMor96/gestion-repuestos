@@ -34,6 +34,11 @@ urlpatterns = [
     path('pedidos/detalle/<int:pk>/', views.detalle_pedido_proveedor, name='detalle_pedido_proveedor'),
     path('pedidos/gestionar/<int:pk>/', views.gestionar_pedido, name='gestionar_pedido'),
 
+    # Completar pedido + Calificaciones – US-13 / US-14
+    path('pedidos/completar/<int:pk>/', views.completar_pedido, name='completar_pedido'),
+    path('calificaciones/proveedor/<int:pedido_pk>/', views.calificar_proveedor, name='calificar_proveedor'),
+    path('calificaciones/tecnico/<int:pedido_pk>/', views.calificar_tecnico, name='calificar_tecnico'),
+
     # Moderación (solo staff)
     path('moderacion/', views.panel_moderacion, name='panel_moderacion'),
     path('moderacion/aprobar/<str:tipo>/<int:pk>/', views.aprobar_usuario, name='aprobar_usuario'),

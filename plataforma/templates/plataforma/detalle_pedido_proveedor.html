@@ -183,9 +183,21 @@
             </div>
             <h5 class="fw-bold">Este pedido ya fue {{ pedido.get_estado_display|lower }}</h5>
             <p class="text-muted small">Última actualización: {{ pedido.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
-            <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-primary rounded-pill px-4 mt-2">
-                Volver a pedidos
-            </a>
+            <div class="d-flex gap-3 justify-content-center mt-2">
+                <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-primary rounded-pill px-4">
+                    Volver a pedidos
+                </a>
+                {% if pedido.estado == 'completado' %}
+                    {% if not ya_calificado %}
+                    <a href="{% url 'calificar_tecnico' pedido.pk %}"
+                       class="btn btn-warning rounded-pill px-4 fw-bold">
+                        Calificar técnico ★
+                    </a>
+                    {% else %}
+                    <span class="btn btn-outline-success rounded-pill px-4 disabled">✓ Técnico calificado</span>
+                    {% endif %}
+                {% endif %}
+            </div>
         </div>
         {% endif %}
     </div>

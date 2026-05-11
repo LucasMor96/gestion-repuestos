@@ -1,6 +1,6 @@
 from math import radians, sin, cos, sqrt, atan2
 
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -12,8 +12,9 @@ from .forms import (
     RegistroTecnicoForm, RegistroProveedorForm, LoginForm,
     EditarPerfilTecnicoForm, EditarPerfilProveedorForm,
     ProductoForm, PedidoForm, GestionarPedidoForm,
+    CalificacionProveedorForm, CalificacionTecnicoForm,
 )
-from .models import Tecnico, Proveedor, Producto, Pedido
+from .models import Tecnico, Proveedor, Producto, Pedido, CalificacionProveedor, CalificacionTecnico
 
 
 def _solo_staff(request):
@@ -172,7 +173,10 @@ def editar_perfil(request):
 def perfil_tecnico(request, pk):
     """Perfil público de un técnico, visible para proveedores"""
     tecnico = get_object_or_404(Tecnico, pk=pk, estado='aprobado', usuario__is_active=True)
-    return render(request, 'plataforma/perfil_tecnico.html', {'tecnico': tecnico})
+    return render(request, 'plataforma/perfil_tecnico.html', {
+        'tecnico': tecnico,
+        'es_proveedor': hasattr(request.user, 'proveedor'),
+    })
 
 
 @login_required(login_url='login')
@@ -540,7 +544,12 @@ def mis_pedidos(request):
     if tecnico is None:
         return redirect('dashboard')
 
-    pedidos = tecnico.pedidos.select_related('producto', 'proveedor').all()
+    pedidos = (
+        tecnico.pedidos
+        .select_related('producto', 'proveedor')
+        .annotate(ya_calificado=Exists(CalificacionProveedor.objects.filter(pedido=OuterRef('pk'))))
+        .all()
+    )
     return render(request, 'plataforma/mis_pedidos.html', {'pedidos': pedidos})
 
 
@@ -571,7 +580,12 @@ def pedidos_recibidos(request):
     if proveedor is None:
         return redirect('dashboard')
 
-    pedidos = proveedor.pedidos_recibidos.select_related('producto', 'tecnico__usuario').all()
+    pedidos = (
+        proveedor.pedidos_recibidos
+        .select_related('producto', 'tecnico__usuario')
+        .annotate(ya_calificado=Exists(CalificacionTecnico.objects.filter(pedido=OuterRef('pk'))))
+        .all()
+    )
     return render(request, 'plataforma/pedidos_recibidos.html', {'pedidos': pedidos})
 
 
@@ -591,6 +605,7 @@ def detalle_pedido_proveedor(request, pk):
     return render(request, 'plataforma/detalle_pedido_proveedor.html', {
         'pedido': pedido,
         'form': form,
+        'ya_calificado': pedido.calificacion_tecnico.exists(),
     })
 
 
@@ -649,3 +664,124 @@ def gestionar_pedido(request, pk):
         return redirect('detalle_pedido_proveedor', pk=pk)
 
     return redirect('pedidos_recibidos')
+
+
+# ---------------------------------------------------------------------------
+# Completar pedido – transición aceptado → completado (técnico confirma recepción)
+# ---------------------------------------------------------------------------
+
+@login_required(login_url='login')
+def completar_pedido(request, pk):
+    """Técnico marca un pedido aceptado como completado (recibió el repuesto)."""
+    tecnico = _get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(Pedido, pk=pk, tecnico=tecnico)
+
+    if request.method == 'POST':
+        if pedido.estado != 'aceptado':
+            messages.error(request, 'Solo podés confirmar la recepción de pedidos en estado aceptado.')
+        else:
+            pedido.estado = 'completado'
+            pedido.save()
+            messages.success(
+                request,
+                f'Pedido #{pedido.id} marcado como completado. ¡Ya podés calificar a {pedido.proveedor.nombre_negocio}!'
+            )
+
+    return redirect('mis_pedidos')
+
+
+# ---------------------------------------------------------------------------
+# Calificaciones – US-13 y US-14
+# ---------------------------------------------------------------------------
+
+@login_required(login_url='login')
+def calificar_proveedor(request, pedido_pk):
+    """Técnico califica a un proveedor tras un pedido completado (US-13)."""
+    tecnico = _get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(Pedido, pk=pedido_pk, tecnico=tecnico)
+
+    if pedido.estado != 'completado':
+        messages.error(request, 'Solo podés calificar pedidos completados.')
+        return redirect('mis_pedidos')
+
+    if pedido.calificacion_proveedor.exists():
+        messages.warning(request, 'Ya calificaste este pedido.')
+        return redirect('mis_pedidos')
+
+    if request.method == 'POST':
+        form = CalificacionProveedorForm(request.POST)
+        if form.is_valid():
+            try:
+                calificacion = form.save(commit=False)
+                calificacion.tecnico = tecnico
+                calificacion.proveedor = pedido.proveedor
+                calificacion.pedido = pedido
+                calificacion.save()
+                estrellas = calificacion.estrellas
+                messages.success(
+                    request,
+                    f'Calificaste a {pedido.proveedor.nombre_negocio} con {estrellas} '
+                    f'estrella{"s" if estrellas != 1 else ""}. ¡Gracias por tu opinión!'
+                )
+                return redirect('mis_pedidos')
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception:
+                messages.error(request, 'Ocurrió un error al guardar la calificación. Intentá de nuevo.')
+    else:
+        form = CalificacionProveedorForm()
+
+    return render(request, 'plataforma/calificar_proveedor.html', {
+        'form': form,
+        'pedido': pedido,
+    })
+
+
+@login_required(login_url='login')
+def calificar_tecnico(request, pedido_pk):
+    """Proveedor califica a un técnico tras un pedido completado (US-14)."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(Pedido, pk=pedido_pk, proveedor=proveedor)
+
+    if pedido.estado != 'completado':
+        messages.error(request, 'Solo podés calificar técnicos con pedidos completados.')
+        return redirect('pedidos_recibidos')
+
+    if pedido.calificacion_tecnico.exists():
+        messages.warning(request, 'Ya calificaste a este técnico por este pedido.')
+        return redirect('pedidos_recibidos')
+
+    if request.method == 'POST':
+        form = CalificacionTecnicoForm(request.POST)
+        if form.is_valid():
+            try:
+                calificacion = form.save(commit=False)
+                calificacion.proveedor = proveedor
+                calificacion.tecnico = pedido.tecnico
+                calificacion.pedido = pedido
+                calificacion.save()
+                messages.success(
+                    request,
+                    f'Calificaste al técnico {pedido.tecnico.usuario.get_full_name()} correctamente. ¡Gracias!'
+                )
+                return redirect('pedidos_recibidos')
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception:
+                messages.error(request, 'Ocurrió un error al guardar la calificación. Intentá de nuevo.')
+    else:
+        form = CalificacionTecnicoForm()
+
+    return render(request, 'plataforma/calificar_tecnico.html', {
+        'form': form,
+        'pedido': pedido,
+    })

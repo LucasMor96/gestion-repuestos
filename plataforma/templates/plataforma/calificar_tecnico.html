@@ -1,0 +1,161 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Calificar a {{ pedido.tecnico.usuario.get_full_name }}{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center py-4">
+    <div class="col-md-7 col-lg-6">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{% url 'pedidos_recibidos' %}">Pedidos Recibidos</a></li>
+                <li class="breadcrumb-item active">Calificar técnico</li>
+            </ol>
+        </nav>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+            <div class="text-center mb-4">
+                <div class="display-5 mb-2">⭐</div>
+                <h3 class="fw-bold mb-1">Calificar técnico</h3>
+                <p class="text-muted small mb-0">
+                    Pedido #{{ pedido.id }} · <strong>{{ pedido.tecnico.usuario.get_full_name }}</strong>
+                </p>
+                <p class="text-muted small">{{ pedido.producto.nombre }}</p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                {{ form.puntualidad }}  {# hidden input #}
+                {{ form.trato }}        {# hidden input #}
+
+                <!-- Puntualidad -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold d-block mb-2">
+                        Puntualidad de pago *
+                        <small class="text-muted fw-normal">¿El técnico pagó o gestionó el pago a tiempo?</small>
+                    </label>
+                    <div id="starPickerPuntualidad" class="d-flex gap-2 mb-1">
+                        <span class="star-icon" data-val="1" title="1 estrella">★</span>
+                        <span class="star-icon" data-val="2" title="2 estrellas">★</span>
+                        <span class="star-icon" data-val="3" title="3 estrellas">★</span>
+                        <span class="star-icon" data-val="4" title="4 estrellas">★</span>
+                        <span class="star-icon" data-val="5" title="5 estrellas">★</span>
+                    </div>
+                    <small class="text-muted" id="starLabelPuntualidad">Hacé clic en una estrella para calificar</small>
+                    {% if form.puntualidad.errors %}
+                    <div class="text-danger small mt-1">
+                        {% for error in form.puntualidad.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Trato -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold d-block mb-2">
+                        Trato *
+                        <small class="text-muted fw-normal">¿Cómo fue la comunicación y el comportamiento del técnico?</small>
+                    </label>
+                    <div id="starPickerTrato" class="d-flex gap-2 mb-1">
+                        <span class="star-icon" data-val="1" title="1 estrella">★</span>
+                        <span class="star-icon" data-val="2" title="2 estrellas">★</span>
+                        <span class="star-icon" data-val="3" title="3 estrellas">★</span>
+                        <span class="star-icon" data-val="4" title="4 estrellas">★</span>
+                        <span class="star-icon" data-val="5" title="5 estrellas">★</span>
+                    </div>
+                    <small class="text-muted" id="starLabelTrato">Hacé clic en una estrella para calificar</small>
+                    {% if form.trato.errors %}
+                    <div class="text-danger small mt-1">
+                        {% for error in form.trato.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Comentario privado -->
+                <div class="mb-4">
+                    <label for="{{ form.comentario_privado.id_for_label }}" class="form-label fw-bold">
+                        {{ form.comentario_privado.label }}
+                    </label>
+                    {{ form.comentario_privado }}
+                    <div class="form-text">
+                        <span class="badge bg-secondary rounded-pill me-1">Privado</span>
+                        Este comentario solo lo verán otros proveedores en el perfil del técnico.
+                    </div>
+                    {% if form.comentario_privado.errors %}
+                    <div class="text-danger small mt-1">
+                        {% for error in form.comentario_privado.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold flex-grow-1">
+                        Enviar calificación
+                    </button>
+                    <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<style>
+.star-icon {
+    font-size: 2.5rem;
+    cursor: pointer;
+    color: #dee2e6;
+    transition: color 0.1s, transform 0.1s;
+    user-select: none;
+}
+.star-icon:hover {
+    transform: scale(1.15);
+}
+</style>
+
+<script>
+(function () {
+    const texts = ['', '1 estrella', '2 estrellas', '3 estrellas', '4 estrellas', '5 estrellas'];
+
+    function initStarPicker(pickerId, inputId, labelId) {
+        const picker = document.getElementById(pickerId);
+        const input  = document.getElementById(inputId);
+        const label  = document.getElementById(labelId);
+        const stars  = Array.from(picker.querySelectorAll('.star-icon'));
+
+        function highlight(val) {
+            stars.forEach((s, i) => {
+                s.style.color = (i + 1) <= val ? '#ffc107' : '#dee2e6';
+            });
+        }
+
+        stars.forEach((star, idx) => {
+            star.addEventListener('click', function () {
+                const val = idx + 1;
+                input.value = val;
+                highlight(val);
+                label.textContent = texts[val] + ' seleccionada' + (val !== 1 ? 's' : '');
+                label.className = 'text-warning fw-bold';
+            });
+            star.addEventListener('mouseover', function () { highlight(idx + 1); });
+        });
+
+        picker.addEventListener('mouseleave', function () {
+            highlight(parseInt(input.value) || 0);
+        });
+
+        const init = parseInt(input.value);
+        if (init >= 1 && init <= 5) {
+            highlight(init);
+            label.textContent = texts[init] + ' seleccionada' + (init !== 1 ? 's' : '');
+            label.className = 'text-warning fw-bold';
+        }
+    }
+
+    initStarPicker('starPickerPuntualidad', 'id_puntualidad', 'starLabelPuntualidad');
+    initStarPicker('starPickerTrato',       'id_trato',       'starLabelTrato');
+})();
+</script>
+
+{% endblock %}

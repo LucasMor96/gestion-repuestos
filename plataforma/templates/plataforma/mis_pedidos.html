@@ -71,6 +71,23 @@
                                 Cancelar
                             </button>
                         </form>
+                        {% elif pedido.estado == 'aceptado' %}
+                        <form method="post" action="{% url 'completar_pedido' pedido.pk %}"
+                              onsubmit="return confirm('¿Confirmar que recibiste el repuesto del pedido #{{ pedido.id }}?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3">
+                                Confirmar recepción
+                            </button>
+                        </form>
+                        {% elif pedido.estado == 'completado' %}
+                            {% if not pedido.ya_calificado %}
+                            <a href="{% url 'calificar_proveedor' pedido.pk %}"
+                               class="btn btn-outline-warning btn-sm rounded-pill px-3 fw-bold">
+                                Calificar ★
+                            </a>
+                            {% else %}
+                            <span class="text-success small fw-bold">✓ Calificado</span>
+                            {% endif %}
                         {% else %}
                             <span class="text-muted">—</span>
                         {% endif %}
