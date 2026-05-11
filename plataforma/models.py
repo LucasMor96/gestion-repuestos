@@ -10,12 +10,17 @@ ESTADO_USUARIO_CHOICES = [
     ('suspendido', 'Suspendido'),
 ]
 
+RUBROS_CHOICES = [
+    ('mecanica_automotriz', 'Mecánica Automotriz'),
+    ('tecnico_computadoras', 'Técnico de Computadoras'),
+]
+
 
 class Tecnico(models.Model):
     """Perfil profesional de técnico independiente (US-02)"""
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
     cuit = models.CharField(max_length=13, unique=True, null=True, blank=True)
-    especialidad = models.CharField(max_length=100)
+    especialidad = models.CharField(max_length=100, choices=RUBROS_CHOICES)
     telefono = models.CharField(max_length=20, blank=True)
     ubicacion = models.CharField(max_length=200)
     estado = models.CharField(max_length=15, choices=ESTADO_USUARIO_CHOICES, default='pendiente')
@@ -44,7 +49,7 @@ class Proveedor(models.Model):
     cuit = models.CharField(max_length=13, unique=True, null=True, blank=True)
     nombre_negocio = models.CharField(max_length=150)
     direccion = models.CharField(max_length=255)
-    rubro = models.CharField(max_length=100)
+    rubro = models.CharField(max_length=100, choices=RUBROS_CHOICES)
     horarios = models.CharField(max_length=200, blank=True)
     logo = models.ImageField(upload_to='proveedores/logos/', blank=True, null=True)
     imagen = models.ImageField(upload_to='proveedores/imagenes/', blank=True, null=True)
@@ -76,7 +81,7 @@ class Producto(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
     modelo = models.CharField(max_length=100, blank=True)
-    categoria = models.CharField(max_length=100)
+    categoria = models.CharField(max_length=100, choices=RUBROS_CHOICES)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
     disponible = models.BooleanField(default=True)

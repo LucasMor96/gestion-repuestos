@@ -13,12 +13,21 @@
                     {% for field in form %}
                     <div class="{% if field.name == 'password1' or field.name == 'password2' %}col-md-6{% else %}col-12{% endif %} mb-3">
                         <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
+                        {% if field.name == 'especialidad' %}
+                        <select name="{{ field.name }}"
+                                class="form-select rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}">
+                            {% for value, label in field.field.choices %}
+                            <option value="{{ value }}" {% if field.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
                         <div class="input-group">
-                            <input type="{{ field.field.widget.input_type }}" 
-                                   name="{{ field.name }}" 
-                                   class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}" 
+                            <input type="{{ field.field.widget.input_type }}"
+                                   name="{{ field.name }}"
+                                   class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
                                    placeholder="{{ field.label }}">
                         </div>
+                        {% endif %}
                         {% if field.errors %}
                             <div class="text-danger small mt-1">{{ field.errors|first }}</div>
                         {% endif %}

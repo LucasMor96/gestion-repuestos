@@ -11,12 +11,28 @@
                 {% csrf_token %}
                 <div class="row">
                     {% for field in form %}
-                    <div class="{% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'password1' or field.name == 'password2' %}col-md-6{% else %}col-12{% endif %} mb-3">
+                    <div class="{% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'password1' or field.name == 'password2' or field.name == 'horario_desde' or field.name == 'horario_hasta' %}col-md-6{% else %}col-12{% endif %} mb-3">
                         <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
-                        <input type="{{ field.field.widget.input_type }}" 
-                               name="{{ field.name }}" 
-                               class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}" 
+                        {% if field.name == 'rubro' %}
+                        <select name="{{ field.name }}"
+                                class="form-select rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}">
+                            {% for value, label in field.field.choices %}
+                            <option value="{{ value }}" {% if field.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% elif field.name == 'horario_desde' or field.name == 'horario_hasta' %}
+                        <input type="number"
+                               name="{{ field.name }}"
+                               value="{{ field.value|default_if_none:'' }}"
+                               min="0" max="23"
+                               class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
+                               placeholder="{{ field.field.widget.attrs.placeholder }}">
+                        {% else %}
+                        <input type="{{ field.field.widget.input_type }}"
+                               name="{{ field.name }}"
+                               class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
                                placeholder="{{ field.label }}">
+                        {% endif %}
                         {% if field.errors %}
                             <div class="text-danger small mt-1">{{ field.errors|first }}</div>
                         {% endif %}
