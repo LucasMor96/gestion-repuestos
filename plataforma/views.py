@@ -1,6 +1,6 @@
 from math import radians, sin, cos, sqrt, atan2
 
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Q, Exists, OuterRef, Sum
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -172,7 +172,7 @@ def editar_perfil(request):
 @login_required(login_url='login')
 def perfil_tecnico(request, pk):
     """Perfil público de un técnico, visible para proveedores"""
-    tecnico = get_object_or_404(Tecnico, pk=pk, estado='aprobado', usuario__is_active=True)
+    tecnico = get_object_or_404(Tecnico, pk=pk)
     return render(request, 'plataforma/perfil_tecnico.html', {
         'tecnico': tecnico,
         'es_proveedor': hasattr(request.user, 'proveedor'),
@@ -182,8 +182,16 @@ def perfil_tecnico(request, pk):
 @login_required(login_url='login')
 def perfil_proveedor(request, pk):
     """Perfil público de un proveedor, visible para técnicos"""
-    proveedor = get_object_or_404(Proveedor, pk=pk, estado='aprobado', usuario__is_active=True)
-    return render(request, 'plataforma/perfil_proveedor.html', {'proveedor': proveedor})
+    proveedor = get_object_or_404(Proveedor, pk=pk)
+    articulos_vendidos = (
+        proveedor.pedidos_recibidos
+        .filter(estado='completado')
+        .aggregate(total=Sum('cantidad'))['total'] or 0
+    )
+    return render(request, 'plataforma/perfil_proveedor.html', {
+        'proveedor': proveedor,
+        'articulos_vendidos': articulos_vendidos,
+    })
 
 
 @login_required(login_url='login')

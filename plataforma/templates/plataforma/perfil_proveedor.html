@@ -49,6 +49,10 @@
                         <p class="text-muted">Sin calificaciones aún</p>
                     {% endif %}
                 </div>
+                <div class="col-md-6">
+                    <p class="text-muted small mb-1">Artículos vendidos</p>
+                    <p class="fw-bold fs-5">{{ articulos_vendidos }} unidad{{ articulos_vendidos|pluralize }}</p>
+                </div>
             </div>
 
             {% with calificaciones=proveedor.calificaciones_recibidas.all %}
