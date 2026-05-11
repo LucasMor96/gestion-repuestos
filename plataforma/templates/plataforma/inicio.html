@@ -1,27 +1,282 @@
 {% extends 'plataforma/base.html' %}
+{% block title %}Gestión de Repuestos — Conectamos talleres con proveedores{% endblock %}
+{% block container_class %}{% endblock %}
 
 {% block content %}
-<div class="row align-items-center py-5">
-    <div class="col-lg-6">
-        <h1 class="display-4 fw-bold lh-1 mb-3">La confianza del taller, <br><span class="text-primary">ahora digital.</span></h1>
-        <p class="lead text-muted mb-4">Conectamos a técnicos profesionales con proveedores locales. Gestioná tu stock, accedé a créditos comerciales y hacé crecer tu negocio.</p>
-        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-            <a href="{% url 'registro_tipo' %}" class="btn btn-primary btn-lg px-4 me-md-2">Comenzar ahora</a>
-            <button class="btn btn-outline-secondary btn-lg px-4">Saber más</button>
+<style>
+  .hero-section {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(255,140,0,0.1) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .feature-card {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 16px !important;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.1) !important;
+  }
+  .step-number {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    background: #FF8C00;
+    color: white;
+    font-weight: 800;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .orange-highlight { color: #FF8C00; }
+  .cta-section { background: linear-gradient(135deg, #FF8C00 0%, #e67e00 100%); }
+  .mock-window { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; backdrop-filter: blur(8px); }
+  .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
+
+<!-- ===== HERO ===== -->
+<section class="hero-section py-5">
+  <div class="container py-4">
+    <div class="row align-items-center g-5">
+
+      <!-- Texto -->
+      <div class="col-lg-6">
+        <span class="badge rounded-pill mb-3 px-3 py-2"
+              style="background:rgba(255,140,0,0.15);color:#FF8C00;font-size:.85rem;letter-spacing:.03em;">
+          🔧 Plataforma para talleres y proveedores
+        </span>
+        <h1 class="display-4 fw-black mb-3" style="letter-spacing:-1.5px;line-height:1.1;">
+          La confianza del taller,<br>
+          <span class="orange-highlight">ahora digital.</span>
+        </h1>
+        <p class="lead mb-4" style="color:#94a3b8;line-height:1.75;font-size:1.1rem;">
+          Conectamos a <strong style="color:white;">técnicos independientes</strong> con
+          <strong style="color:white;">proveedores de repuestos</strong> locales.
+          Gestioná pedidos, créditos y reputación desde un solo lugar.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="{% url 'registro_tipo' %}"
+             class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow">
+            Comenzar gratis
+          </a>
+          <a href="{% url 'login' %}"
+             class="btn btn-lg rounded-pill px-5 fw-bold"
+             style="background:rgba(255,255,255,0.08);color:white;border:1.5px solid rgba(255,255,255,0.25);">
+            Ingresar →
+          </a>
         </div>
-    </div>
-    <div class="col-lg-6 text-center mt-5 mt-lg-0">
-        <div class="p-5 bg-pastel-green border border-success border-opacity-10 rounded-5 shadow-sm">
-            <h5 class="text-success fw-bold">DASHBOARD UI PREVIEW</h5>
-            <div class="bg-white rounded-3 p-3 mt-3 shadow-sm text-start">
-                <div class="mb-2 bg-light rounded" style="height: 10px; width: 40%;"></div>
-                <div class="mb-4 bg-light rounded" style="height: 10px; width: 80%;"></div>
-                <div class="d-flex justify-content-between">
-                    <div class="bg-warning rounded" style="height: 40px; width: 45%;"></div>
-                    <div class="bg-info rounded" style="height: 40px; width: 45%;"></div>
-                </div>
+      </div>
+
+      <!-- Mock UI -->
+      <div class="col-lg-6">
+        <div class="mock-window p-4">
+          <!-- Barra de ventana -->
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="mock-dot" style="background:#ef4444;"></div>
+            <div class="mock-dot" style="background:#f59e0b;"></div>
+            <div class="mock-dot" style="background:#22c55e;"></div>
+            <div class="ms-2 rounded-pill" style="height:8px;width:110px;background:rgba(255,255,255,0.08);"></div>
+          </div>
+          <!-- Contenido mock -->
+          <div class="rounded-3 p-3 mb-3" style="background:rgba(255,255,255,0.06);">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span style="color:#94a3b8;font-size:.75rem;letter-spacing:.08em;">PEDIDOS RECIBIDOS</span>
+              <span class="badge rounded-pill" style="background:#FF8C00;font-size:.72rem;">3 nuevos</span>
             </div>
+            <div class="rounded-2 p-2 mb-2" style="background:rgba(34,197,94,0.12);border-left:3px solid #22c55e;">
+              <div style="color:white;font-size:.85rem;font-weight:600;">Filtro de aceite × 4</div>
+              <div style="color:#94a3b8;font-size:.75rem;">Técnico: Juan García · $12.800</div>
+            </div>
+            <div class="rounded-2 p-2 mb-2" style="background:rgba(255,140,0,0.1);border-left:3px solid #FF8C00;">
+              <div style="color:white;font-size:.85rem;font-weight:600;">Pastilla de freno × 2</div>
+              <div style="color:#94a3b8;font-size:.75rem;">Técnico: María López · $8.400</div>
+            </div>
+            <div class="rounded-2 p-2" style="background:rgba(255,255,255,0.05);border-left:3px solid #64748b;">
+              <div style="color:white;font-size:.85rem;font-weight:600;">Bujías NGK × 6</div>
+              <div style="color:#94a3b8;font-size:.75rem;">Técnico: Carlos Ruiz · $6.200</div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <div class="rounded-3 p-3 flex-grow-1 text-center" style="background:rgba(255,255,255,0.05);">
+              <div style="color:#FF8C00;font-size:1.3rem;font-weight:800;">4.8★</div>
+              <div style="color:#64748b;font-size:.72rem;">Calificación</div>
+            </div>
+            <div class="rounded-3 p-3 flex-grow-1 text-center" style="background:rgba(255,255,255,0.05);">
+              <div style="color:#22c55e;font-size:1.3rem;font-weight:800;">+120</div>
+              <div style="color:#64748b;font-size:.72rem;">Pedidos/mes</div>
+            </div>
+            <div class="rounded-3 p-3 flex-grow-1 text-center" style="background:rgba(255,255,255,0.05);">
+              <div style="color:white;font-size:1.3rem;font-weight:800;">98%</div>
+              <div style="color:#64748b;font-size:.72rem;">A tiempo</div>
+            </div>
+          </div>
         </div>
+      </div>
+
     </div>
-</div>
+  </div>
+</section>
+
+<!-- ===== PARA QUIÉN ===== -->
+<section class="container py-5 my-2">
+  <div class="text-center mb-5">
+    <h2 class="fw-black fs-1 mb-2" style="letter-spacing:-.5px;">¿Para quién es?</h2>
+    <p class="text-muted lead">Dos roles, una misma plataforma.</p>
+  </div>
+  <div class="row g-4">
+
+    <!-- Técnicos -->
+    <div class="col-md-6">
+      <div class="card feature-card shadow-sm h-100 p-4 p-md-5">
+        <div class="mb-3" style="font-size:2.8rem;">🔧</div>
+        <h4 class="fw-bold mb-3">Técnicos independientes</h4>
+        <ul class="list-unstyled text-muted mb-4">
+          <li class="mb-2 d-flex align-items-start gap-2">
+            <span class="fw-bold" style="color:#22c55e;">✓</span>
+            Buscá repuestos por nombre, modelo o categoría
+          </li>
+          <li class="mb-2 d-flex align-items-start gap-2">
+            <span class="fw-bold" style="color:#22c55e;">✓</span>
+            Pedidos directos a proveedores verificados y cercanos
+          </li>
+          <li class="mb-2 d-flex align-items-start gap-2">
+            <span class="fw-bold" style="color:#22c55e;">✓</span>
+            Crédito comercial acordado con cada proveedor
+          </li>
+          <li class="d-flex align-items-start gap-2">
+            <span class="fw-bold" style="color:#22c55e;">✓</span>
+            Calificá proveedores y construí tu reputación
+          </li>
+        </ul>
+        <a href="{% url 'registro_tecnico' %}"
+           class="btn btn-outline-primary rounded-pill px-4 fw-bold align-self-start">
+          Registrarme como técnico →
+        </a>
+      </div>
+    </div>
+
+    <!-- Proveedores -->
+    <div class="col-md-6">
+      <div class="card feature-card shadow-sm h-100 p-4 p-md-5"
+           style="border-top:4px solid #FF8C00 !important;">
+        <div class="mb-3" style="font-size:2.8rem;">🏪</div>
+        <h4 class="fw-bold mb-3">Proveedores de repuestos</h4>
+        <ul class="list-unstyled text-muted mb-4">
+          <li class="mb-2 d-flex align-items-start gap-2">
+            <span class="fw-bold" style="color:#FF8C00;">✓</span>
+            Publicá tu catálogo de productos con stock en tiempo real
+          </li>
+          <li class="mb-2 d-flex align-items-start gap-2">
+            <span class="fw-bold" style="color:#FF8C00;">✓</span>
+            Recibí pedidos de técnicos verificados con notificaciones
+          </li>
+          <li class="mb-2 d-flex align-items-start gap-2">
+            <span class="fw-bold" style="color:#FF8C00;">✓</span>
+            Fijá límites de crédito personalizados por cliente
+          </li>
+          <li class="d-flex align-items-start gap-2">
+            <span class="fw-bold" style="color:#FF8C00;">✓</span>
+            Calificá técnicos y accedé a comentarios privados de colegas
+          </li>
+        </ul>
+        <a href="{% url 'registro_proveedor' %}"
+           class="btn btn-primary rounded-pill px-4 fw-bold align-self-start">
+          Registrarme como proveedor →
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== CÓMO FUNCIONA ===== -->
+<section class="py-5" style="background:#f8fafc;">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-black fs-1 mb-2" style="letter-spacing:-.5px;">¿Cómo funciona?</h2>
+      <p class="text-muted lead">En tres pasos simples.</p>
+    </div>
+    <div class="row g-4 g-md-5 justify-content-center">
+
+      <div class="col-md-4">
+        <div class="d-flex gap-3 align-items-start">
+          <div class="step-number flex-shrink-0">1</div>
+          <div>
+            <h5 class="fw-bold mb-1">Registrate</h5>
+            <p class="text-muted mb-0">
+              Creá tu cuenta como técnico o proveedor. Nuestro equipo verifica los datos
+              y te aprueba en menos de 24 horas.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="d-flex gap-3 align-items-start">
+          <div class="step-number flex-shrink-0">2</div>
+          <div>
+            <h5 class="fw-bold mb-1">Conectate y operá</h5>
+            <p class="text-muted mb-0">
+              Técnicos buscan y solicitan repuestos. Proveedores aceptan, rechazan
+              o proponen alternativas. Todo en tiempo real.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="d-flex gap-3 align-items-start">
+          <div class="step-number flex-shrink-0">3</div>
+          <div>
+            <h5 class="fw-bold mb-1">Calificá y crecé</h5>
+            <p class="text-muted mb-0">
+              Después de cada operación, ambas partes califican. Las reputaciones
+              se construyen con cada transacción completada.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA FINAL ===== -->
+<section class="cta-section py-5">
+  <div class="container text-center py-3">
+    <h2 class="fw-black text-white mb-3" style="font-size:2.2rem;letter-spacing:-.5px;">
+      ¿Listo para empezar?
+    </h2>
+    <p class="text-white lead mb-4" style="opacity:.9;max-width:520px;margin:0 auto 1.5rem;">
+      Uníte a técnicos y proveedores que ya gestionan sus operaciones de forma más eficiente.
+    </p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="{% url 'registro_tipo' %}"
+         class="btn btn-lg rounded-pill px-5 fw-bold shadow"
+         style="background:white;color:#FF8C00;">
+        Crear cuenta gratis
+      </a>
+      <a href="{% url 'login' %}"
+         class="btn btn-lg rounded-pill px-5 fw-bold"
+         style="background:transparent;color:white;border:2px solid rgba(255,255,255,0.5);">
+        Ya tengo cuenta
+      </a>
+    </div>
+  </div>
+</section>
+
 {% endblock %}

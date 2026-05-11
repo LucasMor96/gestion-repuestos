@@ -133,7 +133,9 @@ def espera_aprobacion(request):
 
 
 def inicio(request):
-    """Vista para la página de aterrizaje (Landing Page)"""
+    """Landing page — redirige al dashboard si ya está autenticado."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
     return render(request, 'plataforma/inicio.html')
 
 
