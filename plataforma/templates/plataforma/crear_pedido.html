@@ -120,6 +120,30 @@
                     </p>
                 </div>
 
+                <!-- Crédito comercial -->
+                {% if credito %}
+                <div class="card border rounded-3 p-3 mb-4"
+                     style="border-color: {% if credito.porcentaje_usado >= 80 %}#dc3545{% else %}#198754{% endif %} !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" name="usa_credito" id="usa_credito">
+                            <label class="form-check-label fw-bold" for="usa_credito">
+                                Pagar con crédito comercial
+                            </label>
+                        </div>
+                        <span class="ms-auto text-muted small">
+                            Disponible: <strong class="text-success">${{ credito.saldo_disponible }}</strong>
+                            de ${{ credito.limite }}
+                        </span>
+                    </div>
+                    {% if credito.porcentaje_usado >= 80 %}
+                        <p class="text-danger small mb-0 mt-2">
+                            Atención: usaste el {{ credito.porcentaje_usado }}% de tu crédito disponible.
+                        </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 <div class="d-flex gap-3">
                     <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold">
                         Enviar pedido

@@ -38,6 +38,14 @@
                                   class="form-control border-2 rounded-3 {% if field.errors %}is-invalid{% endif %}"
                                   rows="3"
                                   placeholder="{{ field.label }}">{{ field.value|default_if_none:'' }}</textarea>
+                    {% elif field.field.widget.input_type == 'select' %}
+                        <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
+                        <select name="{{ field.name }}"
+                                class="form-select rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}">
+                            {% for val, text in field.field.choices %}
+                                <option value="{{ val }}" {% if field.value == val|stringformat:"s" %}selected{% endif %}>{{ text }}</option>
+                            {% endfor %}
+                        </select>
                     {% else %}
                         <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
                         <input type="{{ field.field.widget.input_type }}"

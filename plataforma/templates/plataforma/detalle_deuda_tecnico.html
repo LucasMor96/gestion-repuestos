@@ -1,0 +1,110 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Detalle de Deuda{% endblock %}
+{% block content %}
+
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{% url 'gestionar_creditos_proveedor' %}">Créditos</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'deudas_tecnicos' %}">Deudas</a></li>
+                <li class="breadcrumb-item active">{{ credito.tecnico.usuario.get_full_name }}</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold">Deuda de {{ credito.tecnico.usuario.get_full_name }}</h2>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Resumen del crédito -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h6 class="text-muted fw-bold text-uppercase small mb-3">Resumen</h6>
+            <div class="mb-3">
+                <p class="text-muted small mb-0">Técnico</p>
+                <p class="fw-bold mb-0">{{ credito.tecnico.usuario.get_full_name }}</p>
+                <p class="text-muted small">{{ credito.tecnico.especialidad }}</p>
+            </div>
+            <div class="row text-center mb-3">
+                <div class="col-6">
+                    <p class="text-muted small mb-0">Límite</p>
+                    <p class="fw-bold mb-0">${{ credito.limite }}</p>
+                </div>
+                <div class="col-6">
+                    <p class="text-muted small mb-0">Deuda</p>
+                    <p class="fw-bold mb-0 text-danger">${{ credito.saldo_usado }}</p>
+                </div>
+            </div>
+            <div class="progress rounded-pill mb-3" style="height:10px;">
+                <div class="progress-bar
+                    {% if credito.porcentaje_usado >= 80 %}bg-danger
+                    {% elif credito.porcentaje_usado >= 50 %}bg-warning
+                    {% else %}bg-success{% endif %}"
+                    style="width:{{ credito.porcentaje_usado }}%">
+                </div>
+            </div>
+
+            {% if credito.saldo_usado > 0 %}
+            <form method="post" action="{% url 'marcar_deuda_saldada' credito.pk %}"
+                  onsubmit="return confirm('¿Confirmar que el técnico saldó su deuda de ${{ credito.saldo_usado }}?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success rounded-pill w-100 fw-bold">
+                    Marcar deuda como saldada
+                </button>
+            </form>
+            {% else %}
+            <div class="alert alert-success rounded-3 small py-2 mb-0 text-center">
+                Sin deuda pendiente
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pedidos con crédito -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-bold mb-3">Pedidos realizados con crédito</h5>
+            <hr>
+            {% if pedidos_credito %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small">
+                        <thead class="text-muted">
+                            <tr>
+                                <th>#</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pedido in pedidos_credito %}
+                            <tr>
+                                <td>{{ pedido.id }}</td>
+                                <td>{{ pedido.producto.nombre }}</td>
+                                <td>{{ pedido.cantidad }}</td>
+                                <td class="fw-bold">${{ pedido.monto_total }}</td>
+                                <td>
+                                    <span class="badge
+                                        {% if pedido.estado == 'completado' %}bg-success
+                                        {% elif pedido.estado == 'aceptado' %}bg-primary
+                                        {% else %}bg-secondary{% endif %}
+                                        rounded-pill">
+                                        {{ pedido.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td>{{ pedido.fecha_creacion|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center py-3">No hay pedidos activos con crédito para este técnico.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

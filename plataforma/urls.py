@@ -40,6 +40,15 @@ urlpatterns = [
     path('calificaciones/proveedor/<int:pedido_pk>/', views.calificar_proveedor, name='calificar_proveedor'),
     path('calificaciones/tecnico/<int:pedido_pk>/', views.calificar_tecnico, name='calificar_tecnico'),
 
+    # Crédito comercial – US-10 / US-11 / US-12
+    path('credito/', views.mis_creditos, name='mis_creditos'),
+    path('credito/gestionar/', views.gestionar_creditos_proveedor, name='gestionar_creditos_proveedor'),
+    path('credito/asignar/', views.asignar_credito, name='asignar_credito'),
+    path('credito/revocar/<int:pk>/', views.revocar_credito, name='revocar_credito'),
+    path('credito/deudas/', views.deudas_tecnicos, name='deudas_tecnicos'),
+    path('credito/deudas/<int:pk>/', views.detalle_deuda_tecnico, name='detalle_deuda_tecnico'),
+    path('credito/saldar/<int:pk>/', views.marcar_deuda_saldada, name='marcar_deuda_saldada'),
+
     # Moderación (solo staff)
     path('moderacion/', views.panel_moderacion, name='panel_moderacion'),
     path('moderacion/aprobar/<str:tipo>/<int:pk>/', views.aprobar_usuario, name='aprobar_usuario'),

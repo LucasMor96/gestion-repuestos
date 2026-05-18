@@ -1,0 +1,88 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Asignar Crédito{% endblock %}
+{% block content %}
+
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{% url 'gestionar_creditos_proveedor' %}">Créditos</a></li>
+                <li class="breadcrumb-item active">Asignar crédito</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold">Asignar Crédito Comercial</h2>
+        <p class="text-muted">Buscá un técnico y asignale un límite de crédito.</p>
+    </div>
+</div>
+
+<!-- Buscador de técnico -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <h5 class="fw-bold mb-3">Buscar técnico</h5>
+    <form method="get" class="d-flex gap-2">
+        <input type="text" name="q" value="{{ busqueda }}"
+               class="form-control border-2 rounded-pill"
+               placeholder="Nombre o ID del técnico..."
+               style="max-width: 360px;">
+        <button type="submit" class="btn btn-primary rounded-pill px-4">Buscar</button>
+    </form>
+
+    {% if busqueda and not tecnicos_encontrados %}
+        <p class="text-muted small mt-3 mb-0">No se encontraron técnicos con "{{ busqueda }}".</p>
+    {% endif %}
+
+    {% if tecnicos_encontrados %}
+        <hr>
+        <p class="text-muted small mb-2">Resultados:</p>
+        <div class="list-group rounded-3">
+            {% for t in tecnicos_encontrados %}
+                <a href="{% url 'asignar_credito' %}?tecnico={{ t.pk }}"
+                   class="list-group-item list-group-item-action rounded-3 mb-1 border
+                          {% if tecnico_sel and tecnico_sel.pk == t.pk %}active{% endif %}">
+                    <strong>{{ t.usuario.get_full_name }}</strong>
+                    <span class="text-muted small ms-2">ID: {{ t.pk }} · {{ t.especialidad }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Formulario de asignación -->
+{% if tecnico_sel and form %}
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <h5 class="fw-bold mb-1">
+        {% if credito_existente %}Editar crédito{% else %}Nuevo crédito{% endif %}
+        para {{ tecnico_sel.usuario.get_full_name }}
+    </h5>
+    <p class="text-muted small mb-3">
+        Especialidad: {{ tecnico_sel.especialidad }} · ID: {{ tecnico_sel.pk }}
+    </p>
+
+    {% if credito_existente %}
+        <div class="alert alert-info rounded-3 small py-2 mb-3">
+            Este técnico ya tiene un crédito activo de ${{ credito_existente.limite }}.
+            Podés modificar el límite o revocar el crédito desde la pantalla anterior.
+        </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'asignar_credito' %}?tecnico={{ tecnico_sel.pk }}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-bold">{{ form.limite.label }}</label>
+            {{ form.limite }}
+            {% for error in form.limite.errors %}
+                <div class="text-danger small mt-1">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold">
+                {% if credito_existente %}Actualizar crédito{% else %}Asignar crédito{% endif %}
+            </button>
+            <a href="{% url 'gestionar_creditos_proveedor' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}

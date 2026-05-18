@@ -12,9 +12,10 @@ from .forms import (
     RegistroTecnicoForm, RegistroProveedorForm, LoginForm,
     EditarPerfilTecnicoForm, EditarPerfilProveedorForm,
     ProductoForm, PedidoForm, GestionarPedidoForm,
+    AsignarCreditoForm,
     CalificacionProveedorForm, CalificacionTecnicoForm,
 )
-from .models import Tecnico, Proveedor, Producto, Pedido, CalificacionProveedor, CalificacionTecnico
+from .models import Tecnico, Proveedor, Producto, Pedido, Credito, CalificacionProveedor, CalificacionTecnico
 
 
 def _solo_staff(request):
@@ -512,6 +513,66 @@ def _notificar_tecnico_estado(pedido):
     )
 
 
+def _notificar_credito_asignado(credito):
+    send_mail(
+        subject=f'[Repuestos] Crédito comercial asignado — {credito.proveedor.nombre_negocio}',
+        message=(
+            f'Hola {credito.tecnico.usuario.first_name},\n\n'
+            f'{credito.proveedor.nombre_negocio} te asignó un crédito comercial:\n\n'
+            f'  Límite disponible: ${credito.limite}\n\n'
+            f'Ya podés usarlo al hacer pedidos con este proveedor.\n'
+        ),
+        from_email='noreply@gestion-repuestos.com',
+        recipient_list=[credito.tecnico.usuario.email],
+        fail_silently=True,
+    )
+
+
+def _notificar_alerta_credito(credito):
+    send_mail(
+        subject=f'[Repuestos] Alerta: límite de crédito con {credito.proveedor.nombre_negocio}',
+        message=(
+            f'Hola {credito.tecnico.usuario.first_name},\n\n'
+            f'Usaste el {credito.porcentaje_usado}% de tu crédito con {credito.proveedor.nombre_negocio}:\n\n'
+            f'  Límite total    : ${credito.limite}\n'
+            f'  Saldo usado     : ${credito.saldo_usado}\n'
+            f'  Saldo disponible: ${credito.saldo_disponible}\n\n'
+            f'Por favor, regularizá tu deuda para seguir usando el crédito.\n'
+        ),
+        from_email='noreply@gestion-repuestos.com',
+        recipient_list=[credito.tecnico.usuario.email],
+        fail_silently=True,
+    )
+
+
+def _notificar_deuda_saldada(credito):
+    send_mail(
+        subject=f'[Repuestos] Tu deuda con {credito.proveedor.nombre_negocio} fue saldada',
+        message=(
+            f'Hola {credito.tecnico.usuario.first_name},\n\n'
+            f'{credito.proveedor.nombre_negocio} marcó tu deuda como saldada.\n\n'
+            f'Tu crédito disponible se restableció. Límite: ${credito.limite}\n'
+        ),
+        from_email='noreply@gestion-repuestos.com',
+        recipient_list=[credito.tecnico.usuario.email],
+        fail_silently=True,
+    )
+
+
+def _notificar_credito_revocado(credito):
+    send_mail(
+        subject=f'[Repuestos] Tu crédito con {credito.proveedor.nombre_negocio} fue revocado',
+        message=(
+            f'Hola {credito.tecnico.usuario.first_name},\n\n'
+            f'{credito.proveedor.nombre_negocio} revocó tu crédito comercial.\n\n'
+            f'Si tenés saldo pendiente, contactá al proveedor para regularizar tu situación.\n'
+        ),
+        from_email='noreply@gestion-repuestos.com',
+        recipient_list=[credito.tecnico.usuario.email],
+        fail_silently=True,
+    )
+
+
 @login_required(login_url='login')
 def crear_pedido(request, producto_pk):
     """Técnico envía una solicitud de compra de un repuesto al proveedor."""
@@ -520,6 +581,12 @@ def crear_pedido(request, producto_pk):
         return redirect('buscar_repuestos')
 
     producto = get_object_or_404(Producto, pk=producto_pk, disponible=True)
+    proveedor = producto.proveedor
+
+    try:
+        credito = Credito.objects.get(proveedor=proveedor, tecnico=tecnico, activo=True)
+    except Credito.DoesNotExist:
+        credito = None
 
     if request.method == 'POST':
         form = PedidoForm(request.POST, stock=producto.stock)
@@ -527,16 +594,36 @@ def crear_pedido(request, producto_pk):
             try:
                 pedido = form.save(commit=False)
                 pedido.tecnico = tecnico
-                pedido.proveedor = producto.proveedor
+                pedido.proveedor = proveedor
                 pedido.producto = producto
                 pedido.monto_total = producto.precio * form.cleaned_data['cantidad']
                 pedido.estado = 'pendiente'
-                pedido.save()
+
+                usa_credito = request.POST.get('usa_credito') == 'on' and credito is not None
+                if usa_credito:
+                    if pedido.monto_total > credito.saldo_disponible:
+                        messages.error(
+                            request,
+                            f'El monto del pedido (${pedido.monto_total}) supera tu crédito disponible '
+                            f'(${credito.saldo_disponible}) con {proveedor.nombre_negocio}.'
+                        )
+                        return render(request, 'plataforma/crear_pedido.html', {
+                            'form': form, 'producto': producto, 'credito': credito,
+                        })
+                    pedido.usa_credito = True
+                    pedido.save()
+                    credito.saldo_usado += pedido.monto_total
+                    credito.save()
+                    if credito.porcentaje_usado >= 80:
+                        _notificar_alerta_credito(credito)
+                else:
+                    pedido.save()
+
                 _notificar_proveedor_nuevo_pedido(pedido)
                 messages.success(
                     request,
                     f'Pedido #{pedido.id} enviado correctamente. '
-                    f'{producto.proveedor.nombre_negocio} recibirá tu solicitud.'
+                    f'{proveedor.nombre_negocio} recibirá tu solicitud.'
                 )
                 return redirect('mis_pedidos')
             except Exception:
@@ -544,7 +631,7 @@ def crear_pedido(request, producto_pk):
     else:
         form = PedidoForm(stock=producto.stock)
 
-    return render(request, 'plataforma/crear_pedido.html', {'form': form, 'producto': producto})
+    return render(request, 'plataforma/crear_pedido.html', {'form': form, 'producto': producto, 'credito': credito})
 
 
 @login_required(login_url='login')
@@ -660,6 +747,13 @@ def cancelar_pedido(request, pk):
         else:
             pedido.estado = 'cancelado'
             pedido.save()
+            if pedido.usa_credito:
+                try:
+                    credito = Credito.objects.get(proveedor=pedido.proveedor, tecnico=tecnico)
+                    credito.saldo_usado = max(0, credito.saldo_usado - pedido.monto_total)
+                    credito.save()
+                except Credito.DoesNotExist:
+                    pass
             messages.success(request, f'Pedido #{pedido.id} cancelado correctamente.')
 
     return redirect('mis_pedidos')
@@ -739,6 +833,13 @@ def gestionar_pedido(request, pk):
             pedido.respuesta_proveedor = respuesta or None
             pedido.save()
             _notificar_tecnico_estado(pedido)
+            if pedido.usa_credito:
+                try:
+                    credito = Credito.objects.get(proveedor=proveedor, tecnico=pedido.tecnico)
+                    credito.saldo_usado = max(0, credito.saldo_usado - pedido.monto_total)
+                    credito.save()
+                except Credito.DoesNotExist:
+                    pass
             messages.success(request, f'Pedido #{pedido.id} rechazado. El técnico fue notificado.')
 
         elif accion == 'alternativa':
@@ -746,6 +847,13 @@ def gestionar_pedido(request, pk):
             pedido.respuesta_proveedor = f'Alternativa propuesta: {respuesta}'
             pedido.save()
             _notificar_tecnico_estado(pedido)
+            if pedido.usa_credito:
+                try:
+                    credito = Credito.objects.get(proveedor=proveedor, tecnico=pedido.tecnico)
+                    credito.saldo_usado = max(0, credito.saldo_usado - pedido.monto_total)
+                    credito.save()
+                except Credito.DoesNotExist:
+                    pass
             messages.success(
                 request,
                 f'Alternativa enviada al técnico para el pedido #{pedido.id}.'
@@ -783,6 +891,183 @@ def completar_pedido(request, pk):
             )
 
     return redirect('mis_pedidos')
+
+
+# ---------------------------------------------------------------------------
+# Crédito comercial – US-10 / US-11 / US-12
+# ---------------------------------------------------------------------------
+
+@login_required(login_url='login')
+def mis_creditos(request):
+    """Técnico ve sus créditos disponibles con cada proveedor (US-10)."""
+    tecnico = _get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    creditos = tecnico.creditos.select_related('proveedor').filter(activo=True)
+    return render(request, 'plataforma/mis_creditos.html', {'creditos': creditos})
+
+
+@login_required(login_url='login')
+def gestionar_creditos_proveedor(request):
+    """Proveedor ve y administra los créditos asignados a técnicos (US-11)."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    creditos = proveedor.creditos.select_related('tecnico__usuario').filter(activo=True).order_by(
+        'tecnico__usuario__last_name'
+    )
+    return render(request, 'plataforma/gestionar_creditos_proveedor.html', {'creditos': creditos})
+
+
+@login_required(login_url='login')
+def asignar_credito(request):
+    """Proveedor asigna o edita el límite de crédito de un técnico (US-11)."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    busqueda = request.GET.get('q', '').strip()
+    tecnicos_encontrados = []
+
+    if busqueda:
+        try:
+            pk = int(busqueda)
+            tecnicos_encontrados = Tecnico.objects.filter(pk=pk, is_approved=True).select_related('usuario')
+        except ValueError:
+            tecnicos_encontrados = Tecnico.objects.filter(
+                Q(usuario__first_name__icontains=busqueda) | Q(usuario__last_name__icontains=busqueda),
+                is_approved=True,
+            ).select_related('usuario')
+
+    tecnico_pk = request.GET.get('tecnico', '').strip()
+    tecnico_sel = None
+    credito_existente = None
+
+    if tecnico_pk:
+        tecnico_sel = get_object_or_404(Tecnico, pk=tecnico_pk, is_approved=True)
+        try:
+            credito_existente = Credito.objects.get(proveedor=proveedor, tecnico=tecnico_sel)
+        except Credito.DoesNotExist:
+            pass
+
+    if request.method == 'POST' and tecnico_sel:
+        form = AsignarCreditoForm(request.POST, instance=credito_existente)
+        if form.is_valid():
+            try:
+                credito = form.save(commit=False)
+                credito.proveedor = proveedor
+                credito.tecnico = tecnico_sel
+                credito.activo = True
+                credito.save()
+                _notificar_credito_asignado(credito)
+                messages.success(
+                    request,
+                    f'Crédito de ${credito.limite} asignado a '
+                    f'{tecnico_sel.usuario.get_full_name()} correctamente.'
+                )
+                return redirect('gestionar_creditos_proveedor')
+            except Exception:
+                messages.error(request, 'Ocurrió un error al asignar el crédito. Intentá de nuevo.')
+    else:
+        form = AsignarCreditoForm(instance=credito_existente) if tecnico_sel else None
+
+    return render(request, 'plataforma/asignar_credito.html', {
+        'busqueda': busqueda,
+        'tecnicos_encontrados': tecnicos_encontrados,
+        'tecnico_sel': tecnico_sel,
+        'credito_existente': credito_existente,
+        'form': form,
+    })
+
+
+@login_required(login_url='login')
+def revocar_credito(request, pk):
+    """Proveedor revoca el crédito de un técnico (US-11)."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    credito = get_object_or_404(Credito, pk=pk, proveedor=proveedor)
+
+    if request.method == 'POST':
+        try:
+            credito.activo = False
+            credito.save()
+            _notificar_credito_revocado(credito)
+            messages.success(
+                request,
+                f'Crédito de {credito.tecnico.usuario.get_full_name()} revocado correctamente.'
+            )
+        except Exception:
+            messages.error(request, 'Ocurrió un error al revocar el crédito. Intentá de nuevo.')
+
+    return redirect('gestionar_creditos_proveedor')
+
+
+@login_required(login_url='login')
+def deudas_tecnicos(request):
+    """Proveedor consulta qué técnicos tienen deuda pendiente (US-12)."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    deudas = (
+        proveedor.creditos
+        .select_related('tecnico__usuario')
+        .filter(saldo_usado__gt=0)
+        .order_by('-saldo_usado')
+    )
+    return render(request, 'plataforma/deudas_tecnicos.html', {'deudas': deudas})
+
+
+@login_required(login_url='login')
+def detalle_deuda_tecnico(request, pk):
+    """Proveedor ve el detalle de pedidos que componen la deuda de un técnico (US-12)."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    credito = get_object_or_404(Credito, pk=pk, proveedor=proveedor)
+    pedidos_credito = (
+        Pedido.objects
+        .filter(proveedor=proveedor, tecnico=credito.tecnico, usa_credito=True)
+        .exclude(estado__in=['cancelado', 'rechazado'])
+        .order_by('-fecha_creacion')
+    )
+    return render(request, 'plataforma/detalle_deuda_tecnico.html', {
+        'credito': credito,
+        'pedidos_credito': pedidos_credito,
+    })
+
+
+@login_required(login_url='login')
+def marcar_deuda_saldada(request, pk):
+    """Proveedor marca como saldada la deuda de un técnico (US-12)."""
+    proveedor = _get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    credito = get_object_or_404(Credito, pk=pk, proveedor=proveedor)
+
+    if request.method == 'POST':
+        try:
+            if credito.saldo_usado <= 0:
+                messages.warning(request, 'Este técnico no tiene deuda pendiente.')
+            else:
+                credito.saldo_usado = 0
+                credito.save()
+                _notificar_deuda_saldada(credito)
+                messages.success(
+                    request,
+                    f'Deuda de {credito.tecnico.usuario.get_full_name()} marcada como saldada. '
+                    f'El crédito disponible se restableció.'
+                )
+        except Exception:
+            messages.error(request, 'Ocurrió un error al saldar la deuda. Intentá de nuevo.')
+
+    return redirect('deudas_tecnicos')
 
 
 # ---------------------------------------------------------------------------

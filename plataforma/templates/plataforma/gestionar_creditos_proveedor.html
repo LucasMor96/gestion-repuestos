@@ -1,0 +1,74 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Gestionar Créditos{% endblock %}
+{% block content %}
+
+<div class="row mb-3">
+    <div class="col">
+        <h2 class="fw-bold">Créditos Comerciales</h2>
+        <p class="text-muted">Asigná y administrá los créditos para tus técnicos de confianza.</p>
+    </div>
+    <div class="col-auto d-flex align-items-center gap-2">
+        <a href="{% url 'deudas_tecnicos' %}" class="btn btn-outline-danger rounded-pill px-4">Ver deudas</a>
+        <a href="{% url 'asignar_credito' %}" class="btn btn-primary rounded-pill px-4">Asignar crédito</a>
+    </div>
+</div>
+
+{% if creditos %}
+    <div class="card border-0 shadow-sm rounded-4 p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="px-4 py-3">Técnico</th>
+                        <th>Límite</th>
+                        <th>Saldo usado</th>
+                        <th>Disponible</th>
+                        <th>Uso</th>
+                        <th class="text-end px-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for credito in creditos %}
+                    <tr>
+                        <td class="px-4">
+                            <p class="fw-bold mb-0">{{ credito.tecnico.usuario.get_full_name }}</p>
+                            <p class="text-muted small mb-0">ID: {{ credito.tecnico.pk }} · {{ credito.tecnico.especialidad }}</p>
+                        </td>
+                        <td>${{ credito.limite }}</td>
+                        <td class="text-danger fw-bold">${{ credito.saldo_usado }}</td>
+                        <td class="text-success fw-bold">${{ credito.saldo_disponible }}</td>
+                        <td style="min-width: 120px;">
+                            <div class="progress rounded-pill" style="height:8px;">
+                                <div class="progress-bar
+                                    {% if credito.porcentaje_usado >= 80 %}bg-danger
+                                    {% elif credito.porcentaje_usado >= 50 %}bg-warning
+                                    {% else %}bg-success{% endif %}"
+                                    style="width:{{ credito.porcentaje_usado }}%">
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ credito.porcentaje_usado }}%</small>
+                        </td>
+                        <td class="text-end px-4">
+                            <a href="{% url 'asignar_credito' %}?tecnico={{ credito.tecnico.pk }}"
+                               class="btn btn-outline-primary btn-sm rounded-pill px-3 me-1">Editar</a>
+                            <form method="post" action="{% url 'revocar_credito' credito.pk %}"
+                                  class="d-inline"
+                                  onsubmit="return confirm('¿Revocar el crédito de {{ credito.tecnico.usuario.get_full_name }}?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">Revocar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+        <p class="text-muted mb-3">Todavía no asignaste crédito a ningún técnico.</p>
+        <a href="{% url 'asignar_credito' %}" class="btn btn-primary rounded-pill px-5">Asignar primer crédito</a>
+    </div>
+{% endif %}
+
+{% endblock %}

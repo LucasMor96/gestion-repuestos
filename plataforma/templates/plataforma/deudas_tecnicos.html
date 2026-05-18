@@ -1,0 +1,82 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Deudas Pendientes{% endblock %}
+{% block content %}
+
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{% url 'gestionar_creditos_proveedor' %}">Créditos</a></li>
+                <li class="breadcrumb-item active">Deudas pendientes</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold">Deudas Pendientes de Técnicos</h2>
+        <p class="text-muted">Hacé seguimiento de los pagos pendientes de tus técnicos.</p>
+    </div>
+    <div class="col-auto d-flex align-items-center">
+        <a href="{% url 'gestionar_creditos_proveedor' %}" class="btn btn-outline-secondary rounded-pill px-4">
+            Ver créditos
+        </a>
+    </div>
+</div>
+
+{% if deudas %}
+    <div class="card border-0 shadow-sm rounded-4 p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="px-4 py-3">Técnico</th>
+                        <th>Límite</th>
+                        <th>Deuda</th>
+                        <th>Disponible</th>
+                        <th>Estado</th>
+                        <th class="text-end px-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for deuda in deudas %}
+                    <tr>
+                        <td class="px-4">
+                            <p class="fw-bold mb-0">{{ deuda.tecnico.usuario.get_full_name }}</p>
+                            <p class="text-muted small mb-0">{{ deuda.tecnico.especialidad }}
+                                {% if not deuda.activo %}
+                                    · <span class="text-danger">Crédito revocado</span>
+                                {% endif %}
+                            </p>
+                        </td>
+                        <td>${{ deuda.limite }}</td>
+                        <td class="fw-bold text-danger">${{ deuda.saldo_usado }}</td>
+                        <td class="text-success">${{ deuda.saldo_disponible }}</td>
+                        <td>
+                            {% if deuda.porcentaje_usado >= 100 %}
+                                <span class="badge bg-danger rounded-pill">Límite alcanzado</span>
+                            {% elif deuda.porcentaje_usado >= 80 %}
+                                <span class="badge bg-warning text-dark rounded-pill">Límite próximo</span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill">Con deuda</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end px-4">
+                            <a href="{% url 'detalle_deuda_tecnico' deuda.pk %}"
+                               class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-1">Ver detalle</a>
+                            <form method="post" action="{% url 'marcar_deuda_saldada' deuda.pk %}"
+                                  class="d-inline"
+                                  onsubmit="return confirm('¿Confirmar que {{ deuda.tecnico.usuario.get_full_name }} saldó su deuda de ${{ deuda.saldo_usado }}?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm rounded-pill px-3">Marcar saldada</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+        <p class="text-muted mb-0">No hay técnicos con deuda pendiente en este momento.</p>
+    </div>
+{% endif %}
+
+{% endblock %}

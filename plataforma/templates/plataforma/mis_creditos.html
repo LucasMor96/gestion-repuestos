@@ -1,0 +1,87 @@
+{% extends "plataforma/base.html" %}
+{% block title %}Mis Créditos{% endblock %}
+{% block content %}
+
+<div class="row mb-3">
+    <div class="col">
+        <h2 class="fw-bold">Mis Créditos Comerciales</h2>
+        <p class="text-muted">Visualizá el crédito disponible que cada proveedor te otorgó.</p>
+    </div>
+</div>
+
+{% if creditos %}
+    <div class="row g-4">
+        {% for credito in creditos %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ credito.proveedor.nombre_negocio }}</h5>
+                        <p class="text-muted small mb-0">{{ credito.proveedor.direccion }}</p>
+                    </div>
+                    {% if credito.porcentaje_usado >= 80 %}
+                        <span class="badge bg-danger rounded-pill">Límite próximo</span>
+                    {% elif credito.porcentaje_usado >= 50 %}
+                        <span class="badge bg-warning text-dark rounded-pill">Uso moderado</span>
+                    {% else %}
+                        <span class="badge bg-success rounded-pill">Disponible</span>
+                    {% endif %}
+                </div>
+
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <p class="text-muted small mb-0">Límite total</p>
+                        <p class="fw-bold fs-6 mb-0">${{ credito.limite }}</p>
+                    </div>
+                    <div class="col-4">
+                        <p class="text-muted small mb-0">Usado</p>
+                        <p class="fw-bold fs-6 mb-0 text-danger">${{ credito.saldo_usado }}</p>
+                    </div>
+                    <div class="col-4">
+                        <p class="text-muted small mb-0">Disponible</p>
+                        <p class="fw-bold fs-6 mb-0 text-success">${{ credito.saldo_disponible }}</p>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Crédito utilizado</span>
+                        <span>{{ credito.porcentaje_usado }}%</span>
+                    </div>
+                    <div class="progress rounded-pill" style="height: 10px;">
+                        <div class="progress-bar
+                            {% if credito.porcentaje_usado >= 80 %}bg-danger
+                            {% elif credito.porcentaje_usado >= 50 %}bg-warning
+                            {% else %}bg-success{% endif %}"
+                            role="progressbar"
+                            style="width: {{ credito.porcentaje_usado }}%"
+                            aria-valuenow="{{ credito.porcentaje_usado }}"
+                            aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+
+                {% if credito.porcentaje_usado >= 80 %}
+                    <div class="alert alert-danger rounded-3 small py-2 mt-2 mb-0">
+                        Te estás acercando al límite de crédito. Saldá tu deuda para seguir comprando.
+                    </div>
+                {% endif %}
+
+                <div class="mt-3">
+                    <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        Buscar repuestos
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+        <p class="text-muted mb-1">No tenés créditos comerciales activos con ningún proveedor.</p>
+        <p class="text-muted small">Pedile a un proveedor que te asigne un crédito para pagar tus pedidos después.</p>
+        <a href="{% url 'buscar_repuestos' %}" class="btn btn-primary rounded-pill px-4 mt-3">Buscar repuestos</a>
+    </div>
+{% endif %}
+
+{% endblock %}

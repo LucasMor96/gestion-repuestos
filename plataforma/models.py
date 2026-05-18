@@ -120,6 +120,7 @@ class Pedido(models.Model):
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     notas = models.TextField(blank=True, null=True)
     respuesta_proveedor = models.TextField(blank=True, null=True)
+    usa_credito = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Pedido"
@@ -136,6 +137,18 @@ class Credito(models.Model):
     tecnico = models.ForeignKey(Tecnico, on_delete=models.CASCADE, related_name='creditos')
     limite = models.DecimalField(max_digits=12, decimal_places=2)
     saldo_usado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def saldo_disponible(self):
+        return self.limite - self.saldo_usado
+
+    @property
+    def porcentaje_usado(self):
+        if self.limite == 0:
+            return 100
+        return int((self.saldo_usado / self.limite) * 100)
 
     class Meta:
         verbose_name = "Crédito"
