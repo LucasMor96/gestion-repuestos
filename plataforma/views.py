@@ -822,9 +822,18 @@ def gestionar_pedido(request, pk):
 
     try:
         if accion == 'aceptar':
+            producto = pedido.producto
+            if producto.stock < pedido.cantidad:
+                messages.error(
+                    request,
+                    f'Stock insuficiente. Disponible: {producto.stock}, solicitado: {pedido.cantidad}.'
+                )
+                return redirect('detalle_pedido_proveedor', pk=pk)
             pedido.estado = 'aceptado'
             pedido.respuesta_proveedor = respuesta or None
             pedido.save()
+            producto.stock -= pedido.cantidad
+            producto.save()
             _notificar_tecnico_estado(pedido)
             messages.success(request, f'Pedido #{pedido.id} aceptado. El técnico fue notificado.')
 
