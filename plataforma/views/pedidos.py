@@ -1,0 +1,338 @@
+import csv
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Exists, OuterRef
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+
+from ..forms import GestionarPedidoForm, PedidoForm
+from ..models import CalificacionProveedor, CalificacionTecnico, Credito, Pedido, Producto, Proveedor
+from .notifications import (
+    notificar_alerta_credito,
+    notificar_proveedor_nuevo_pedido,
+    notificar_tecnico_estado,
+)
+from .utils import get_proveedor_o_403, get_tecnico_o_403
+
+
+@login_required(login_url='login')
+def crear_pedido(request, producto_pk):
+    """TÃ©cnico envÃ­a una solicitud de compra de un repuesto al proveedor."""
+    tecnico = get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('buscar_repuestos')
+
+    producto = get_object_or_404(Producto, pk=producto_pk, disponible=True)
+    proveedor = producto.proveedor
+
+    try:
+        credito = Credito.objects.get(proveedor=proveedor, tecnico=tecnico, activo=True)
+    except Credito.DoesNotExist:
+        credito = None
+
+    if request.method == 'POST':
+        form = PedidoForm(request.POST, stock=producto.stock)
+        if form.is_valid():
+            try:
+                pedido = form.save(commit=False)
+                pedido.tecnico = tecnico
+                pedido.proveedor = proveedor
+                pedido.producto = producto
+                pedido.monto_total = producto.precio * form.cleaned_data['cantidad']
+                pedido.estado = 'pendiente'
+
+                usa_credito = request.POST.get('usa_credito') == 'on' and credito is not None
+                if usa_credito:
+                    if pedido.monto_total > credito.saldo_disponible:
+                        messages.error(
+                            request,
+                            f'El monto del pedido (${pedido.monto_total}) supera tu crÃ©dito disponible '
+                            f'(${credito.saldo_disponible}) con {proveedor.nombre_negocio}.'
+                        )
+                        return render(request, 'plataforma/crear_pedido.html', {
+                            'form': form, 'producto': producto, 'credito': credito,
+                        })
+                    pedido.usa_credito = True
+                    pedido.save()
+                    credito.saldo_usado += pedido.monto_total
+                    credito.save()
+                    if credito.porcentaje_usado >= 80:
+                        notificar_alerta_credito(credito)
+                else:
+                    pedido.save()
+
+                notificar_proveedor_nuevo_pedido(pedido)
+                messages.success(
+                    request,
+                    f'Pedido #{pedido.id} enviado correctamente. '
+                    f'{proveedor.nombre_negocio} recibirÃ¡ tu solicitud.'
+                )
+                return redirect('mis_pedidos')
+            except Exception:
+                messages.error(request, 'OcurriÃ³ un error al procesar el pedido. IntentÃ¡ de nuevo.')
+    else:
+        form = PedidoForm(stock=producto.stock)
+
+    return render(request, 'plataforma/crear_pedido.html', {'form': form, 'producto': producto, 'credito': credito})
+
+
+@login_required(login_url='login')
+def mis_pedidos(request):
+    """Historial de pedidos del tÃ©cnico con filtros por fecha y proveedor."""
+    tecnico = get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    fecha_desde = request.GET.get('fecha_desde', '').strip()
+    fecha_hasta = request.GET.get('fecha_hasta', '').strip()
+    proveedor_id = request.GET.get('proveedor', '').strip()
+
+    try:
+        pedidos_qs = (
+            tecnico.pedidos
+            .select_related('producto', 'proveedor')
+            .annotate(ya_calificado=Exists(CalificacionProveedor.objects.filter(pedido=OuterRef('pk'))))
+        )
+
+        if fecha_desde:
+            pedidos_qs = pedidos_qs.filter(fecha_creacion__date__gte=fecha_desde)
+        if fecha_hasta:
+            pedidos_qs = pedidos_qs.filter(fecha_creacion__date__lte=fecha_hasta)
+        if proveedor_id:
+            pedidos_qs = pedidos_qs.filter(proveedor_id=proveedor_id)
+
+        pedidos = pedidos_qs.order_by('-fecha_creacion')
+        proveedores = Proveedor.objects.filter(pedidos_recibidos__tecnico=tecnico).distinct().order_by('nombre_negocio')
+        hay_filtros = bool(fecha_desde or fecha_hasta or proveedor_id)
+
+    except Exception:
+        messages.error(request, 'OcurriÃ³ un error al cargar tu historial de pedidos. IntentÃ¡ de nuevo.')
+        pedidos = []
+        proveedores = []
+        hay_filtros = False
+        fecha_desde = fecha_hasta = proveedor_id = ''
+
+    return render(request, 'plataforma/mis_pedidos.html', {
+        'pedidos': pedidos,
+        'proveedores': proveedores,
+        'hay_filtros': hay_filtros,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'proveedor_id_sel': proveedor_id,
+    })
+
+
+@login_required(login_url='login')
+def exportar_historial(request):
+    """Descarga el historial de pedidos del tÃ©cnico como CSV."""
+    tecnico = get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    fecha_desde = request.GET.get('fecha_desde', '').strip()
+    fecha_hasta = request.GET.get('fecha_hasta', '').strip()
+    proveedor_id = request.GET.get('proveedor', '').strip()
+
+    try:
+        pedidos_qs = tecnico.pedidos.select_related('producto', 'proveedor')
+
+        if fecha_desde:
+            pedidos_qs = pedidos_qs.filter(fecha_creacion__date__gte=fecha_desde)
+        if fecha_hasta:
+            pedidos_qs = pedidos_qs.filter(fecha_creacion__date__lte=fecha_hasta)
+        if proveedor_id:
+            pedidos_qs = pedidos_qs.filter(proveedor_id=proveedor_id)
+
+        pedidos = pedidos_qs.order_by('-fecha_creacion')
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="historial_pedidos.csv"'
+        response.write('ï»¿')  # BOM para compatibilidad con Excel
+
+        writer = csv.writer(response)
+        writer.writerow(['#', 'Producto', 'Proveedor', 'Cantidad', 'Entrega', 'Monto ($)', 'Estado', 'Fecha'])
+
+        for pedido in pedidos:
+            writer.writerow([
+                pedido.id,
+                pedido.producto.nombre,
+                pedido.proveedor.nombre_negocio,
+                pedido.cantidad,
+                pedido.get_forma_entrega_display(),
+                pedido.monto_total,
+                pedido.get_estado_display(),
+                pedido.fecha_creacion.strftime('%d/%m/%Y'),
+            ])
+
+        return response
+
+    except Exception:
+        messages.error(request, 'No se pudo generar el archivo de exportaciÃ³n. IntentÃ¡ de nuevo.')
+        return redirect('mis_pedidos')
+
+
+@login_required(login_url='login')
+def cancelar_pedido(request, pk):
+    """TÃ©cnico cancela un pedido en estado pendiente."""
+    tecnico = get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(Pedido, pk=pk, tecnico=tecnico)
+
+    if request.method == 'POST':
+        if pedido.estado != 'pendiente':
+            messages.error(request, 'Solo podÃ©s cancelar pedidos en estado pendiente.')
+        else:
+            pedido.estado = 'cancelado'
+            pedido.save()
+            if pedido.usa_credito:
+                try:
+                    credito = Credito.objects.get(proveedor=pedido.proveedor, tecnico=tecnico)
+                    credito.saldo_usado = max(0, credito.saldo_usado - pedido.monto_total)
+                    credito.save()
+                except Credito.DoesNotExist:
+                    pass
+            messages.success(request, f'Pedido #{pedido.id} cancelado correctamente.')
+
+    return redirect('mis_pedidos')
+
+
+@login_required(login_url='login')
+def pedidos_recibidos(request):
+    """Panel de pedidos recibidos para el proveedor."""
+    proveedor = get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    pedidos = (
+        proveedor.pedidos_recibidos
+        .select_related('producto', 'tecnico__usuario')
+        .annotate(ya_calificado=Exists(CalificacionTecnico.objects.filter(pedido=OuterRef('pk'))))
+        .all()
+    )
+    return render(request, 'plataforma/pedidos_recibidos.html', {'pedidos': pedidos})
+
+
+@login_required(login_url='login')
+def detalle_pedido_proveedor(request, pk):
+    """Detalle de un pedido recibido, con informaciÃ³n del tÃ©cnico y formulario de gestiÃ³n."""
+    proveedor = get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(
+        Pedido.objects.select_related('producto', 'tecnico__usuario'),
+        pk=pk,
+        proveedor=proveedor,
+    )
+    form = GestionarPedidoForm()
+    return render(request, 'plataforma/detalle_pedido_proveedor.html', {
+        'pedido': pedido,
+        'form': form,
+        'ya_calificado': pedido.calificacion_tecnico.exists(),
+    })
+
+
+@login_required(login_url='login')
+def gestionar_pedido(request, pk):
+    """Proveedor acepta, rechaza o propone alternativa para un pedido pendiente."""
+    proveedor = get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(Pedido, pk=pk, proveedor=proveedor)
+
+    if request.method != 'POST':
+        return redirect('detalle_pedido_proveedor', pk=pk)
+
+    if pedido.estado != 'pendiente':
+        messages.error(request, 'Solo podÃ©s gestionar pedidos en estado pendiente.')
+        return redirect('detalle_pedido_proveedor', pk=pk)
+
+    form = GestionarPedidoForm(request.POST)
+    if not form.is_valid():
+        for error in form.non_field_errors():
+            messages.error(request, error)
+        return redirect('detalle_pedido_proveedor', pk=pk)
+
+    accion = form.cleaned_data['accion']
+    respuesta = (form.cleaned_data['respuesta'] or '').strip()
+
+    try:
+        if accion == 'aceptar':
+            producto = pedido.producto
+            if producto.stock < pedido.cantidad:
+                messages.error(
+                    request,
+                    f'Stock insuficiente. Disponible: {producto.stock}, solicitado: {pedido.cantidad}.'
+                )
+                return redirect('detalle_pedido_proveedor', pk=pk)
+            pedido.estado = 'aceptado'
+            pedido.respuesta_proveedor = respuesta or None
+            pedido.save()
+            producto.stock -= pedido.cantidad
+            producto.save()
+            notificar_tecnico_estado(pedido)
+            messages.success(request, f'Pedido #{pedido.id} aceptado. El tÃ©cnico fue notificado.')
+
+        elif accion == 'rechazar':
+            pedido.estado = 'rechazado'
+            pedido.respuesta_proveedor = respuesta or None
+            pedido.save()
+            notificar_tecnico_estado(pedido)
+            if pedido.usa_credito:
+                try:
+                    credito = Credito.objects.get(proveedor=proveedor, tecnico=pedido.tecnico)
+                    credito.saldo_usado = max(0, credito.saldo_usado - pedido.monto_total)
+                    credito.save()
+                except Credito.DoesNotExist:
+                    pass
+            messages.success(request, f'Pedido #{pedido.id} rechazado. El tÃ©cnico fue notificado.')
+
+        elif accion == 'alternativa':
+            pedido.estado = 'rechazado'
+            pedido.respuesta_proveedor = f'Alternativa propuesta: {respuesta}'
+            pedido.save()
+            notificar_tecnico_estado(pedido)
+            if pedido.usa_credito:
+                try:
+                    credito = Credito.objects.get(proveedor=proveedor, tecnico=pedido.tecnico)
+                    credito.saldo_usado = max(0, credito.saldo_usado - pedido.monto_total)
+                    credito.save()
+                except Credito.DoesNotExist:
+                    pass
+            messages.success(
+                request,
+                f'Alternativa enviada al tÃ©cnico para el pedido #{pedido.id}.'
+            )
+
+    except Exception:
+        messages.error(request, 'OcurriÃ³ un error al procesar la acciÃ³n. IntentÃ¡ de nuevo.')
+        return redirect('detalle_pedido_proveedor', pk=pk)
+
+    return redirect('pedidos_recibidos')
+
+
+@login_required(login_url='login')
+def completar_pedido(request, pk):
+    """TÃ©cnico marca un pedido aceptado como completado (recibiÃ³ el repuesto)."""
+    tecnico = get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
+    pedido = get_object_or_404(Pedido, pk=pk, tecnico=tecnico)
+
+    if request.method == 'POST':
+        if pedido.estado != 'aceptado':
+            messages.error(request, 'Solo podÃ©s confirmar la recepciÃ³n de pedidos en estado aceptado.')
+        else:
+            pedido.estado = 'completado'
+            pedido.save()
+            messages.success(
+                request,
+                f'Pedido #{pedido.id} marcado como completado. Â¡Ya podÃ©s calificar a {pedido.proveedor.nombre_negocio}!'
+            )
+
+    return redirect('mis_pedidos')
