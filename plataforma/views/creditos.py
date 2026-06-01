@@ -15,7 +15,7 @@ from .utils import get_proveedor_o_403, get_tecnico_o_403
 
 @login_required(login_url='login')
 def mis_creditos(request):
-    """TÃ©cnico ve sus crÃ©ditos disponibles con cada proveedor (US-10)."""
+    """Técnico ve sus créditos disponibles con cada proveedor (US-10)."""
     tecnico = get_tecnico_o_403(request)
     if tecnico is None:
         return redirect('dashboard')
@@ -26,7 +26,7 @@ def mis_creditos(request):
 
 @login_required(login_url='login')
 def gestionar_creditos_proveedor(request):
-    """Proveedor ve y administra los crÃ©ditos asignados a tÃ©cnicos (US-11)."""
+    """Proveedor ve y administra los créditos asignados a técnicos (US-11)."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -39,7 +39,7 @@ def gestionar_creditos_proveedor(request):
 
 @login_required(login_url='login')
 def asignar_credito(request):
-    """Proveedor asigna o edita el lÃ­mite de crÃ©dito de un tÃ©cnico (US-11)."""
+    """Proveedor asigna o edita el límite de crédito de un técnico (US-11)."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -80,12 +80,12 @@ def asignar_credito(request):
                 notificar_credito_asignado(credito)
                 messages.success(
                     request,
-                    f'CrÃ©dito de ${credito.limite} asignado a '
+                    f'Crédito de ${credito.limite} asignado a '
                     f'{tecnico_sel.usuario.get_full_name()} correctamente.'
                 )
                 return redirect('gestionar_creditos_proveedor')
             except Exception:
-                messages.error(request, 'OcurriÃ³ un error al asignar el crÃ©dito. IntentÃ¡ de nuevo.')
+                messages.error(request, 'Ocurrió un error al asignar el crédito. Intentá de nuevo.')
     else:
         form = AsignarCreditoForm(instance=credito_existente) if tecnico_sel else None
 
@@ -100,7 +100,7 @@ def asignar_credito(request):
 
 @login_required(login_url='login')
 def revocar_credito(request, pk):
-    """Proveedor revoca el crÃ©dito de un tÃ©cnico (US-11)."""
+    """Proveedor revoca el crédito de un técnico (US-11)."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -114,17 +114,17 @@ def revocar_credito(request, pk):
             notificar_credito_revocado(credito)
             messages.success(
                 request,
-                f'CrÃ©dito de {credito.tecnico.usuario.get_full_name()} revocado correctamente.'
+                f'Crédito de {credito.tecnico.usuario.get_full_name()} revocado correctamente.'
             )
         except Exception:
-            messages.error(request, 'OcurriÃ³ un error al revocar el crÃ©dito. IntentÃ¡ de nuevo.')
+            messages.error(request, 'Ocurrió un error al revocar el crédito. Intentá de nuevo.')
 
     return redirect('gestionar_creditos_proveedor')
 
 
 @login_required(login_url='login')
 def deudas_tecnicos(request):
-    """Proveedor consulta quÃ© tÃ©cnicos tienen deuda pendiente (US-12)."""
+    """Proveedor consulta qué técnicos tienen deuda pendiente (US-12)."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -140,7 +140,7 @@ def deudas_tecnicos(request):
 
 @login_required(login_url='login')
 def detalle_deuda_tecnico(request, pk):
-    """Proveedor ve el detalle de pedidos que componen la deuda de un tÃ©cnico (US-12)."""
+    """Proveedor ve el detalle de pedidos que componen la deuda de un técnico (US-12)."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -160,7 +160,7 @@ def detalle_deuda_tecnico(request, pk):
 
 @login_required(login_url='login')
 def marcar_deuda_saldada(request, pk):
-    """Proveedor marca como saldada la deuda de un tÃ©cnico (US-12)."""
+    """Proveedor marca como saldada la deuda de un técnico (US-12)."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -170,7 +170,7 @@ def marcar_deuda_saldada(request, pk):
     if request.method == 'POST':
         try:
             if credito.saldo_usado <= 0:
-                messages.warning(request, 'Este tÃ©cnico no tiene deuda pendiente.')
+                messages.warning(request, 'Este técnico no tiene deuda pendiente.')
             else:
                 credito.saldo_usado = 0
                 credito.save()
@@ -178,9 +178,9 @@ def marcar_deuda_saldada(request, pk):
                 messages.success(
                     request,
                     f'Deuda de {credito.tecnico.usuario.get_full_name()} marcada como saldada. '
-                    f'El crÃ©dito disponible se restableciÃ³.'
+                    f'El crédito disponible se restableció.'
                 )
         except Exception:
-            messages.error(request, 'OcurriÃ³ un error al saldar la deuda. IntentÃ¡ de nuevo.')
+            messages.error(request, 'Ocurrió un error al saldar la deuda. Intentá de nuevo.')
 
     return redirect('deudas_tecnicos')

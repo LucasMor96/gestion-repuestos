@@ -9,7 +9,7 @@ from .utils import haversine
 
 @login_required(login_url='login')
 def buscar_repuestos(request):
-    """BÃºsqueda de repuestos por nombre, modelo o categorÃ­a (US-04)."""
+    """Búsqueda de repuestos por nombre, modelo o categoría (US-04)."""
     query = request.GET.get('q', '').strip()
     categoria_sel = request.GET.get('categoria', '').strip()
     orden = request.GET.get('orden', '')
@@ -75,7 +75,7 @@ def buscar_repuestos(request):
             'es_tecnico': hasattr(request.user, 'tecnico'),
         }
     except Exception:
-        messages.error(request, 'OcurriÃ³ un error al realizar la bÃºsqueda. IntentÃ¡ de nuevo.')
+        messages.error(request, 'Ocurrió un error al realizar la búsqueda. Intentá de nuevo.')
         context = {
             'productos': [],
             'query': query,

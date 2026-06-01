@@ -20,7 +20,7 @@ def catalogo_proveedor(request):
 
 @login_required(login_url='login')
 def agregar_producto(request):
-    """Crea un nuevo producto en el catÃ¡logo."""
+    """Crea un nuevo producto en el catálogo."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -31,7 +31,7 @@ def agregar_producto(request):
             producto = form.save(commit=False)
             producto.proveedor = proveedor
             producto.save()
-            messages.success(request, f'Producto "{producto.nombre}" publicado en el catÃ¡logo.')
+            messages.success(request, f'Producto "{producto.nombre}" publicado en el catálogo.')
             return redirect('catalogo_proveedor')
     else:
         form = ProductoForm()
@@ -62,7 +62,7 @@ def editar_producto(request, pk):
 
 @login_required(login_url='login')
 def eliminar_producto(request, pk):
-    """Elimina un producto tras confirmaciÃ³n POST."""
+    """Elimina un producto tras confirmación POST."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -72,7 +72,7 @@ def eliminar_producto(request, pk):
     if request.method == 'POST':
         nombre = producto.nombre
         producto.delete()
-        messages.success(request, f'Producto "{nombre}" eliminado del catÃ¡logo.')
+        messages.success(request, f'Producto "{nombre}" eliminado del catálogo.')
     return redirect('catalogo_proveedor')
 
 
@@ -87,5 +87,5 @@ def toggle_disponibilidad(request, pk):
     producto.disponible = not producto.disponible
     producto.save(update_fields=['disponible'])
     estado = 'visible' if producto.disponible else 'oculto'
-    messages.success(request, f'"{producto.nombre}" ahora estÃ¡ {estado} en el catÃ¡logo.')
+    messages.success(request, f'"{producto.nombre}" ahora está {estado} en el catálogo.')
     return redirect('catalogo_proveedor')

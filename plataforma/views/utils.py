@@ -5,7 +5,7 @@ from django.contrib import messages
 
 def solo_staff(request):
     if not request.user.is_staff:
-        messages.error(request, 'No tenÃ©s permisos para acceder a esta secciÃ³n.')
+        messages.error(request, 'No tenés permisos para acceder a esta sección.')
         return False
     return True
 
@@ -13,7 +13,7 @@ def solo_staff(request):
 def get_proveedor_o_403(request):
     """Devuelve el perfil Proveedor del usuario o None si no corresponde."""
     if not hasattr(request.user, 'proveedor'):
-        messages.error(request, 'Esta secciÃ³n es solo para proveedores.')
+        messages.error(request, 'Esta sección es solo para proveedores.')
         return None
     return request.user.proveedor
 
@@ -21,7 +21,7 @@ def get_proveedor_o_403(request):
 def get_tecnico_o_403(request):
     """Devuelve el perfil Tecnico del usuario o None si no corresponde."""
     if not hasattr(request.user, 'tecnico'):
-        messages.error(request, 'Esta secciÃ³n es solo para tÃ©cnicos.')
+        messages.error(request, 'Esta sección es solo para técnicos.')
         return None
     return request.user.tecnico
 

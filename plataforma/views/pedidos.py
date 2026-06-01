@@ -18,7 +18,7 @@ from .utils import get_proveedor_o_403, get_tecnico_o_403
 
 @login_required(login_url='login')
 def crear_pedido(request, producto_pk):
-    """TÃ©cnico envÃ­a una solicitud de compra de un repuesto al proveedor."""
+    """Técnico envía una solicitud de compra de un repuesto al proveedor."""
     tecnico = get_tecnico_o_403(request)
     if tecnico is None:
         return redirect('buscar_repuestos')
@@ -47,7 +47,7 @@ def crear_pedido(request, producto_pk):
                     if pedido.monto_total > credito.saldo_disponible:
                         messages.error(
                             request,
-                            f'El monto del pedido (${pedido.monto_total}) supera tu crÃ©dito disponible '
+                            f'El monto del pedido (${pedido.monto_total}) supera tu crédito disponible '
                             f'(${credito.saldo_disponible}) con {proveedor.nombre_negocio}.'
                         )
                         return render(request, 'plataforma/crear_pedido.html', {
@@ -66,11 +66,11 @@ def crear_pedido(request, producto_pk):
                 messages.success(
                     request,
                     f'Pedido #{pedido.id} enviado correctamente. '
-                    f'{proveedor.nombre_negocio} recibirÃ¡ tu solicitud.'
+                    f'{proveedor.nombre_negocio} recibirá tu solicitud.'
                 )
                 return redirect('mis_pedidos')
             except Exception:
-                messages.error(request, 'OcurriÃ³ un error al procesar el pedido. IntentÃ¡ de nuevo.')
+                messages.error(request, 'Ocurrió un error al procesar el pedido. Intentá de nuevo.')
     else:
         form = PedidoForm(stock=producto.stock)
 
@@ -79,7 +79,7 @@ def crear_pedido(request, producto_pk):
 
 @login_required(login_url='login')
 def mis_pedidos(request):
-    """Historial de pedidos del tÃ©cnico con filtros por fecha y proveedor."""
+    """Historial de pedidos del técnico con filtros por fecha y proveedor."""
     tecnico = get_tecnico_o_403(request)
     if tecnico is None:
         return redirect('dashboard')
@@ -107,7 +107,7 @@ def mis_pedidos(request):
         hay_filtros = bool(fecha_desde or fecha_hasta or proveedor_id)
 
     except Exception:
-        messages.error(request, 'OcurriÃ³ un error al cargar tu historial de pedidos. IntentÃ¡ de nuevo.')
+        messages.error(request, 'Ocurrió un error al cargar tu historial de pedidos. Intentá de nuevo.')
         pedidos = []
         proveedores = []
         hay_filtros = False
@@ -125,7 +125,7 @@ def mis_pedidos(request):
 
 @login_required(login_url='login')
 def exportar_historial(request):
-    """Descarga el historial de pedidos del tÃ©cnico como CSV."""
+    """Descarga el historial de pedidos del técnico como CSV."""
     tecnico = get_tecnico_o_403(request)
     if tecnico is None:
         return redirect('dashboard')
@@ -148,7 +148,7 @@ def exportar_historial(request):
 
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="historial_pedidos.csv"'
-        response.write('ï»¿')  # BOM para compatibilidad con Excel
+        response.write('\ufeff')  # BOM para compatibilidad con Excel
 
         writer = csv.writer(response)
         writer.writerow(['#', 'Producto', 'Proveedor', 'Cantidad', 'Entrega', 'Monto ($)', 'Estado', 'Fecha'])
@@ -168,13 +168,13 @@ def exportar_historial(request):
         return response
 
     except Exception:
-        messages.error(request, 'No se pudo generar el archivo de exportaciÃ³n. IntentÃ¡ de nuevo.')
+        messages.error(request, 'No se pudo generar el archivo de exportación. Intentá de nuevo.')
         return redirect('mis_pedidos')
 
 
 @login_required(login_url='login')
 def cancelar_pedido(request, pk):
-    """TÃ©cnico cancela un pedido en estado pendiente."""
+    """Técnico cancela un pedido en estado pendiente."""
     tecnico = get_tecnico_o_403(request)
     if tecnico is None:
         return redirect('dashboard')
@@ -183,7 +183,7 @@ def cancelar_pedido(request, pk):
 
     if request.method == 'POST':
         if pedido.estado != 'pendiente':
-            messages.error(request, 'Solo podÃ©s cancelar pedidos en estado pendiente.')
+            messages.error(request, 'Solo podés cancelar pedidos en estado pendiente.')
         else:
             pedido.estado = 'cancelado'
             pedido.save()
@@ -217,7 +217,7 @@ def pedidos_recibidos(request):
 
 @login_required(login_url='login')
 def detalle_pedido_proveedor(request, pk):
-    """Detalle de un pedido recibido, con informaciÃ³n del tÃ©cnico y formulario de gestiÃ³n."""
+    """Detalle de un pedido recibido, con información del técnico y formulario de gestión."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -248,7 +248,7 @@ def gestionar_pedido(request, pk):
         return redirect('detalle_pedido_proveedor', pk=pk)
 
     if pedido.estado != 'pendiente':
-        messages.error(request, 'Solo podÃ©s gestionar pedidos en estado pendiente.')
+        messages.error(request, 'Solo podés gestionar pedidos en estado pendiente.')
         return redirect('detalle_pedido_proveedor', pk=pk)
 
     form = GestionarPedidoForm(request.POST)
@@ -275,7 +275,7 @@ def gestionar_pedido(request, pk):
             producto.stock -= pedido.cantidad
             producto.save()
             notificar_tecnico_estado(pedido)
-            messages.success(request, f'Pedido #{pedido.id} aceptado. El tÃ©cnico fue notificado.')
+            messages.success(request, f'Pedido #{pedido.id} aceptado. El técnico fue notificado.')
 
         elif accion == 'rechazar':
             pedido.estado = 'rechazado'
@@ -289,7 +289,7 @@ def gestionar_pedido(request, pk):
                     credito.save()
                 except Credito.DoesNotExist:
                     pass
-            messages.success(request, f'Pedido #{pedido.id} rechazado. El tÃ©cnico fue notificado.')
+            messages.success(request, f'Pedido #{pedido.id} rechazado. El técnico fue notificado.')
 
         elif accion == 'alternativa':
             pedido.estado = 'rechazado'
@@ -305,11 +305,11 @@ def gestionar_pedido(request, pk):
                     pass
             messages.success(
                 request,
-                f'Alternativa enviada al tÃ©cnico para el pedido #{pedido.id}.'
+                f'Alternativa enviada al técnico para el pedido #{pedido.id}.'
             )
 
     except Exception:
-        messages.error(request, 'OcurriÃ³ un error al procesar la acciÃ³n. IntentÃ¡ de nuevo.')
+        messages.error(request, 'Ocurrió un error al procesar la acción. Intentá de nuevo.')
         return redirect('detalle_pedido_proveedor', pk=pk)
 
     return redirect('pedidos_recibidos')
@@ -317,7 +317,7 @@ def gestionar_pedido(request, pk):
 
 @login_required(login_url='login')
 def completar_pedido(request, pk):
-    """TÃ©cnico marca un pedido aceptado como completado (recibiÃ³ el repuesto)."""
+    """Técnico marca un pedido aceptado como completado (recibió el repuesto)."""
     tecnico = get_tecnico_o_403(request)
     if tecnico is None:
         return redirect('dashboard')
@@ -326,13 +326,13 @@ def completar_pedido(request, pk):
 
     if request.method == 'POST':
         if pedido.estado != 'aceptado':
-            messages.error(request, 'Solo podÃ©s confirmar la recepciÃ³n de pedidos en estado aceptado.')
+            messages.error(request, 'Solo podés confirmar la recepción de pedidos en estado aceptado.')
         else:
             pedido.estado = 'completado'
             pedido.save()
             messages.success(
                 request,
-                f'Pedido #{pedido.id} marcado como completado. Â¡Ya podÃ©s calificar a {pedido.proveedor.nombre_negocio}!'
+                f'Pedido #{pedido.id} marcado como completado. ¡Ya podés calificar a {pedido.proveedor.nombre_negocio}!'
             )
 
     return redirect('mis_pedidos')

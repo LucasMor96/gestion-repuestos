@@ -8,7 +8,7 @@ from .utils import solo_staff
 
 @login_required(login_url='login')
 def panel_moderacion(request):
-    """Panel de moderaciÃ³n de usuarios (solo staff)."""
+    """Panel de moderación de usuarios (solo staff)."""
     if not solo_staff(request):
         return redirect('dashboard')
 
@@ -25,7 +25,7 @@ def panel_moderacion(request):
 
 @login_required(login_url='login')
 def aprobar_usuario(request, tipo, pk):
-    """Aprueba el registro de un tÃ©cnico o proveedor."""
+    """Aprueba el registro de un técnico o proveedor."""
     if not solo_staff(request):
         return redirect('dashboard')
 
@@ -42,7 +42,7 @@ def aprobar_usuario(request, tipo, pk):
 
 @login_required(login_url='login')
 def rechazar_usuario(request, tipo, pk):
-    """Rechaza el registro de un tÃ©cnico o proveedor."""
+    """Rechaza el registro de un técnico o proveedor."""
     if not solo_staff(request):
         return redirect('dashboard')
 
@@ -77,7 +77,7 @@ def suspender_usuario(request, tipo, pk):
 
 @login_required(login_url='login')
 def solicitar_info(request, tipo, pk):
-    """Solicita informaciÃ³n adicional a un usuario pendiente."""
+    """Solicita información adicional a un usuario pendiente."""
     if not solo_staff(request):
         return redirect('dashboard')
 
@@ -85,5 +85,5 @@ def solicitar_info(request, tipo, pk):
         perfil = get_object_or_404(Tecnico if tipo == 'tecnico' else Proveedor, pk=pk)
         perfil.nota_admin = request.POST.get('nota', '')
         perfil.save()
-        messages.success(request, f'Nota guardada para {perfil.usuario.get_full_name()}. El usuario la verÃ¡ al intentar ingresar.')
+        messages.success(request, f'Nota guardada para {perfil.usuario.get_full_name()}. El usuario la verá al intentar ingresar.')
     return redirect('panel_moderacion')

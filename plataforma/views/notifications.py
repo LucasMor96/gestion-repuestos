@@ -2,9 +2,9 @@ from django.core.mail import send_mail
 
 
 def notificar_proveedor_nuevo_pedido(pedido):
-    """EnvÃ­a email al proveedor cuando llega un nuevo pedido."""
+    """Envía email al proveedor cuando llega un nuevo pedido."""
     send_mail(
-        subject=f'[Repuestos] Nuevo pedido #{pedido.id} â€” {pedido.producto.nombre}',
+        subject=f'[Repuestos] Nuevo pedido #{pedido.id} — {pedido.producto.nombre}',
         message=(
             f'Hola {pedido.proveedor.usuario.first_name},\n\n'
             f'Recibiste un nuevo pedido en la plataforma:\n\n'
@@ -12,9 +12,9 @@ def notificar_proveedor_nuevo_pedido(pedido):
             f'  Cantidad : {pedido.cantidad}\n'
             f'  Monto    : ${pedido.monto_total}\n'
             f'  Entrega  : {pedido.get_forma_entrega_display()}\n'
-            f'  TÃ©cnico  : {pedido.tecnico.usuario.get_full_name()}\n'
-            f'  TelÃ©fono : {pedido.tecnico.telefono or "No informado"}\n\n'
-            f'IngresÃ¡ a la plataforma para aceptar o rechazar el pedido.\n'
+            f'  Técnico  : {pedido.tecnico.usuario.get_full_name()}\n'
+            f'  Teléfono : {pedido.tecnico.telefono or "No informado"}\n\n'
+            f'Ingresá a la plataforma para aceptar o rechazar el pedido.\n'
         ),
         from_email='noreply@gestion-repuestos.com',
         recipient_list=[pedido.proveedor.usuario.email],
@@ -23,9 +23,9 @@ def notificar_proveedor_nuevo_pedido(pedido):
 
 
 def notificar_tecnico_estado(pedido):
-    """EnvÃ­a email al tÃ©cnico cuando el proveedor cambia el estado de su pedido."""
+    """Envía email al técnico cuando el proveedor cambia el estado de su pedido."""
     send_mail(
-        subject=f'[Repuestos] Pedido #{pedido.id} â€” {pedido.get_estado_display()}',
+        subject=f'[Repuestos] Pedido #{pedido.id} — {pedido.get_estado_display()}',
         message=(
             f'Hola {pedido.tecnico.usuario.first_name},\n\n'
             f'Tu pedido fue actualizado:\n\n'
@@ -33,7 +33,7 @@ def notificar_tecnico_estado(pedido):
             f'  Estado    : {pedido.get_estado_display()}\n'
             f'  Proveedor : {pedido.proveedor.nombre_negocio}\n'
             + (f'  Mensaje   : {pedido.respuesta_proveedor}\n' if pedido.respuesta_proveedor else '')
-            + '\nIngresÃ¡ a la plataforma para ver el detalle de tus pedidos.\n'
+            + '\nIngresá a la plataforma para ver el detalle de tus pedidos.\n'
         ),
         from_email='noreply@gestion-repuestos.com',
         recipient_list=[pedido.tecnico.usuario.email],
@@ -43,12 +43,12 @@ def notificar_tecnico_estado(pedido):
 
 def notificar_credito_asignado(credito):
     send_mail(
-        subject=f'[Repuestos] CrÃ©dito comercial asignado â€” {credito.proveedor.nombre_negocio}',
+        subject=f'[Repuestos] Crédito comercial asignado — {credito.proveedor.nombre_negocio}',
         message=(
             f'Hola {credito.tecnico.usuario.first_name},\n\n'
-            f'{credito.proveedor.nombre_negocio} te asignÃ³ un crÃ©dito comercial:\n\n'
-            f'  LÃ­mite disponible: ${credito.limite}\n\n'
-            f'Ya podÃ©s usarlo al hacer pedidos con este proveedor.\n'
+            f'{credito.proveedor.nombre_negocio} te asignó un crédito comercial:\n\n'
+            f'  Límite disponible: ${credito.limite}\n\n'
+            f'Ya podés usarlo al hacer pedidos con este proveedor.\n'
         ),
         from_email='noreply@gestion-repuestos.com',
         recipient_list=[credito.tecnico.usuario.email],
@@ -58,14 +58,14 @@ def notificar_credito_asignado(credito):
 
 def notificar_alerta_credito(credito):
     send_mail(
-        subject=f'[Repuestos] Alerta: lÃ­mite de crÃ©dito con {credito.proveedor.nombre_negocio}',
+        subject=f'[Repuestos] Alerta: límite de crédito con {credito.proveedor.nombre_negocio}',
         message=(
             f'Hola {credito.tecnico.usuario.first_name},\n\n'
-            f'Usaste el {credito.porcentaje_usado}% de tu crÃ©dito con {credito.proveedor.nombre_negocio}:\n\n'
-            f'  LÃ­mite total    : ${credito.limite}\n'
+            f'Usaste el {credito.porcentaje_usado}% de tu crédito con {credito.proveedor.nombre_negocio}:\n\n'
+            f'  Límite total    : ${credito.limite}\n'
             f'  Saldo usado     : ${credito.saldo_usado}\n'
             f'  Saldo disponible: ${credito.saldo_disponible}\n\n'
-            f'Por favor, regularizÃ¡ tu deuda para seguir usando el crÃ©dito.\n'
+            f'Por favor, regularizá tu deuda para seguir usando el crédito.\n'
         ),
         from_email='noreply@gestion-repuestos.com',
         recipient_list=[credito.tecnico.usuario.email],
@@ -78,8 +78,8 @@ def notificar_deuda_saldada(credito):
         subject=f'[Repuestos] Tu deuda con {credito.proveedor.nombre_negocio} fue saldada',
         message=(
             f'Hola {credito.tecnico.usuario.first_name},\n\n'
-            f'{credito.proveedor.nombre_negocio} marcÃ³ tu deuda como saldada.\n\n'
-            f'Tu crÃ©dito disponible se restableciÃ³. LÃ­mite: ${credito.limite}\n'
+            f'{credito.proveedor.nombre_negocio} marcó tu deuda como saldada.\n\n'
+            f'Tu crédito disponible se restableció. Límite: ${credito.limite}\n'
         ),
         from_email='noreply@gestion-repuestos.com',
         recipient_list=[credito.tecnico.usuario.email],
@@ -89,11 +89,11 @@ def notificar_deuda_saldada(credito):
 
 def notificar_credito_revocado(credito):
     send_mail(
-        subject=f'[Repuestos] Tu crÃ©dito con {credito.proveedor.nombre_negocio} fue revocado',
+        subject=f'[Repuestos] Tu crédito con {credito.proveedor.nombre_negocio} fue revocado',
         message=(
             f'Hola {credito.tecnico.usuario.first_name},\n\n'
-            f'{credito.proveedor.nombre_negocio} revocÃ³ tu crÃ©dito comercial.\n\n'
-            f'Si tenÃ©s saldo pendiente, contactÃ¡ al proveedor para regularizar tu situaciÃ³n.\n'
+            f'{credito.proveedor.nombre_negocio} revocó tu crédito comercial.\n\n'
+            f'Si tenés saldo pendiente, contactá al proveedor para regularizar tu situación.\n'
         ),
         from_email='noreply@gestion-repuestos.com',
         recipient_list=[credito.tecnico.usuario.email],

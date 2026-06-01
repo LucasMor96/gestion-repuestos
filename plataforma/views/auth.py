@@ -16,7 +16,7 @@ from ..models import Proveedor, Tecnico
 
 
 def registro_tipo(request):
-    """Vista para elegir tipo de registro: tÃ©cnico o proveedor."""
+    """Vista para elegir tipo de registro: técnico o proveedor."""
     if request.user.is_authenticated:
         return redirect('dashboard')
 
@@ -24,7 +24,7 @@ def registro_tipo(request):
 
 
 def registro_tecnico(request):
-    """Registro de tÃ©cnico."""
+    """Registro de técnico."""
     if request.user.is_authenticated:
         return redirect('dashboard')
 
@@ -32,7 +32,7 @@ def registro_tecnico(request):
         form = RegistroTecnicoForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Registro exitoso. Espera la aprobaciÃ³n del administrador para poder ingresar.')
+            messages.success(request, 'Registro exitoso. Espera la aprobación del administrador para poder ingresar.')
             return redirect('espera_aprobacion')
     else:
         form = RegistroTecnicoForm()
@@ -48,7 +48,7 @@ def registro_proveedor(request):
         form = RegistroProveedorForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Registro exitoso. Espera la aprobaciÃ³n del administrador para poder ingresar.')
+            messages.success(request, 'Registro exitoso. Espera la aprobación del administrador para poder ingresar.')
             return redirect('espera_aprobacion')
     else:
         form = RegistroProveedorForm()
@@ -90,24 +90,24 @@ def login_view(request):
                                 msg += f' Motivo: {nota}'
                             messages.warning(request, msg)
                         else:
-                            messages.warning(request, 'Tu cuenta estÃ¡ pendiente de aprobaciÃ³n por el administrador.')
+                            messages.warning(request, 'Tu cuenta está pendiente de aprobación por el administrador.')
                         return redirect('espera_aprobacion')
 
                     login(request, user_obj)
                     messages.success(request, f'Bienvenido, {user_obj.first_name}!')
                     return redirect('dashboard')
-                messages.error(request, 'Email o contraseÃ±a incorrectos.')
+                messages.error(request, 'Email o contraseña incorrectos.')
             except User.DoesNotExist:
-                messages.error(request, 'Email o contraseÃ±a incorrectos.')
+                messages.error(request, 'Email o contraseña incorrectos.')
     else:
         form = LoginForm()
     return render(request, 'plataforma/login.html', {'form': form})
 
 
 def logout_view(request):
-    """Cerrar sesiÃ³n."""
+    """Cerrar sesión."""
     logout(request)
-    messages.success(request, 'SesiÃ³n cerrada correctamente.')
+    messages.success(request, 'Sesión cerrada correctamente.')
     return redirect('login')
 
 
@@ -130,12 +130,12 @@ def dashboard(request):
 
 
 def espera_aprobacion(request):
-    """Vista que muestra mensaje de espera / resultado de moderaciÃ³n."""
+    """Vista que muestra mensaje de espera / resultado de moderación."""
     return render(request, 'plataforma/espera_aprobacion.html')
 
 
 def inicio(request):
-    """Landing page, redirige al dashboard si ya estÃ¡ autenticado."""
+    """Landing page, redirige al dashboard si ya está autenticado."""
     if request.user.is_authenticated:
         return redirect('dashboard')
     return render(request, 'plataforma/inicio.html')
@@ -175,7 +175,7 @@ def editar_perfil(request):
 
 @login_required(login_url='login')
 def perfil_tecnico(request, pk):
-    """Perfil pÃºblico de un tÃ©cnico, visible para proveedores."""
+    """Perfil público de un técnico, visible para proveedores."""
     tecnico = get_object_or_404(Tecnico, pk=pk)
     return render(request, 'plataforma/perfil_tecnico.html', {
         'tecnico': tecnico,
@@ -185,7 +185,7 @@ def perfil_tecnico(request, pk):
 
 @login_required(login_url='login')
 def perfil_proveedor(request, pk):
-    """Perfil pÃºblico de un proveedor, visible para tÃ©cnicos."""
+    """Perfil público de un proveedor, visible para técnicos."""
     proveedor = get_object_or_404(Proveedor, pk=pk)
     articulos_vendidos = (
         proveedor.pedidos_recibidos
