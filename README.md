@@ -25,6 +25,7 @@ El sistema permite registrar tecnicos y proveedores, moderar altas de usuarios, 
 - Django 5.2.13
 - PostgreSQL
 - HTML templates de Django
+- Resend para emails transaccionales
 
 ## Estructura principal
 
@@ -92,7 +93,11 @@ DB_USER=postgres
 DB_PASSWORD=tu_password_aqui
 DB_HOST=localhost
 DB_PORT=5432
+RESEND_API_KEY=re_xxxxxxxxx
+DEFAULT_FROM_EMAIL=LUMA <no-reply@tu-dominio-verificado.com>
 ```
+
+Para enviar emails reales con Resend, crea una API key en Resend, verifica tu dominio y usa un remitente de ese dominio en `DEFAULT_FROM_EMAIL`. Si `RESEND_API_KEY` no esta configurada, Django usa el backend de consola para desarrollo local.
 
 5. Crear la base de datos en PostgreSQL si todavia no existe:
 
@@ -151,6 +156,7 @@ El login de la aplicacion se realiza con email y password.
 | `/registro/tecnico/` | Registro de tecnico |
 | `/registro/proveedor/` | Registro de proveedor |
 | `/login/` | Inicio de sesion |
+| `/password-reset/` | Recuperacion de contrasena |
 | `/dashboard/` | Panel principal |
 | `/buscar/` | Busqueda de repuestos |
 | `/catalogo/` | Catalogo del proveedor |
@@ -182,4 +188,3 @@ python manage.py createsuperuser
 python manage.py crear_usuarios_prueba
 python manage.py runserver
 ```
-
