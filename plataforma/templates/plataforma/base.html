@@ -12,8 +12,38 @@
             --bs-primary-rgb: 255, 140, 0;
             --green-pastel: #F0FFF4;
         }
-        .btn-primary { background-color: var(--bs-primary); border-color: var(--bs-primary); font-weight: bold; }
-        .btn-primary:hover { background-color: #e67e00; border-color: #e67e00; }
+        .btn-primary {
+            --bs-btn-bg: var(--bs-primary);
+            --bs-btn-border-color: var(--bs-primary);
+            --bs-btn-hover-bg: #e67e00;
+            --bs-btn-hover-border-color: #e67e00;
+            --bs-btn-active-bg: #cc7000;
+            --bs-btn-active-border-color: #cc7000;
+            --bs-btn-disabled-bg: var(--bs-primary);
+            --bs-btn-disabled-border-color: var(--bs-primary);
+            font-weight: bold;
+        }
+        .btn-outline-primary {
+            --bs-btn-color: var(--bs-primary);
+            --bs-btn-border-color: var(--bs-primary);
+            --bs-btn-hover-bg: var(--bs-primary);
+            --bs-btn-hover-border-color: var(--bs-primary);
+            --bs-btn-active-bg: #cc7000;
+            --bs-btn-active-border-color: #cc7000;
+            --bs-btn-disabled-color: var(--bs-primary);
+            --bs-btn-disabled-border-color: var(--bs-primary);
+        }
+        .btn:focus-visible,
+        .form-control:focus,
+        .form-select:focus {
+            border-color: rgba(var(--bs-primary-rgb), .65);
+            box-shadow: 0 0 0 .25rem rgba(var(--bs-primary-rgb), .25);
+        }
+        .dropdown-item:active,
+        .nav-pills .nav-link.active,
+        .nav-pills .show > .nav-link {
+            background-color: var(--bs-primary);
+        }
         .bg-pastel-green { background-color: var(--green-pastel); }
         .app-logo { height: 38px; width: auto; display: block; }
         .navbar-brand { display: inline-flex; align-items: center; padding: 0; }
@@ -21,36 +51,42 @@
     </style>
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-white bg-white border-bottom shadow-sm mb-4">
+    <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm mb-4">
         <div class="container">
             <a class="navbar-brand text-dark tracking-tighter" href="{% url 'inicio' %}">
                 <img src="{% static 'plataforma/img/luma-logo.svg' %}" alt="LUMA" class="app-logo">
             </a>
-            <div class="ms-auto">
-                {% if user.is_authenticated %}
-                    <span class="me-3 text-muted small">Hola, {{ user.first_name }}</span>
-                    <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-2">Buscar repuestos</a>
-                    {% if user.tecnico %}
-                        <a href="{% url 'mis_pedidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-2">Mis pedidos</a>
-                    {% elif user.proveedor %}
-                        <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-2 position-relative">
-                            Pedidos
-                            {% if pedidos_pendientes_count > 0 %}
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size:.65rem;">
-                                    {{ pedidos_pendientes_count }}
-                                </span>
-                            {% endif %}
-                        </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                    aria-controls="mainNavbar" aria-expanded="false" aria-label="Abrir navegacion">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <div class="ms-lg-auto d-flex flex-column flex-lg-row align-items-lg-center gap-2 gap-lg-0 py-3 py-lg-0">
+                    {% if user.is_authenticated %}
+                        <span class="me-lg-3 text-muted small">Hola, {{ user.first_name }}</span>
+                        <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-lg-2">Buscar repuestos</a>
+                        {% if user.tecnico %}
+                            <a href="{% url 'mis_pedidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-lg-2">Mis pedidos</a>
+                        {% elif user.proveedor %}
+                            <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-lg-2 position-relative">
+                                Pedidos
+                                {% if pedidos_pendientes_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size:.65rem;">
+                                        {{ pedidos_pendientes_count }}
+                                    </span>
+                                {% endif %}
+                            </a>
+                        {% endif %}
+                        {% if user.is_staff %}
+                            <a href="{% url 'panel_moderacion' %}" class="btn btn-outline-warning btn-sm rounded-pill px-3 me-lg-2">Moderaci&oacute;n</a>
+                        {% endif %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-dark btn-sm rounded-pill px-3">Mi Panel</a>
+                        <a href="{% url 'logout' %}" class="btn btn-link text-muted btn-sm text-decoration-none">Salir</a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4 me-lg-2">Ingresar</a>
+                        <a href="{% url 'registro_tipo' %}" class="btn btn-primary btn-sm rounded-pill px-4">Registrarse</a>
                     {% endif %}
-                    {% if user.is_staff %}
-                        <a href="{% url 'panel_moderacion' %}" class="btn btn-outline-warning btn-sm rounded-pill px-3 me-2">Moderación</a>
-                    {% endif %}
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-dark btn-sm rounded-pill px-3">Mi Panel</a>
-                    <a href="{% url 'logout' %}" class="btn btn-link text-muted btn-sm text-decoration-none">Salir</a>
-                {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4 me-2">Ingresar</a>
-                    <a href="{% url 'registro_tipo' %}" class="btn btn-primary btn-sm rounded-pill px-4">Registrarse</a>
-                {% endif %}
+                </div>
             </div>
         </div>
     </nav>
@@ -72,7 +108,7 @@
 
     <footer class="container text-center py-5 text-muted small">
         <hr>
-        &copy; 2026 LUMA — Lucas Moraga & Maxi
+        &copy; 2026 LUMA &mdash; Lucas Moraga & Maxi
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
