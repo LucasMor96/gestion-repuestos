@@ -18,8 +18,17 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from plataforma.views.errors import not_found
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('plataforma.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += [
+    path('<path:unknown_path>/', not_found, name='not_found'),
+    path('<path:unknown_path>', not_found),
+]
+
+handler404 = not_found

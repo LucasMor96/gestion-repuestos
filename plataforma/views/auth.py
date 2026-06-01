@@ -17,11 +17,17 @@ from ..models import Proveedor, Tecnico
 
 def registro_tipo(request):
     """Vista para elegir tipo de registro: tÃ©cnico o proveedor."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
     return render(request, 'plataforma/registro_tipo.html')
 
 
 def registro_tecnico(request):
     """Registro de tÃ©cnico."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
     if request.method == 'POST':
         form = RegistroTecnicoForm(request.POST)
         if form.is_valid():
@@ -35,6 +41,9 @@ def registro_tecnico(request):
 
 def registro_proveedor(request):
     """Registro de proveedor."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
     if request.method == 'POST':
         form = RegistroProveedorForm(request.POST, request.FILES)
         if form.is_valid():
