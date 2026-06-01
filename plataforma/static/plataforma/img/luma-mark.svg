@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-label="LUMA">
+  <defs>
+    <linearGradient id="orange" x1="35" y1="60" x2="170" y2="195" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb21b"/>
+      <stop offset="1" stop-color="#ff7600"/>
+    </linearGradient>
+    <linearGradient id="navy" x1="100" y1="10" x2="220" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22344a"/>
+      <stop offset="1" stop-color="#0f1d2d"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#orange)" d="M75 54a10 10 0 0 1 15.3 8.5v60.2a13 13 0 0 0 6.4 11.2l82.8 48.3a8.5 8.5 0 0 1-4.3 15.8h-20.1a36 36 0 0 1-18.2-5L40.1 136.5A36 36 0 0 1 22 105.4V75.7a28 28 0 0 1 12.6-23.4L75 54Z"/>
+  <path fill="url(#navy)" d="M132.7 10a37 37 0 0 1 39.6 0l50.4 31.5A37 37 0 0 1 240 72.8v62.4a37 37 0 0 1-17.3 31.3L172.3 198a37 37 0 0 1-39.6 0l-28.8-18 27.8-27.8a58 58 0 0 0 78.9-72.4l-33.7 33.7a18 18 0 0 1-25.5 0l-7.3-7.3a18 18 0 0 1 0-25.5l33.7-33.7a58 58 0 0 0-72.4 78.9l-32 32V72.8a37 37 0 0 1 17.3-31.3L132.7 10Z"/>
+</svg>
