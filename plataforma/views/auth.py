@@ -48,6 +48,9 @@ def registro_proveedor(request):
 
 def login_view(request):
     """Login con email."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
