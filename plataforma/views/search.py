@@ -1,15 +1,19 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 from ..models import Producto
-from .utils import haversine
+from .utils import get_tecnico_o_403, haversine
 
 
 @login_required(login_url='login')
 def buscar_repuestos(request):
     """Búsqueda de repuestos por nombre, modelo o categoría (US-04)."""
+    tecnico = get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+
     query = request.GET.get('q', '').strip()
     categoria_sel = request.GET.get('categoria', '').strip()
     orden = request.GET.get('orden', '')

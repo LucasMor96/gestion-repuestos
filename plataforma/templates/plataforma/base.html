@@ -66,8 +66,8 @@
                 <div class="ms-lg-auto d-flex flex-column flex-lg-row align-items-lg-center gap-2 gap-lg-0 py-3 py-lg-0">
                     {% if user.is_authenticated %}
                         <span class="me-lg-3 text-muted small">Hola, {{ user.first_name }}</span>
-                        <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-lg-2">Buscar repuestos</a>
                         {% if user.tecnico %}
+                            <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-lg-2">Buscar repuestos</a>
                             <a href="{% url 'mis_pedidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-lg-2">Mis pedidos</a>
                         {% elif user.proveedor %}
                             <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-lg-2 position-relative">

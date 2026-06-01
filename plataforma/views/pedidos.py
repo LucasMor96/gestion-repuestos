@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Exists, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from ..forms import GestionarPedidoForm, PedidoForm
 from ..models import CalificacionProveedor, CalificacionTecnico, Credito, Pedido, Producto, Proveedor
@@ -21,7 +22,7 @@ def crear_pedido(request, producto_pk):
     """Técnico envía una solicitud de compra de un repuesto al proveedor."""
     tecnico = get_tecnico_o_403(request)
     if tecnico is None:
-        return redirect('buscar_repuestos')
+        return redirect('dashboard')
 
     producto = get_object_or_404(Producto, pk=producto_pk, disponible=True)
     proveedor = producto.proveedor
@@ -173,6 +174,7 @@ def exportar_historial(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def cancelar_pedido(request, pk):
     """Técnico cancela un pedido en estado pendiente."""
     tecnico = get_tecnico_o_403(request)
@@ -316,6 +318,7 @@ def gestionar_pedido(request, pk):
 
 
 @login_required(login_url='login')
+@require_POST
 def completar_pedido(request, pk):
     """Técnico marca un pedido aceptado como completado (recibió el repuesto)."""
     tecnico = get_tecnico_o_403(request)

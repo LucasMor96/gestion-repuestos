@@ -59,9 +59,12 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'aprobar_usuario' 'tecnico' t.pk %}"
-                               class="btn btn-success btn-sm rounded-pill me-1"
-                               onclick="return confirm('¿Aprobar a {{ t.usuario.get_full_name }}?')">Aprobar</a>
+                            <form method="post" action="{% url 'aprobar_usuario' 'tecnico' t.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn btn-success btn-sm rounded-pill me-1"
+                                        onclick="return confirm('Aprobar a {{ t.usuario.get_full_name }}?')">Aprobar</button>
+                            </form>
                             <button class="btn btn-danger btn-sm rounded-pill me-1"
                                     data-bs-toggle="modal" data-bs-target="#rechazarT{{ t.pk }}">Rechazar</button>
                             <button class="btn btn-outline-secondary btn-sm rounded-pill"
@@ -96,9 +99,12 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'aprobar_usuario' 'proveedor' p.pk %}"
-                               class="btn btn-success btn-sm rounded-pill me-1"
-                               onclick="return confirm('¿Aprobar a {{ p.nombre_negocio }}?')">Aprobar</a>
+                            <form method="post" action="{% url 'aprobar_usuario' 'proveedor' p.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn btn-success btn-sm rounded-pill me-1"
+                                        onclick="return confirm('Aprobar a {{ p.nombre_negocio }}?')">Aprobar</button>
+                            </form>
                             <button class="btn btn-danger btn-sm rounded-pill me-1"
                                     data-bs-toggle="modal" data-bs-target="#rechazarP{{ p.pk }}">Rechazar</button>
                             <button class="btn btn-outline-secondary btn-sm rounded-pill"
@@ -194,9 +200,12 @@
                         </td>
                         <td class="text-muted small">{{ t.nota_admin|default:"-" }}</td>
                         <td>
-                            <a href="{% url 'aprobar_usuario' 'tecnico' t.pk %}"
-                               class="btn btn-success btn-sm rounded-pill"
-                               onclick="return confirm('¿Reactivar a {{ t.usuario.get_full_name }}?')">Reactivar</a>
+                            <form method="post" action="{% url 'aprobar_usuario' 'tecnico' t.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn btn-success btn-sm rounded-pill"
+                                        onclick="return confirm('Reactivar a {{ t.usuario.get_full_name }}?')">Reactivar</button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -224,9 +233,12 @@
                         </td>
                         <td class="text-muted small">{{ p.nota_admin|default:"-" }}</td>
                         <td>
-                            <a href="{% url 'aprobar_usuario' 'proveedor' p.pk %}"
-                               class="btn btn-success btn-sm rounded-pill"
-                               onclick="return confirm('¿Reactivar a {{ p.nombre_negocio }}?')">Reactivar</a>
+                            <form method="post" action="{% url 'aprobar_usuario' 'proveedor' p.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn btn-success btn-sm rounded-pill"
+                                        onclick="return confirm('Reactivar a {{ p.nombre_negocio }}?')">Reactivar</button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}

@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from ..forms import AsignarCreditoForm
 from ..models import Credito, Pedido, Tecnico
@@ -99,6 +100,7 @@ def asignar_credito(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def revocar_credito(request, pk):
     """Proveedor revoca el crédito de un técnico (US-11)."""
     proveedor = get_proveedor_o_403(request)
@@ -159,6 +161,7 @@ def detalle_deuda_tecnico(request, pk):
 
 
 @login_required(login_url='login')
+@require_POST
 def marcar_deuda_saldada(request, pk):
     """Proveedor marca como saldada la deuda de un técnico (US-12)."""
     proveedor = get_proveedor_o_403(request)

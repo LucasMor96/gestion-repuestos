@@ -1,14 +1,27 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from ..models import Proveedor, Tecnico
 from .utils import solo_staff
 
 
+def get_perfil_moderacion(tipo, pk):
+    if tipo == 'tecnico':
+        modelo = Tecnico
+    elif tipo == 'proveedor':
+        modelo = Proveedor
+    else:
+        raise Http404('Tipo de usuario invalido.')
+
+    return get_object_or_404(modelo, pk=pk)
+
+
 @login_required(login_url='login')
 def panel_moderacion(request):
-    """Panel de moderación de usuarios (solo staff)."""
+    """Panel de moderacion de usuarios (solo staff)."""
     if not solo_staff(request):
         return redirect('dashboard')
 
@@ -24,12 +37,13 @@ def panel_moderacion(request):
 
 
 @login_required(login_url='login')
+@require_POST
 def aprobar_usuario(request, tipo, pk):
-    """Aprueba el registro de un técnico o proveedor."""
+    """Aprueba el registro de un tecnico o proveedor."""
     if not solo_staff(request):
         return redirect('dashboard')
 
-    perfil = get_object_or_404(Tecnico if tipo == 'tecnico' else Proveedor, pk=pk)
+    perfil = get_perfil_moderacion(tipo, pk)
     perfil.estado = 'aprobado'
     perfil.is_approved = True
     perfil.nota_admin = ''
@@ -41,49 +55,50 @@ def aprobar_usuario(request, tipo, pk):
 
 
 @login_required(login_url='login')
+@require_POST
 def rechazar_usuario(request, tipo, pk):
-    """Rechaza el registro de un técnico o proveedor."""
+    """Rechaza el registro de un tecnico o proveedor."""
     if not solo_staff(request):
         return redirect('dashboard')
 
-    if request.method == 'POST':
-        perfil = get_object_or_404(Tecnico if tipo == 'tecnico' else Proveedor, pk=pk)
-        perfil.estado = 'rechazado'
-        perfil.is_approved = False
-        perfil.nota_admin = request.POST.get('nota', '')
-        perfil.save()
-        perfil.usuario.is_active = False
-        perfil.usuario.save()
-        messages.success(request, f'Solicitud de {perfil.usuario.get_full_name()} rechazada.')
+    perfil = get_perfil_moderacion(tipo, pk)
+    perfil.estado = 'rechazado'
+    perfil.is_approved = False
+    perfil.nota_admin = request.POST.get('nota', '')
+    perfil.save()
+    perfil.usuario.is_active = False
+    perfil.usuario.save()
+    messages.success(request, f'Solicitud de {perfil.usuario.get_full_name()} rechazada.')
     return redirect('panel_moderacion')
 
 
 @login_required(login_url='login')
+@require_POST
 def suspender_usuario(request, tipo, pk):
     """Suspende una cuenta activa."""
     if not solo_staff(request):
         return redirect('dashboard')
 
-    if request.method == 'POST':
-        perfil = get_object_or_404(Tecnico if tipo == 'tecnico' else Proveedor, pk=pk)
-        perfil.estado = 'suspendido'
-        perfil.nota_admin = request.POST.get('nota', '')
-        perfil.save()
-        perfil.usuario.is_active = False
-        perfil.usuario.save()
-        messages.success(request, f'Cuenta de {perfil.usuario.get_full_name()} suspendida.')
+    perfil = get_perfil_moderacion(tipo, pk)
+    perfil.estado = 'suspendido'
+    perfil.is_approved = False
+    perfil.nota_admin = request.POST.get('nota', '')
+    perfil.save()
+    perfil.usuario.is_active = False
+    perfil.usuario.save()
+    messages.success(request, f'Cuenta de {perfil.usuario.get_full_name()} suspendida.')
     return redirect('panel_moderacion')
 
 
 @login_required(login_url='login')
+@require_POST
 def solicitar_info(request, tipo, pk):
-    """Solicita información adicional a un usuario pendiente."""
+    """Solicita informacion adicional a un usuario pendiente."""
     if not solo_staff(request):
         return redirect('dashboard')
 
-    if request.method == 'POST':
-        perfil = get_object_or_404(Tecnico if tipo == 'tecnico' else Proveedor, pk=pk)
-        perfil.nota_admin = request.POST.get('nota', '')
-        perfil.save()
-        messages.success(request, f'Nota guardada para {perfil.usuario.get_full_name()}. El usuario la verá al intentar ingresar.')
+    perfil = get_perfil_moderacion(tipo, pk)
+    perfil.nota_admin = request.POST.get('nota', '')
+    perfil.save()
+    messages.success(request, f'Nota guardada para {perfil.usuario.get_full_name()}.')
     return redirect('panel_moderacion')

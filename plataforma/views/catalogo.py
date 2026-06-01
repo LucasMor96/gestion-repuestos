@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from ..forms import ProductoForm
 from ..models import Producto
@@ -20,7 +21,7 @@ def catalogo_proveedor(request):
 
 @login_required(login_url='login')
 def agregar_producto(request):
-    """Crea un nuevo producto en el catálogo."""
+    """Crea un nuevo producto en el catalogo."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
@@ -31,7 +32,7 @@ def agregar_producto(request):
             producto = form.save(commit=False)
             producto.proveedor = proveedor
             producto.save()
-            messages.success(request, f'Producto "{producto.nombre}" publicado en el catálogo.')
+            messages.success(request, f'Producto "{producto.nombre}" publicado en el catalogo.')
             return redirect('catalogo_proveedor')
     else:
         form = ProductoForm()
@@ -61,22 +62,22 @@ def editar_producto(request, pk):
 
 
 @login_required(login_url='login')
+@require_POST
 def eliminar_producto(request, pk):
-    """Elimina un producto tras confirmación POST."""
+    """Elimina un producto tras confirmacion POST."""
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
 
     producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
-
-    if request.method == 'POST':
-        nombre = producto.nombre
-        producto.delete()
-        messages.success(request, f'Producto "{nombre}" eliminado del catálogo.')
+    nombre = producto.nombre
+    producto.delete()
+    messages.success(request, f'Producto "{nombre}" eliminado del catalogo.')
     return redirect('catalogo_proveedor')
 
 
 @login_required(login_url='login')
+@require_POST
 def toggle_disponibilidad(request, pk):
     """Activa o desactiva la visibilidad de un producto sin editar el resto."""
     proveedor = get_proveedor_o_403(request)
@@ -87,5 +88,5 @@ def toggle_disponibilidad(request, pk):
     producto.disponible = not producto.disponible
     producto.save(update_fields=['disponible'])
     estado = 'visible' if producto.disponible else 'oculto'
-    messages.success(request, f'"{producto.nombre}" ahora está {estado} en el catálogo.')
+    messages.success(request, f'"{producto.nombre}" ahora esta {estado} en el catalogo.')
     return redirect('catalogo_proveedor')
