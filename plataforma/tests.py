@@ -73,6 +73,9 @@ class PasswordResetTests(TestCase):
         self.assertRedirects(response, reverse('password_reset_done'))
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('Restablecer contrasena en LUMA', mail.outbox[0].subject)
+        self.assertEqual(len(mail.outbox[0].alternatives), 1)
+        self.assertEqual(mail.outbox[0].alternatives[0][1], 'text/html')
+        self.assertIn('Crear nueva contrasena', mail.outbox[0].alternatives[0][0])
 
         reset_url = re.search(r'http://testserver(?P<path>/password-reset/\S+)', mail.outbox[0].body).group('path')
         response = self.client.get(reset_url, follow=True)
