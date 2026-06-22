@@ -1,51 +1,89 @@
 {% extends "plataforma/base.html" %}
+{% load static %}
+
 {% block title %}Editar Perfil{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQkUq4vvv5E7t4zz5GqXqiwBo0LjF4="
+      crossorigin="">
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center py-4">
     <div class="col-md-7 col-lg-6">
         <div class="card shadow border-0 rounded-4 p-4">
             <div class="mb-4">
                 <h2 class="fw-bold">Editar Perfil</h2>
-                <p class="text-muted">Actualizá tu información personal y profesional.</p>
+                <p class="text-muted">Actualiza tu informacion personal y profesional.</p>
             </div>
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="row">
                     {% for field in form %}
-                    <div class="{% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'horario_desde' or field.name == 'horario_hasta' %}col-md-6{% else %}col-12{% endif %} mb-3">
-                        <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
-                        {% if field.name == 'rubro' or field.name == 'especialidad' %}
-                            <select name="{{ field.name }}"
-                                    class="form-select rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}">
-                                {% for value, label in field.field.choices %}
-                                <option value="{{ value }}" {% if field.value == value %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        {% elif field.name == 'horario_desde' or field.name == 'horario_hasta' %}
-                            <input type="number"
-                                   name="{{ field.name }}"
-                                   value="{{ field.value|default_if_none:'' }}"
-                                   min="0" max="23"
-                                   class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
-                                   placeholder="{{ field.field.widget.attrs.placeholder }}">
-                        {% elif field.field.widget.input_type == 'file' %}
-                            <input type="file"
-                                   name="{{ field.name }}"
-                                   class="form-control border-2 {% if field.errors %}is-invalid{% endif %}">
-                            {% if field.value %}
-                                <small class="text-muted">Archivo actual: {{ field.value }}</small>
-                            {% endif %}
+                        {% if field.is_hidden %}
+                            {{ field }}
                         {% else %}
-                            <input type="{{ field.field.widget.input_type }}"
-                                   name="{{ field.name }}"
-                                   value="{{ field.value|default_if_none:'' }}"
-                                   class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
-                                   placeholder="{{ field.label }}">
+                        <div class="{% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'horario_desde' or field.name == 'horario_hasta' %}col-md-6{% else %}col-12{% endif %} mb-3">
+                            <label class="form-label fw-bold small text-secondary" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {% if field.name == 'rubro' or field.name == 'especialidad' %}
+                                <select id="{{ field.id_for_label }}"
+                                        name="{{ field.name }}"
+                                        class="form-select rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}">
+                                    {% for value, label in field.field.choices %}
+                                    <option value="{{ value }}" {% if field.value == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% elif field.name == 'horario_desde' or field.name == 'horario_hasta' %}
+                                <input type="number"
+                                       id="{{ field.id_for_label }}"
+                                       name="{{ field.name }}"
+                                       value="{{ field.value|default_if_none:'' }}"
+                                       min="0" max="23"
+                                       class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
+                                       placeholder="{{ field.field.widget.attrs.placeholder }}">
+                            {% elif field.field.widget.input_type == 'file' %}
+                                <input type="file"
+                                       id="{{ field.id_for_label }}"
+                                       name="{{ field.name }}"
+                                       class="form-control border-2 {% if field.errors %}is-invalid{% endif %}">
+                                {% if field.value %}
+                                    <small class="text-muted">Archivo actual: {{ field.value }}</small>
+                                {% endif %}
+                            {% else %}
+                                <input type="{{ field.field.widget.input_type }}"
+                                       id="{{ field.id_for_label }}"
+                                       name="{{ field.name }}"
+                                       value="{{ field.value|default_if_none:'' }}"
+                                       class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
+                                       placeholder="{{ field.label }}">
+                            {% endif %}
+
+                            {% if field.name == 'ubicacion' or field.name == 'direccion' %}
+                            <div class="d-flex justify-content-between align-items-center mt-2 mb-2">
+                                <span class="small text-muted">Vista previa de la ubicacion</span>
+                                <button type="button" id="address-map-search" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                    Ver en mapa
+                                </button>
+                            </div>
+                            <div id="address-map"
+                                 class="address-map"
+                                 data-address-map
+                                 data-address-input="#{{ field.id_for_label }}"
+                                 data-lat-input="#id_latitud"
+                                 data-lng-input="#id_longitud"
+                                 data-search-button="#address-map-search"
+                                 data-status="#address-map-status"></div>
+                            <div id="address-map-status" class="small mt-2 text-muted">
+                                Escribi la direccion y ajusta el marcador si hace falta.
+                            </div>
+                            {% endif %}
+
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">{{ field.errors|first }}</div>
+                            {% endif %}
+                        </div>
                         {% endif %}
-                        {% if field.errors %}
-                            <div class="text-danger small mt-1">{{ field.errors|first }}</div>
-                        {% endif %}
-                    </div>
                     {% endfor %}
                 </div>
                 <div class="d-flex gap-2 mt-3">
@@ -60,4 +98,11 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script src="{% static 'plataforma/js/address-map.js' %}"></script>
 {% endblock %}

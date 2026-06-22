@@ -12,6 +12,8 @@ class Tecnico(models.Model):
     especialidad = models.CharField(max_length=100, choices=RUBROS_CHOICES)
     telefono = models.CharField(max_length=20, blank=True)
     ubicacion = models.CharField(max_length=200)
+    latitud = models.FloatField(null=True, blank=True)
+    longitud = models.FloatField(null=True, blank=True)
     estado = models.CharField(max_length=15, choices=ESTADO_USUARIO_CHOICES, default='pendiente')
     nota_admin = models.TextField(blank=True)
     is_approved = models.BooleanField(default=False)

@@ -48,6 +48,48 @@ class RegistroViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'plataforma/registro_tipo.html')
 
+    def test_registro_tecnico_guarda_coordenadas(self):
+        response = self.client.post(reverse('registro_tecnico'), {
+            'first_name': 'Mapa',
+            'last_name': 'Tecnico',
+            'email': 'mapa-tecnico@example.com',
+            'cuit': '27-11111111-1',
+            'especialidad': 'mecanica_automotriz',
+            'telefono': '1122334455',
+            'ubicacion': 'Rawson, Chubut',
+            'latitud': '-43.3002',
+            'longitud': '-65.1023',
+            'password1': 'Testpass1234',
+            'password2': 'Testpass1234',
+        })
+
+        self.assertRedirects(response, reverse('espera_aprobacion'))
+        tecnico = Tecnico.objects.get(usuario__email='mapa-tecnico@example.com')
+        self.assertEqual(tecnico.latitud, -43.3002)
+        self.assertEqual(tecnico.longitud, -65.1023)
+
+    def test_registro_proveedor_guarda_coordenadas(self):
+        response = self.client.post(reverse('registro_proveedor'), {
+            'first_name': 'Mapa',
+            'last_name': 'Proveedor',
+            'email': 'mapa-proveedor@example.com',
+            'cuit': '30-22222222-2',
+            'nombre_negocio': 'Mapa Repuestos',
+            'direccion': 'Av Corrientes 1234, CABA',
+            'latitud': '-34.6037',
+            'longitud': '-58.3816',
+            'rubro': 'mecanica_automotriz',
+            'horario_desde': '9',
+            'horario_hasta': '18',
+            'password1': 'Testpass1234',
+            'password2': 'Testpass1234',
+        })
+
+        self.assertRedirects(response, reverse('espera_aprobacion'))
+        proveedor = Proveedor.objects.get(usuario__email='mapa-proveedor@example.com')
+        self.assertEqual(proveedor.latitud, -34.6037)
+        self.assertEqual(proveedor.longitud, -58.3816)
+
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class PasswordResetTests(TestCase):
@@ -230,6 +272,117 @@ class PedidoEmailTests(TestCase):
         )
         self.assertIn('confirmado', mail.outbox[0].subject)
         self.assertIn('completado', mail.outbox[0].body)
+
+
+class LocationMapTests(TestCase):
+    def crear_tecnico(self, email='map-tecnico@example.com', cuit='27-33333333-3'):
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password='password123',
+            first_name='Tec',
+            last_name='Mapa',
+            is_active=True,
+        )
+        return Tecnico.objects.create(
+            usuario=user,
+            cuit=cuit,
+            especialidad='mecanica_automotriz',
+            telefono='1122334455',
+            ubicacion='Rawson, Chubut',
+            latitud=-43.3002,
+            longitud=-65.1023,
+            estado='aprobado',
+            is_approved=True,
+        )
+
+    def crear_proveedor(self, email='map-proveedor@example.com', cuit='30-44444444-4'):
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password='password123',
+            first_name='Prov',
+            last_name='Mapa',
+            is_active=True,
+        )
+        return Proveedor.objects.create(
+            usuario=user,
+            cuit=cuit,
+            nombre_negocio='Mapa Repuestos',
+            direccion='Av Corrientes 1234, CABA',
+            rubro='mecanica_automotriz',
+            latitud=-34.6037,
+            longitud=-58.3816,
+            estado='aprobado',
+            is_approved=True,
+        )
+
+    def test_dashboard_muestra_mapa_del_perfil(self):
+        tecnico = self.crear_tecnico()
+        self.client.force_login(tecnico.usuario)
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertContains(response, 'data-static-map')
+        self.assertContains(response, 'data-lat="-43.3002"')
+
+    def test_perfiles_publicos_muestran_mapa(self):
+        tecnico = self.crear_tecnico()
+        proveedor = self.crear_proveedor()
+        self.client.force_login(proveedor.usuario)
+
+        response = self.client.get(reverse('perfil_tecnico', args=[tecnico.pk]))
+
+        self.assertContains(response, 'data-static-map')
+        self.assertContains(response, tecnico.ubicacion)
+
+        self.client.force_login(tecnico.usuario)
+        response = self.client.get(reverse('perfil_proveedor', args=[proveedor.pk]))
+
+        self.assertContains(response, 'data-static-map')
+        self.assertContains(response, proveedor.direccion)
+
+    def test_editar_perfil_tecnico_guarda_coordenadas(self):
+        tecnico = self.crear_tecnico()
+        self.client.force_login(tecnico.usuario)
+
+        response = self.client.post(reverse('editar_perfil'), {
+            'first_name': 'Tec',
+            'last_name': 'Mapa',
+            'especialidad': 'mecanica_automotriz',
+            'telefono': '1122334455',
+            'ubicacion': 'Trelew, Chubut',
+            'latitud': '-43.2489',
+            'longitud': '-65.3051',
+        })
+
+        self.assertRedirects(response, reverse('dashboard'))
+        tecnico.refresh_from_db()
+        self.assertEqual(tecnico.ubicacion, 'Trelew, Chubut')
+        self.assertEqual(tecnico.latitud, -43.2489)
+        self.assertEqual(tecnico.longitud, -65.3051)
+
+    def test_editar_perfil_proveedor_guarda_coordenadas(self):
+        proveedor = self.crear_proveedor()
+        self.client.force_login(proveedor.usuario)
+
+        response = self.client.post(reverse('editar_perfil'), {
+            'first_name': 'Prov',
+            'last_name': 'Mapa',
+            'nombre_negocio': 'Mapa Repuestos',
+            'direccion': 'Av Siempre Viva 742, CABA',
+            'latitud': '-34.6158',
+            'longitud': '-58.4333',
+            'rubro': 'mecanica_automotriz',
+            'horario_desde': '9',
+            'horario_hasta': '18',
+        })
+
+        self.assertRedirects(response, reverse('dashboard'))
+        proveedor.refresh_from_db()
+        self.assertEqual(proveedor.direccion, 'Av Siempre Viva 742, CABA')
+        self.assertEqual(proveedor.latitud, -34.6158)
+        self.assertEqual(proveedor.longitud, -58.4333)
 
 
 class NotFoundPageTests(TestCase):

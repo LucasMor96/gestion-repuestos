@@ -1,0 +1,15 @@
+{% load l10n %}
+{% if latitud != None and longitud != None %}
+{% localize off %}
+<div class="static-map"
+     data-static-map
+     data-lat="{{ latitud }}"
+     data-lng="{{ longitud }}"
+     data-label="{{ label|default:'Ubicacion' }}"
+     aria-label="Mapa de ubicacion"></div>
+{% endlocalize %}
+{% else %}
+<div class="map-empty-state d-flex align-items-center justify-content-center text-center px-3">
+    <p class="text-muted small mb-0">No hay coordenadas guardadas para mostrar el mapa.</p>
+</div>
+{% endif %}

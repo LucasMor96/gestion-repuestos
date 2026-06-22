@@ -11,12 +11,17 @@ class RegistroTecnicoForm(UserCreationForm):
     email = forms.EmailField(required=True)
     cuit = forms.CharField(max_length=13, required=True, label="CUIT (XX-XXXXXXXX-X)")
     especialidad = forms.ChoiceField(choices=RUBROS_CHOICES, required=True, label="Especialidad")
+    latitud = forms.FloatField(required=False, widget=forms.HiddenInput())
+    longitud = forms.FloatField(required=False, widget=forms.HiddenInput())
     telefono = forms.CharField(max_length=20, required=False, label="Teléfono")
     ubicacion = forms.CharField(max_length=200, required=True, label="Ubicación")
 
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'cuit', 'especialidad', 'telefono', 'ubicacion', 'password1', 'password2')
+        fields = (
+            'first_name', 'last_name', 'email', 'cuit', 'especialidad', 'telefono',
+            'ubicacion', 'latitud', 'longitud', 'password1', 'password2',
+        )
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -42,6 +47,8 @@ class RegistroTecnicoForm(UserCreationForm):
                 especialidad=self.cleaned_data['especialidad'],
                 telefono=self.cleaned_data.get('telefono', ''),
                 ubicacion=self.cleaned_data['ubicacion'],
+                latitud=self.cleaned_data.get('latitud'),
+                longitud=self.cleaned_data.get('longitud'),
                 is_approved=False,
             )
         return user
@@ -56,6 +63,8 @@ class RegistroProveedorForm(UserCreationForm):
     nombre_negocio = forms.CharField(max_length=150, required=True, label="Nombre del Negocio")
     direccion = forms.CharField(max_length=255, required=True, label="Dirección")
     rubro = forms.ChoiceField(choices=RUBROS_CHOICES, required=True, label="Rubro")
+    latitud = forms.FloatField(required=False, widget=forms.HiddenInput())
+    longitud = forms.FloatField(required=False, widget=forms.HiddenInput())
     horario_desde = forms.IntegerField(
         min_value=0, max_value=23, required=False, label="Desde (hs)",
         widget=forms.NumberInput(attrs={'min': 0, 'max': 23, 'placeholder': 'Ej: 9'}),
@@ -67,7 +76,11 @@ class RegistroProveedorForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'cuit', 'nombre_negocio', 'direccion', 'rubro', 'horario_desde', 'horario_hasta', 'password1', 'password2')
+        fields = (
+            'first_name', 'last_name', 'email', 'cuit', 'nombre_negocio',
+            'direccion', 'latitud', 'longitud', 'rubro', 'horario_desde',
+            'horario_hasta', 'password1', 'password2',
+        )
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -95,6 +108,8 @@ class RegistroProveedorForm(UserCreationForm):
                 cuit=self.cleaned_data['cuit'],
                 nombre_negocio=self.cleaned_data['nombre_negocio'],
                 direccion=self.cleaned_data['direccion'],
+                latitud=self.cleaned_data.get('latitud'),
+                longitud=self.cleaned_data.get('longitud'),
                 rubro=self.cleaned_data['rubro'],
                 horarios=horarios,
                 is_approved=False,
@@ -113,11 +128,14 @@ class EditarPerfilTecnicoForm(forms.ModelForm):
     first_name = forms.CharField(max_length=30, required=True, label="Nombre")
     last_name = forms.CharField(max_length=150, required=True, label="Apellido")
 
-    field_order = ['first_name', 'last_name', 'especialidad', 'telefono', 'ubicacion']
+    latitud = forms.FloatField(required=False, widget=forms.HiddenInput())
+    longitud = forms.FloatField(required=False, widget=forms.HiddenInput())
+
+    field_order = ['first_name', 'last_name', 'especialidad', 'telefono', 'ubicacion', 'latitud', 'longitud']
 
     class Meta:
         model = Tecnico
-        fields = ('especialidad', 'telefono', 'ubicacion')
+        fields = ('especialidad', 'telefono', 'ubicacion', 'latitud', 'longitud')
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
@@ -136,6 +154,8 @@ class EditarPerfilProveedorForm(forms.ModelForm):
     """Formulario para que el proveedor edite su perfil"""
     first_name = forms.CharField(max_length=30, required=True, label="Nombre")
     last_name = forms.CharField(max_length=150, required=True, label="Apellido")
+    latitud = forms.FloatField(required=False, widget=forms.HiddenInput())
+    longitud = forms.FloatField(required=False, widget=forms.HiddenInput())
     horario_desde = forms.IntegerField(
         min_value=0, max_value=23, required=False, label="Desde (hs)",
         widget=forms.NumberInput(attrs={'min': 0, 'max': 23, 'placeholder': 'Ej: 9'}),
@@ -145,11 +165,14 @@ class EditarPerfilProveedorForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={'min': 0, 'max': 23, 'placeholder': 'Ej: 18'}),
     )
 
-    field_order = ['first_name', 'last_name', 'nombre_negocio', 'direccion', 'rubro', 'horario_desde', 'horario_hasta', 'logo', 'imagen']
+    field_order = [
+        'first_name', 'last_name', 'nombre_negocio', 'direccion', 'latitud', 'longitud',
+        'rubro', 'horario_desde', 'horario_hasta', 'logo', 'imagen',
+    ]
 
     class Meta:
         model = Proveedor
-        fields = ('nombre_negocio', 'direccion', 'rubro', 'logo', 'imagen')
+        fields = ('nombre_negocio', 'direccion', 'latitud', 'longitud', 'rubro', 'logo', 'imagen')
         widgets = {
             'logo': forms.FileInput(),
             'imagen': forms.FileInput(),

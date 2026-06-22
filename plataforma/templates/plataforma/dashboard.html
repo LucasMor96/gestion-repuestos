@@ -1,4 +1,16 @@
 {% extends "plataforma/base.html" %}
+{% load static %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQkUq4vvv5E7t4zz5GqXqiwBo0LjF4="
+      crossorigin="">
+{% endblock %}
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script src="{% static 'plataforma/js/address-map.js' %}"></script>
+{% endblock %}
 {% block content %}
 <div class="row">
     <div class="col-12 mb-4">
@@ -35,6 +47,7 @@
                 {% endif %}
                 <p class="mb-1 text-muted small">Ubicación</p>
                 <p class="fw-bold">{{ perfil.ubicacion }}</p>
+                {% include "plataforma/includes/static_location_map.html" with latitud=perfil.latitud longitud=perfil.longitud label=perfil.ubicacion %}
                 {% if perfil.calificacion_promedio %}
                     <p class="mb-1 text-muted small">Calificación promedio</p>
                     <p class="fw-bold text-warning">{{ perfil.calificacion_promedio }} / 5</p>
@@ -51,6 +64,7 @@
                 <p class="fw-bold">{{ perfil.rubro }}</p>
                 <p class="mb-1 text-muted small">Dirección</p>
                 <p class="fw-bold">{{ perfil.direccion }}</p>
+                {% include "plataforma/includes/static_location_map.html" with latitud=perfil.latitud longitud=perfil.longitud label=perfil.direccion %}
                 {% if perfil.horarios %}
                     <p class="mb-1 text-muted small">Horarios</p>
                     <p class="fw-bold">{{ perfil.horarios }}</p>

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}LUMA{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
     <style>
         :root {
             --bs-primary: #FF8C00; /* Tu Naranja */
@@ -50,6 +51,21 @@
         .nav-link:hover { color: var(--bs-primary) !important; }
         .toast-container { z-index: 1080; }
         .app-toast { min-width: min(360px, calc(100vw - 2rem)); }
+        .address-map,
+        .static-map {
+            min-height: 240px;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+        .static-map { min-height: 220px; }
+        .map-empty-state {
+            min-height: 180px;
+            border: 1px dashed #ced4da;
+            border-radius: 12px;
+            background: #f8f9fa;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -135,5 +151,6 @@
             toast.show();
         });
     </script>
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>
