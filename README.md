@@ -25,7 +25,7 @@ El sistema permite registrar tecnicos y proveedores, moderar altas de usuarios, 
 - Django 5.2.13
 - PostgreSQL
 - HTML templates de Django
-- Resend para emails transaccionales
+- Emails transaccionales configurables desde Django
 
 ## Estructura principal
 
@@ -93,11 +93,11 @@ DB_USER=postgres
 DB_PASSWORD=tu_password_aqui
 DB_HOST=localhost
 DB_PORT=5432
-RESEND_API_KEY=re_xxxxxxxxx
-DEFAULT_FROM_EMAIL=LUMA <no-reply@tu-dominio-verificado.com>
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+DEFAULT_FROM_EMAIL=LUMA <no-reply@luma.local>
 ```
 
-Para enviar emails reales con Resend, crea una API key en Resend, verifica tu dominio y usa un remitente de ese dominio en `DEFAULT_FROM_EMAIL`. Si `RESEND_API_KEY` no esta configurada, Django usa el backend de consola para desarrollo local.
+Por defecto, Django usa el backend de consola para desarrollo local y muestra los emails en la terminal. Para enviar emails reales, configura `EMAIL_BACKEND` con el backend SMTP o proveedor que vayas a usar y ajusta `DEFAULT_FROM_EMAIL`.
 
 5. Crear la base de datos en PostgreSQL si todavia no existe:
 

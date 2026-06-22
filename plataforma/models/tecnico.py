@@ -15,6 +15,7 @@ class Tecnico(models.Model):
     estado = models.CharField(max_length=15, choices=ESTADO_USUARIO_CHOICES, default='pendiente')
     nota_admin = models.TextField(blank=True)
     is_approved = models.BooleanField(default=False)
+    email_confirmed = models.BooleanField(default=False)
 
     @property
     def calificacion_promedio(self):

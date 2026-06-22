@@ -1,5 +1,4 @@
 asgiref==3.11.1
-django-anymail[resend]==13.1
 Django==5.2.13
 psycopg2-binary==2.9.10
 sqlparse==0.5.5

@@ -11,6 +11,7 @@ from ..forms import GestionarPedidoForm, PedidoForm
 from ..models import CalificacionProveedor, CalificacionTecnico, Credito, Pedido, Producto, Proveedor
 from .notifications import (
     notificar_alerta_credito,
+    notificar_pedido_confirmado,
     notificar_proveedor_nuevo_pedido,
     notificar_tecnico_estado,
 )
@@ -333,6 +334,7 @@ def completar_pedido(request, pk):
         else:
             pedido.estado = 'completado'
             pedido.save()
+            notificar_pedido_confirmado(pedido)
             messages.success(
                 request,
                 f'Pedido #{pedido.id} marcado como completado. ¡Ya podés calificar a {pedido.proveedor.nombre_negocio}!'

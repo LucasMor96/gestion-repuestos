@@ -1,10 +1,35 @@
+import logging
+
+from django.conf import settings
 from django.core.mail import send_mail
 
 
+logger = logging.getLogger(__name__)
+
+
+def _send_transactional_mail(subject, message, recipient_list):
+    """Envia usando el backend de email configurado en Django."""
+    try:
+        return send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=recipient_list,
+            fail_silently=False,
+        )
+    except Exception:
+        logger.exception(
+            'No se pudo enviar email transaccional "%s" a %s',
+            subject,
+            ', '.join(recipient_list),
+        )
+        return 0
+
+
 def notificar_proveedor_nuevo_pedido(pedido):
-    """Envía email al proveedor cuando llega un nuevo pedido."""
-    send_mail(
-        subject=f'[Repuestos] Nuevo pedido #{pedido.id} — {pedido.producto.nombre}',
+    """Envia email al proveedor cuando llega un nuevo pedido."""
+    _send_transactional_mail(
+        subject=f'[Repuestos] Nuevo pedido #{pedido.id} - {pedido.producto.nombre}',
         message=(
             f'Hola {pedido.proveedor.usuario.first_name},\n\n'
             f'Recibiste un nuevo pedido en la plataforma:\n\n'
@@ -12,20 +37,18 @@ def notificar_proveedor_nuevo_pedido(pedido):
             f'  Cantidad : {pedido.cantidad}\n'
             f'  Monto    : ${pedido.monto_total}\n'
             f'  Entrega  : {pedido.get_forma_entrega_display()}\n'
-            f'  Técnico  : {pedido.tecnico.usuario.get_full_name()}\n'
-            f'  Teléfono : {pedido.tecnico.telefono or "No informado"}\n\n'
-            f'Ingresá a la plataforma para aceptar o rechazar el pedido.\n'
+            f'  Tecnico  : {pedido.tecnico.usuario.get_full_name()}\n'
+            f'  Telefono : {pedido.tecnico.telefono or "No informado"}\n\n'
+            f'Ingresa a la plataforma para aceptar o rechazar el pedido.\n'
         ),
-        from_email='noreply@gestion-repuestos.com',
         recipient_list=[pedido.proveedor.usuario.email],
-        fail_silently=True,
     )
 
 
 def notificar_tecnico_estado(pedido):
-    """Envía email al técnico cuando el proveedor cambia el estado de su pedido."""
-    send_mail(
-        subject=f'[Repuestos] Pedido #{pedido.id} — {pedido.get_estado_display()}',
+    """Envia email al tecnico cuando el proveedor cambia el estado de su pedido."""
+    _send_transactional_mail(
+        subject=f'[Repuestos] Pedido #{pedido.id} - {pedido.get_estado_display()}',
         message=(
             f'Hola {pedido.tecnico.usuario.first_name},\n\n'
             f'Tu pedido fue actualizado:\n\n'
@@ -33,69 +56,80 @@ def notificar_tecnico_estado(pedido):
             f'  Estado    : {pedido.get_estado_display()}\n'
             f'  Proveedor : {pedido.proveedor.nombre_negocio}\n'
             + (f'  Mensaje   : {pedido.respuesta_proveedor}\n' if pedido.respuesta_proveedor else '')
-            + '\nIngresá a la plataforma para ver el detalle de tus pedidos.\n'
+            + '\nIngresa a la plataforma para ver el detalle de tus pedidos.\n'
         ),
-        from_email='noreply@gestion-repuestos.com',
         recipient_list=[pedido.tecnico.usuario.email],
-        fail_silently=True,
+    )
+
+
+def notificar_pedido_confirmado(pedido):
+    """Envia email a tecnico y proveedor cuando el pedido queda completado."""
+    _send_transactional_mail(
+        subject=f'[Repuestos] Pedido #{pedido.id} confirmado',
+        message=(
+            f'El pedido #{pedido.id} fue confirmado como completado.\n\n'
+            f'  Producto  : {pedido.producto.nombre}\n'
+            f'  Cantidad  : {pedido.cantidad}\n'
+            f'  Monto     : ${pedido.monto_total}\n'
+            f'  Entrega   : {pedido.get_forma_entrega_display()}\n'
+            f'  Proveedor : {pedido.proveedor.nombre_negocio}\n'
+            f'  Tecnico   : {pedido.tecnico.usuario.get_full_name()}\n\n'
+            f'Ya pueden ingresar a la plataforma para calificar la operacion.\n'
+        ),
+        recipient_list=[
+            pedido.tecnico.usuario.email,
+            pedido.proveedor.usuario.email,
+        ],
     )
 
 
 def notificar_credito_asignado(credito):
-    send_mail(
-        subject=f'[Repuestos] Crédito comercial asignado — {credito.proveedor.nombre_negocio}',
+    _send_transactional_mail(
+        subject=f'[Repuestos] Credito comercial asignado - {credito.proveedor.nombre_negocio}',
         message=(
             f'Hola {credito.tecnico.usuario.first_name},\n\n'
-            f'{credito.proveedor.nombre_negocio} te asignó un crédito comercial:\n\n'
-            f'  Límite disponible: ${credito.limite}\n\n'
-            f'Ya podés usarlo al hacer pedidos con este proveedor.\n'
+            f'{credito.proveedor.nombre_negocio} te asigno un credito comercial:\n\n'
+            f'  Limite disponible: ${credito.limite}\n\n'
+            f'Ya podes usarlo al hacer pedidos con este proveedor.\n'
         ),
-        from_email='noreply@gestion-repuestos.com',
         recipient_list=[credito.tecnico.usuario.email],
-        fail_silently=True,
     )
 
 
 def notificar_alerta_credito(credito):
-    send_mail(
-        subject=f'[Repuestos] Alerta: límite de crédito con {credito.proveedor.nombre_negocio}',
+    _send_transactional_mail(
+        subject=f'[Repuestos] Alerta: limite de credito con {credito.proveedor.nombre_negocio}',
         message=(
             f'Hola {credito.tecnico.usuario.first_name},\n\n'
-            f'Usaste el {credito.porcentaje_usado}% de tu crédito con {credito.proveedor.nombre_negocio}:\n\n'
-            f'  Límite total    : ${credito.limite}\n'
-            f'  Saldo usado     : ${credito.saldo_usado}\n'
-            f'  Saldo disponible: ${credito.saldo_disponible}\n\n'
-            f'Por favor, regularizá tu deuda para seguir usando el crédito.\n'
+            f'Usaste el {credito.porcentaje_usado}% de tu credito con {credito.proveedor.nombre_negocio}:\n\n'
+            f'  Limite total     : ${credito.limite}\n'
+            f'  Saldo usado      : ${credito.saldo_usado}\n'
+            f'  Saldo disponible : ${credito.saldo_disponible}\n\n'
+            f'Por favor, regulariza tu deuda para seguir usando el credito.\n'
         ),
-        from_email='noreply@gestion-repuestos.com',
         recipient_list=[credito.tecnico.usuario.email],
-        fail_silently=True,
     )
 
 
 def notificar_deuda_saldada(credito):
-    send_mail(
+    _send_transactional_mail(
         subject=f'[Repuestos] Tu deuda con {credito.proveedor.nombre_negocio} fue saldada',
         message=(
             f'Hola {credito.tecnico.usuario.first_name},\n\n'
-            f'{credito.proveedor.nombre_negocio} marcó tu deuda como saldada.\n\n'
-            f'Tu crédito disponible se restableció. Límite: ${credito.limite}\n'
+            f'{credito.proveedor.nombre_negocio} marco tu deuda como saldada.\n\n'
+            f'Tu credito disponible se restablecio. Limite: ${credito.limite}\n'
         ),
-        from_email='noreply@gestion-repuestos.com',
         recipient_list=[credito.tecnico.usuario.email],
-        fail_silently=True,
     )
 
 
 def notificar_credito_revocado(credito):
-    send_mail(
-        subject=f'[Repuestos] Tu crédito con {credito.proveedor.nombre_negocio} fue revocado',
+    _send_transactional_mail(
+        subject=f'[Repuestos] Tu credito con {credito.proveedor.nombre_negocio} fue revocado',
         message=(
             f'Hola {credito.tecnico.usuario.first_name},\n\n'
-            f'{credito.proveedor.nombre_negocio} revocó tu crédito comercial.\n\n'
-            f'Si tenés saldo pendiente, contactá al proveedor para regularizar tu situación.\n'
+            f'{credito.proveedor.nombre_negocio} revoco tu credito comercial.\n\n'
+            f'Si tenes saldo pendiente, contacta al proveedor para regularizar tu situacion.\n'
         ),
-        from_email='noreply@gestion-repuestos.com',
         recipient_list=[credito.tecnico.usuario.email],
-        fail_silently=True,
     )
