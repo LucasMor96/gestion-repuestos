@@ -53,17 +53,34 @@
         .app-toast { min-width: min(360px, calc(100vw - 2rem)); }
         .address-map,
         .static-map {
-            min-height: 240px;
             border: 1px solid #dee2e6;
-            border-radius: 12px;
+            border-radius: 8px;
             overflow: hidden;
             background: #f8f9fa;
         }
-        .static-map { min-height: 220px; }
+        .address-map {
+            height: 180px;
+            max-width: 320px;
+        }
+        .static-map {
+            width: 150px;
+            height: 150px;
+            max-width: 100%;
+        }
+        .location-dot {
+            width: 16px;
+            height: 16px;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            background: var(--bs-primary);
+            box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), .35), 0 2px 8px rgba(0, 0, 0, .25);
+        }
         .map-empty-state {
-            min-height: 180px;
+            width: 150px;
+            height: 150px;
+            max-width: 100%;
             border: 1px dashed #ced4da;
-            border-radius: 12px;
+            border-radius: 8px;
             background: #f8f9fa;
         }
     </style>

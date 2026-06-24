@@ -1,7 +1,8 @@
 (function () {
     const DEFAULT_CENTER = [-34.6037, -58.3816];
     const DEFAULT_ZOOM = 12;
-    const RESULT_ZOOM = 16;
+    const RESULT_ZOOM = 17;
+    const STATIC_ZOOM = 18;
 
     function debounce(fn, delay) {
         let timer = null;
@@ -28,6 +29,15 @@
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors',
         }).addTo(map);
+    }
+
+    function locationDotIcon() {
+        return L.divIcon({
+            className: '',
+            html: '<span class="location-dot" aria-hidden="true"></span>',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+        });
     }
 
     function getPointFromInputs(latInput, lngInput) {
@@ -133,10 +143,14 @@
             keyboard: false,
             tap: false,
             zoomControl: false,
-        }).setView([lat, lng], Number(container.dataset.zoom || RESULT_ZOOM));
+            attributionControl: false,
+        }).setView([lat, lng], Number(container.dataset.zoom || STATIC_ZOOM));
 
         addTiles(map);
-        const marker = L.marker([lat, lng]).addTo(map);
+        const marker = L.marker([lat, lng], {
+            icon: locationDotIcon(),
+            interactive: false,
+        }).addTo(map);
         if (container.dataset.label) marker.bindPopup(container.dataset.label);
         window.setTimeout(() => map.invalidateSize(), 250);
     }
