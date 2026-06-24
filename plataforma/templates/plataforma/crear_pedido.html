@@ -20,6 +20,11 @@
     <div class="col-md-5">
         <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
             <h6 class="text-muted fw-bold text-uppercase small mb-3">Repuesto seleccionado</h6>
+            {% if producto.imagen %}
+                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}"
+                     class="img-fluid rounded-4 border mb-3"
+                     style="max-height: 240px; width: 100%; object-fit: cover;">
+            {% endif %}
             <h4 class="fw-bold mb-1">{{ producto.nombre }}</h4>
             {% if producto.modelo %}
                 <p class="text-muted small mb-2">Modelo: <strong>{{ producto.modelo }}</strong></p>

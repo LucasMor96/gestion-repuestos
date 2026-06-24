@@ -73,6 +73,11 @@
     {% for producto in productos %}
     <div class="col-md-6 col-lg-4">
         <div class="card border-0 shadow-sm rounded-4 h-100">
+            {% if producto.imagen %}
+                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}"
+                     class="card-img-top"
+                     style="height: 180px; object-fit: cover;">
+            {% endif %}
             <div class="card-body p-4">
                 <!-- Encabezado: nombre + badge stock -->
                 <div class="d-flex justify-content-between align-items-start mb-2">

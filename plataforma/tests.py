@@ -59,8 +59,8 @@ class RegistroViewTests(TestCase):
             'ubicacion': 'Rawson, Chubut',
             'latitud': '-43.3002',
             'longitud': '-65.1023',
-            'password1': 'Testpass1234',
-            'password2': 'Testpass1234',
+            'password1': 'Testpass1234!',
+            'password2': 'Testpass1234!',
         })
 
         self.assertRedirects(response, reverse('espera_aprobacion'))
@@ -81,14 +81,36 @@ class RegistroViewTests(TestCase):
             'rubro': 'mecanica_automotriz',
             'horario_desde': '9',
             'horario_hasta': '18',
-            'password1': 'Testpass1234',
-            'password2': 'Testpass1234',
+            'password1': 'Testpass1234!',
+            'password2': 'Testpass1234!',
         })
 
         self.assertRedirects(response, reverse('espera_aprobacion'))
         proveedor = Proveedor.objects.get(usuario__email='mapa-proveedor@example.com')
         self.assertEqual(proveedor.latitud, -34.6037)
         self.assertEqual(proveedor.longitud, -58.3816)
+
+    def test_registro_tecnico_rechaza_contrasena_simple(self):
+        response = self.client.post(reverse('registro_tecnico'), {
+            'first_name': 'Clave',
+            'last_name': 'Simple',
+            'email': 'clave-simple-tecnico@example.com',
+            'cuit': '27-33333333-3',
+            'especialidad': 'mecanica_automotriz',
+            'telefono': '1122334455',
+            'ubicacion': 'Rawson, Chubut',
+            'latitud': '-43.3002',
+            'longitud': '-65.1023',
+            'password1': 'password123',
+            'password2': 'password123',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            'La contrasena debe incluir una letra mayuscula, un simbolo.',
+            response.context['form'].errors['password2'],
+        )
+        self.assertFalse(User.objects.filter(email='clave-simple-tecnico@example.com').exists())
 
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
@@ -126,14 +148,41 @@ class PasswordResetTests(TestCase):
         response = self.client.post(
             reset_confirm_path,
             {
-                'new_password1': 'new-password123',
-                'new_password2': 'new-password123',
+                'new_password1': 'New-password123!',
+                'new_password2': 'New-password123!',
             },
         )
 
         self.assertRedirects(response, reverse('password_reset_complete'))
         user.refresh_from_db()
-        self.assertTrue(user.check_password('new-password123'))
+        self.assertTrue(user.check_password('New-password123!'))
+
+    def test_password_reset_rechaza_contrasena_simple(self):
+        user = User.objects.create_user(
+            username='reset-simple@example.com',
+            email='reset-simple@example.com',
+            password='Password123!',
+            is_active=True,
+        )
+
+        response = self.client.post(reverse('password_reset'), {'email': user.email})
+        self.assertRedirects(response, reverse('password_reset_done'))
+        reset_url = re.search(r'http://testserver(?P<path>/password-reset/\S+)', mail.outbox[0].body).group('path')
+        response = self.client.get(reset_url, follow=True)
+        reset_confirm_path = response.request['PATH_INFO']
+
+        response = self.client.post(
+            reset_confirm_path,
+            {
+                'new_password1': 'password123',
+                'new_password2': 'password123',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'La contrasena debe incluir una letra mayuscula, un simbolo.')
+        user.refresh_from_db()
+        self.assertFalse(user.check_password('password123'))
 
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')

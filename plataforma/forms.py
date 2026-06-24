@@ -214,10 +214,11 @@ class ProductoForm(forms.ModelForm):
 
     class Meta:
         model = Producto
-        fields = ('nombre', 'descripcion', 'modelo', 'categoria', 'precio', 'stock', 'disponible')
+        fields = ('nombre', 'descripcion', 'imagen', 'modelo', 'categoria', 'precio', 'stock', 'disponible')
         labels = {
             'nombre': 'Nombre del producto',
             'descripcion': 'Descripción',
+            'imagen': 'Imagen del producto',
             'modelo': 'Modelo / Compatibilidad',
             'categoria': 'Categoría',
             'precio': 'Precio ($)',
@@ -226,6 +227,7 @@ class ProductoForm(forms.ModelForm):
         }
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 3}),
+            'imagen': forms.FileInput(),
         }
 
     def clean_precio(self):

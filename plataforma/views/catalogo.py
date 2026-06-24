@@ -27,7 +27,7 @@ def agregar_producto(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = ProductoForm(request.POST)
+        form = ProductoForm(request.POST, request.FILES)
         if form.is_valid():
             producto = form.save(commit=False)
             producto.proveedor = proveedor
@@ -50,7 +50,7 @@ def editar_producto(request, pk):
     producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
 
     if request.method == 'POST':
-        form = ProductoForm(request.POST, instance=producto)
+        form = ProductoForm(request.POST, request.FILES, instance=producto)
         if form.is_valid():
             form.save()
             messages.success(request, f'Producto "{producto.nombre}" actualizado.')

@@ -19,6 +19,7 @@
             <thead class="table-light">
                 <tr>
                     <th class="ps-4">Producto</th>
+                    <th>Imagen</th>
                     <th>Categoría</th>
                     <th>Precio</th>
                     <th>Stock</th>
@@ -36,6 +37,15 @@
                         {% endif %}
                         {% if p.descripcion %}
                             <p class="text-muted small mb-0">{{ p.descripcion|truncatechars:60 }}</p>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.imagen %}
+                            <img src="{{ p.imagen.url }}" alt="{{ p.nombre }}"
+                                 class="rounded-3 border"
+                                 style="width: 72px; height: 56px; object-fit: cover;">
+                        {% else %}
+                            <span class="text-muted small">Sin imagen</span>
                         {% endif %}
                     </td>
                     <td>

@@ -15,7 +15,7 @@
                 </p>
             </div>
 
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
                 {% for field in form %}
@@ -32,6 +32,19 @@
                             </label>
                         </div>
                         <p class="text-muted small mt-1">Desactivá para ocultar temporalmente el producto del catálogo.</p>
+                    {% elif field.field.widget.input_type == 'file' %}
+                        <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
+                        {% if producto and producto.imagen %}
+                            <div class="mb-2">
+                                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}"
+                                     class="img-fluid rounded-3 border"
+                                     style="max-height: 180px; object-fit: cover;">
+                            </div>
+                        {% endif %}
+                        <input type="file"
+                               name="{{ field.name }}"
+                               class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
+                               accept="image/*">
                     {% elif field.field.widget.input_type == 'textarea' %}
                         <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
                         <textarea name="{{ field.name }}"

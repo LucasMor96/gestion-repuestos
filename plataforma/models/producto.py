@@ -9,6 +9,7 @@ class Producto(models.Model):
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name="productos")
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
+    imagen = models.ImageField(upload_to='productos/', blank=True, null=True)
     modelo = models.CharField(max_length=100, blank=True)
     categoria = models.CharField(max_length=100, choices=RUBROS_CHOICES)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
