@@ -83,6 +83,48 @@
             border-radius: 8px;
             background: #f8f9fa;
         }
+        .password-hint {
+            margin-top: .4rem;
+            color: #6c757d;
+            font-size: .78rem;
+            line-height: 1.35;
+        }
+        .password-control {
+            position: relative;
+        }
+        .password-control .form-control {
+            padding-right: 3.25rem;
+        }
+        .password-control .form-control.is-invalid {
+            padding-right: 5.25rem;
+            background-position: right 3.15rem center;
+        }
+        .password-toggle {
+            position: absolute;
+            top: 50%;
+            right: .45rem;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.2rem;
+            height: 2.2rem;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: #6c757d;
+        }
+        .password-toggle:hover,
+        .password-toggle:focus-visible {
+            background: rgba(var(--bs-primary-rgb), .1);
+            color: #9a5500;
+            outline: 0;
+        }
+        .password-toggle svg {
+            width: 1.15rem;
+            height: 1.15rem;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -166,6 +208,17 @@
         document.querySelectorAll('.toast').forEach((toastEl) => {
             const toast = new bootstrap.Toast(toastEl, { delay: 4500 });
             toast.show();
+        });
+
+        document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const input = document.querySelector(button.dataset.target);
+                if (!input) return;
+
+                const isHidden = input.type === 'password';
+                input.type = isHidden ? 'text' : 'password';
+                button.setAttribute('aria-label', isHidden ? 'Ocultar contrasena' : 'Ver contrasena');
+            });
         });
     </script>
     {% block extra_scripts %}{% endblock %}

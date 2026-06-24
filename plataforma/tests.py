@@ -112,6 +112,55 @@ class RegistroViewTests(TestCase):
         )
         self.assertFalse(User.objects.filter(email='clave-simple-tecnico@example.com').exists())
 
+    def test_registro_tecnico_conserva_datos_si_falla(self):
+        response = self.client.post(reverse('registro_tecnico'), {
+            'first_name': 'Clave',
+            'last_name': 'Simple',
+            'email': 'conserva-tecnico@example.com',
+            'cuit': '27-44444444-4',
+            'especialidad': 'mecanica_automotriz',
+            'telefono': '1122334455',
+            'ubicacion': 'Rawson, Chubut',
+            'latitud': '-43.3002',
+            'longitud': '-65.1023',
+            'password1': 'password123',
+            'password2': 'password123',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="Clave"')
+        self.assertContains(response, 'value="conserva-tecnico@example.com"')
+        self.assertContains(response, 'value="27-44444444-4"')
+        self.assertContains(response, 'value="Rawson, Chubut"')
+        self.assertContains(response, 'value="password123"')
+
+    def test_registro_proveedor_conserva_datos_si_falla(self):
+        response = self.client.post(reverse('registro_proveedor'), {
+            'first_name': 'Clave',
+            'last_name': 'Proveedor',
+            'email': 'conserva-proveedor@example.com',
+            'cuit': '30-55555555-5',
+            'nombre_negocio': 'Repuestos Conserva',
+            'direccion': 'Av Corrientes 1234, CABA',
+            'latitud': '-34.6037',
+            'longitud': '-58.3816',
+            'rubro': 'mecanica_automotriz',
+            'horario_desde': '9',
+            'horario_hasta': '18',
+            'password1': 'password123',
+            'password2': 'password123',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="Clave"')
+        self.assertContains(response, 'value="conserva-proveedor@example.com"')
+        self.assertContains(response, 'value="30-55555555-5"')
+        self.assertContains(response, 'value="Repuestos Conserva"')
+        self.assertContains(response, 'value="Av Corrientes 1234, CABA"')
+        self.assertContains(response, 'value="9"')
+        self.assertContains(response, 'value="18"')
+        self.assertContains(response, 'value="password123"')
+
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class PasswordResetTests(TestCase):

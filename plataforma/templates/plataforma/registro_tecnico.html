@@ -32,11 +32,31 @@
                                 <option value="{{ value }}" {% if field.value == value %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
+                            {% elif field.name == 'password1' or field.name == 'password2' %}
+                            <div class="password-control">
+                                <input type="{{ field.field.widget.input_type }}"
+                                       id="{{ field.id_for_label }}"
+                                       name="{{ field.name }}"
+                                       value="{{ field.value|default_if_none:'' }}"
+                                       class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
+                                       placeholder="{{ field.label }}"
+                                       autocomplete="new-password">
+                                <button type="button"
+                                        class="password-toggle"
+                                        data-password-toggle
+                                        data-target="#{{ field.id_for_label }}"
+                                        aria-label="Ver contrasena">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
                             {% else %}
                             <input type="{{ field.field.widget.input_type }}"
                                    id="{{ field.id_for_label }}"
                                    name="{{ field.name }}"
-                                   value="{% if field.field.widget.input_type != 'password' %}{{ field.value|default_if_none:'' }}{% endif %}"
+                                   value="{{ field.value|default_if_none:'' }}"
                                    class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
                                    placeholder="{{ field.label }}">
                             {% endif %}
@@ -62,7 +82,11 @@
                             {% if field.errors %}
                                 <div class="text-danger small mt-1">{{ field.errors|first }}</div>
                             {% endif %}
-                            {% if field.help_text %}
+                            {% if field.name == 'password1' %}
+                                <div class="password-hint">Minimo 8 caracteres, con mayuscula, minuscula, numero y simbolo.</div>
+                            {% elif field.name == 'password2' %}
+                                <div class="password-hint">Debe coincidir con la contrasena anterior.</div>
+                            {% elif field.help_text %}
                                 <div class="form-text small">{{ field.help_text|safe }}</div>
                             {% endif %}
                         </div>
