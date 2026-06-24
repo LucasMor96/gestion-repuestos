@@ -93,7 +93,12 @@
                     </td>
                     <td class="text-muted small">{{ pedido.proveedor.nombre_negocio }}</td>
                     <td>{{ pedido.cantidad }}</td>
-                    <td class="text-muted small">{{ pedido.get_forma_entrega_display }}</td>
+                    <td class="text-muted small">
+                        {{ pedido.get_forma_entrega_display }}
+                        {% if pedido.fecha_limite_retiro %}
+                            <br><span class="text-warning fw-bold">Retirar antes del {{ pedido.fecha_limite_retiro|date:"d/m/Y H:i" }}</span>
+                        {% endif %}
+                    </td>
                     <td class="fw-bold text-primary">${{ pedido.monto_total }}</td>
                     <td>
                         {% if pedido.estado == 'pendiente' %}

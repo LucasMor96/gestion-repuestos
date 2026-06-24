@@ -94,6 +94,62 @@
                     {% endfor %}
                 </div>
 
+                <div id="retiroInfo" class="alert alert-warning border rounded-3 mb-4">
+                    <p class="fw-bold mb-1">Retiro en local</p>
+                    <p class="small mb-0">
+                        Una vez que el proveedor confirme el pedido, tenes 24 hs para retirarlo.
+                        Si no se confirma la recepcion dentro de ese plazo, la compra se cancela automaticamente.
+                    </p>
+                </div>
+
+                <div id="envioInfo" class="border rounded-3 p-3 mb-4" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                        <div>
+                            <p class="fw-bold mb-1">Datos para envio</p>
+                            <p class="text-muted small mb-0">
+                                El proveedor usa estos datos para coordinar la entrega y confirmar disponibilidad.
+                            </p>
+                        </div>
+                        <span class="badge bg-light text-dark border">Envio estimado: 24 a 72 hs</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.direccion_envio.id_for_label }}" class="form-label small fw-bold">
+                                {{ form.direccion_envio.label }}
+                            </label>
+                            {{ form.direccion_envio }}
+                            {% for error in form.direccion_envio.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.telefono_contacto.id_for_label }}" class="form-label small fw-bold">
+                                {{ form.telefono_contacto.label }}
+                            </label>
+                            {{ form.telefono_contacto }}
+                            {% for error in form.telefono_contacto.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.franja_horaria.id_for_label }}" class="form-label small fw-bold">
+                                {{ form.franja_horaria.label }}
+                            </label>
+                            {{ form.franja_horaria }}
+                            {% for error in form.franja_horaria.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Referencia de prueba</label>
+                            <div class="form-control border-2 bg-light text-muted">
+                                Despacho, reparto y seguimiento simulado
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Notas -->
                 <div class="mb-4">
                     <label for="{{ form.notas.id_for_label }}" class="form-label fw-bold">
@@ -159,21 +215,39 @@
 
 <script>
 (function () {
-    const precioData = document.querySelector('input[name="cantidad"]').dataset;
     const precioStr = '{{ producto.precio }}';
     const precioUnit = parseFloat(precioStr.replace(',', '.')) || 0;
     const inputCant = document.querySelector('input[name="cantidad"]');
     const spanTotal = document.getElementById('montoTotal');
     const spanCant = document.getElementById('cantDisplay');
+    const radiosEntrega = document.querySelectorAll('input[name="forma_entrega"]');
+    const retiroInfo = document.getElementById('retiroInfo');
+    const envioInfo = document.getElementById('envioInfo');
+    const notas = document.getElementById('{{ form.notas.id_for_label }}');
 
     function actualizar() {
         const cant = parseInt(inputCant.value) || 0;
-        spanTotal.textContent = '$' + (precioUnit * cant).toFixed(2);
+        const envioSeleccionado = document.querySelector('input[name="forma_entrega"]:checked')?.value === 'envio';
+        const costoEnvio = envioSeleccionado ? 3500 + Math.max(cant - 1, 0) * 900 : 0;
+        const total = precioUnit * cant + costoEnvio;
+        spanTotal.textContent = '$' + total.toFixed(2);
         spanCant.textContent = cant;
     }
 
+    function actualizarEntrega() {
+        const seleccionado = document.querySelector('input[name="forma_entrega"]:checked')?.value || 'retiro';
+        const esEnvio = seleccionado === 'envio';
+        retiroInfo.style.display = esEnvio ? 'none' : 'block';
+        envioInfo.style.display = esEnvio ? 'block' : 'none';
+        notas.placeholder = esEnvio
+            ? 'Ej: tocar timbre del taller, llamar 15 minutos antes, dejar en recepcion...'
+            : 'Instrucciones especiales para el proveedor';
+        actualizar();
+    }
+
     inputCant.addEventListener('input', actualizar);
-    actualizar();
+    radiosEntrega.forEach(radio => radio.addEventListener('change', actualizarEntrega));
+    actualizarEntrega();
 })();
 </script>
 

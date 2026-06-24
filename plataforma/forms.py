@@ -268,8 +268,37 @@ class GestionarPedidoForm(forms.Form):
 
 
 class PedidoForm(forms.ModelForm):
-    """Formulario para que un técnico solicite un repuesto (US-07)"""
+    """Formulario para que un tecnico solicite un repuesto (US-07)"""
 
+    direccion_envio = forms.CharField(
+        max_length=255,
+        required=False,
+        label='Direccion de entrega',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control border-2',
+            'placeholder': 'Ej: Av. San Martin 2450, Rosario',
+        }),
+    )
+    telefono_contacto = forms.CharField(
+        max_length=30,
+        required=False,
+        label='Telefono de contacto',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control border-2',
+            'placeholder': 'Ej: 341 555-0198',
+        }),
+    )
+    franja_horaria = forms.ChoiceField(
+        choices=[
+            ('', 'Selecciona una franja'),
+            ('manana', 'Manana, 9 a 13 hs'),
+            ('tarde', 'Tarde, 13 a 18 hs'),
+            ('noche', 'Ultimo reparto, 18 a 21 hs'),
+        ],
+        required=False,
+        label='Franja horaria',
+        widget=forms.Select(attrs={'class': 'form-select border-2'}),
+    )
     class Meta:
         model = Pedido
         fields = ('cantidad', 'forma_entrega', 'notas')
@@ -285,12 +314,16 @@ class PedidoForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, stock=None, **kwargs):
+    def __init__(self, *args, stock=None, tecnico=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._stock = stock
+        self.fields['forma_entrega'].choices = Pedido.ENTREGA_CHOICES
         self.fields['cantidad'].widget.attrs.update({'min': 1, 'class': 'form-control rounded-pill border-2'})
         if stock is not None:
             self.fields['cantidad'].widget.attrs['max'] = stock
+        if tecnico is not None:
+            self.fields['direccion_envio'].initial = tecnico.ubicacion
+            self.fields['telefono_contacto'].initial = tecnico.telefono
 
     def clean_cantidad(self):
         cantidad = self.cleaned_data.get('cantidad')
@@ -299,6 +332,14 @@ class PedidoForm(forms.ModelForm):
         if self._stock is not None and cantidad is not None and cantidad > self._stock:
             raise forms.ValidationError(f'Solo hay {self._stock} unidades disponibles en stock.')
         return cantidad
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('forma_entrega') == 'envio':
+            for field_name in ('direccion_envio', 'telefono_contacto', 'franja_horaria'):
+                if not (cleaned_data.get(field_name) or '').strip():
+                    self.add_error(field_name, 'Completa este dato para coordinar el envio.')
+        return cleaned_data
 
 
 class AsignarCreditoForm(forms.ModelForm):

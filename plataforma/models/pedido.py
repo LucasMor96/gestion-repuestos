@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 
 from .tecnico import Tecnico
 from .proveedor import Proveedor
@@ -32,6 +35,17 @@ class Pedido(models.Model):
     notas = models.TextField(blank=True, null=True)
     respuesta_proveedor = models.TextField(blank=True, null=True)
     usa_credito = models.BooleanField(default=False)
+
+    @property
+    def fecha_limite_retiro(self):
+        if self.forma_entrega != 'retiro' or self.estado != 'aceptado':
+            return None
+        return self.fecha_actualizacion + timedelta(hours=24)
+
+    @property
+    def retiro_vencido(self):
+        limite = self.fecha_limite_retiro
+        return limite is not None and timezone.now() > limite
 
     class Meta:
         verbose_name = "Pedido"

@@ -55,6 +55,10 @@ def notificar_tecnico_estado(pedido):
             f'  Producto  : {pedido.producto.nombre}\n'
             f'  Estado    : {pedido.get_estado_display()}\n'
             f'  Proveedor : {pedido.proveedor.nombre_negocio}\n'
+            + (
+                f'  Retiro hasta: {pedido.fecha_limite_retiro.strftime("%d/%m/%Y %H:%M")}\n'
+                if pedido.fecha_limite_retiro else ''
+            )
             + (f'  Mensaje   : {pedido.respuesta_proveedor}\n' if pedido.respuesta_proveedor else '')
             + '\nIngresa a la plataforma para ver el detalle de tus pedidos.\n'
         ),

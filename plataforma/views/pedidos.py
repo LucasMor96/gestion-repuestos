@@ -1,10 +1,13 @@
 import csv
+from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Exists, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from ..forms import GestionarPedidoForm, PedidoForm
@@ -16,6 +19,57 @@ from .notifications import (
     notificar_tecnico_estado,
 )
 from .utils import get_proveedor_o_403, get_tecnico_o_403
+
+
+def cancelar_retiros_vencidos(pedidos):
+    """Cancela retiros aceptados que superaron las 24 hs sin confirmacion."""
+    cutoff = timezone.now() - timedelta(hours=24)
+    vencidos = [
+        pedido for pedido in pedidos
+        if pedido.estado == 'aceptado'
+        and pedido.forma_entrega == 'retiro'
+        and pedido.fecha_actualizacion <= cutoff
+    ]
+
+    for pedido in vencidos:
+        pedido.estado = 'cancelado'
+        pedido.respuesta_proveedor = 'Compra cancelada automaticamente: no se retiro dentro de las 24 hs posteriores a la confirmacion.'
+        pedido.save()
+
+        producto = pedido.producto
+        producto.stock += pedido.cantidad
+        producto.save()
+
+        if pedido.usa_credito:
+            try:
+                credito = Credito.objects.get(proveedor=pedido.proveedor, tecnico=pedido.tecnico)
+                credito.saldo_usado = max(0, credito.saldo_usado - pedido.monto_total)
+                credito.save()
+            except Credito.DoesNotExist:
+                pass
+
+    return len(vencidos)
+
+
+def agregar_datos_envio_a_notas(pedido, cleaned_data):
+    if cleaned_data.get('forma_entrega') != 'envio':
+        return
+
+    franja = dict(PedidoForm.base_fields['franja_horaria'].choices).get(cleaned_data.get('franja_horaria'), '')
+    datos_envio = (
+        'Datos de envio:\n'
+        f'- Direccion: {cleaned_data.get("direccion_envio")}\n'
+        f'- Telefono: {cleaned_data.get("telefono_contacto")}\n'
+        f'- Franja horaria: {franja}'
+    )
+    notas = (pedido.notas or '').strip()
+    pedido.notas = f'{notas}\n\n{datos_envio}' if notas else datos_envio
+
+
+def calcular_costo_envio(forma_entrega, cantidad):
+    if forma_entrega != 'envio':
+        return Decimal('0')
+    return Decimal('3500') + (Decimal(max(cantidad - 1, 0)) * Decimal('900'))
 
 
 @login_required(login_url='login')
@@ -34,15 +88,20 @@ def crear_pedido(request, producto_pk):
         credito = None
 
     if request.method == 'POST':
-        form = PedidoForm(request.POST, stock=producto.stock)
+        form = PedidoForm(request.POST, stock=producto.stock, tecnico=tecnico)
         if form.is_valid():
             try:
                 pedido = form.save(commit=False)
                 pedido.tecnico = tecnico
                 pedido.proveedor = proveedor
                 pedido.producto = producto
-                pedido.monto_total = producto.precio * form.cleaned_data['cantidad']
+                cantidad = form.cleaned_data['cantidad']
+                pedido.monto_total = (producto.precio * cantidad) + calcular_costo_envio(
+                    form.cleaned_data['forma_entrega'],
+                    cantidad,
+                )
                 pedido.estado = 'pendiente'
+                agregar_datos_envio_a_notas(pedido, form.cleaned_data)
 
                 usa_credito = request.POST.get('usa_credito') == 'on' and credito is not None
                 if usa_credito:
@@ -74,7 +133,7 @@ def crear_pedido(request, producto_pk):
             except Exception:
                 messages.error(request, 'Ocurrió un error al procesar el pedido. Intentá de nuevo.')
     else:
-        form = PedidoForm(stock=producto.stock)
+        form = PedidoForm(stock=producto.stock, tecnico=tecnico)
 
     return render(request, 'plataforma/crear_pedido.html', {'form': form, 'producto': producto, 'credito': credito})
 
@@ -91,6 +150,8 @@ def mis_pedidos(request):
     proveedor_id = request.GET.get('proveedor', '').strip()
 
     try:
+        cancelar_retiros_vencidos(tecnico.pedidos.select_related('producto', 'proveedor'))
+
         pedidos_qs = (
             tecnico.pedidos
             .select_related('producto', 'proveedor')
@@ -209,6 +270,9 @@ def pedidos_recibidos(request):
     if proveedor is None:
         return redirect('dashboard')
 
+    pedidos_base = proveedor.pedidos_recibidos.select_related('producto', 'tecnico', 'proveedor')
+    cancelar_retiros_vencidos(pedidos_base)
+
     pedidos = (
         proveedor.pedidos_recibidos
         .select_related('producto', 'tecnico__usuario')
@@ -230,6 +294,9 @@ def detalle_pedido_proveedor(request, pk):
         pk=pk,
         proveedor=proveedor,
     )
+    cancelar_retiros_vencidos([pedido])
+    if pedido.estado == 'cancelado':
+        messages.warning(request, 'Este retiro fue cancelado automaticamente porque pasaron mas de 24 hs desde la confirmacion.')
     form = GestionarPedidoForm()
     return render(request, 'plataforma/detalle_pedido_proveedor.html', {
         'pedido': pedido,
@@ -327,6 +394,7 @@ def completar_pedido(request, pk):
         return redirect('dashboard')
 
     pedido = get_object_or_404(Pedido, pk=pk, tecnico=tecnico)
+    cancelar_retiros_vencidos([pedido])
 
     if request.method == 'POST':
         if pedido.estado != 'aceptado':
