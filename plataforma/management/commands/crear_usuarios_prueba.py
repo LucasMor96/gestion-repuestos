@@ -1,6 +1,12 @@
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
+from time import sleep
+from urllib.error import URLError
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -189,6 +195,86 @@ PRODUCTOS_DEMO = {
 }
 
 
+PRODUCTOS_DEMO_IMAGENES = {
+    "Filtro de aceite Wega": (
+        "filtro-aceite-wega.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/5/52/Bosch_Oil_Filter.JPG",
+    ),
+    "Pastillas de freno Bosch": (
+        "pastillas-freno-bosch.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/7/76/Brake_pads.JPG",
+    ),
+    "Bateria 12V Moura": (
+        "bateria-12v-moura.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/4/41/Remy_charg-o-matic_car_battery.jpg",
+    ),
+    "Kit distribucion Renault": (
+        "kit-distribucion-renault.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/6/62/Zahnriemen_Suzuki_G10A.JPG",
+    ),
+    "Amortiguador delantero Corven": (
+        "amortiguador-delantero-corven.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/9/9b/Buggy_shock_tower.jpg",
+    ),
+    "Bujias NGK x4": (
+        "bujias-ngk-x4.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/7/7c/Spark_plug_2.jpg",
+    ),
+    "Liquido refrigerante 5L": (
+        "liquido-refrigerante-5l.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/7/79/Engine_coolant.jpg",
+    ),
+    "Radiador Peugeot 206": (
+        "radiador-peugeot-206.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/3/37/Honeycomb_radiator_tubes.jpg",
+    ),
+    "Optica derecha Gol Trend": (
+        "optica-derecha-gol-trend.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/5/5b/Headlight_of_a_Soviet_car.jpg",
+    ),
+    "Sensor MAP Fiat": (
+        "sensor-map-fiat.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/0/09/Manifoldpresser.JPG",
+    ),
+    "Embrague completo Corsa": (
+        "embrague-completo-corsa.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/5/5b/Clutchdisc.jpg",
+    ),
+    "SSD Kingston 480GB": (
+        "ssd-kingston-480gb.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/a/a3/Crucial_CT256M4SSD2_rear_20120123.jpg",
+    ),
+    "Memoria DDR4 8GB": (
+        "memoria-ddr4-8gb.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/6/6c/RAM_Module_%28SDRAM-DDR4%29.jpg",
+    ),
+    "Fuente ATX 600W": (
+        "fuente-atx-600w.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/a/af/ATX_Computer_power_supply_unit.jpg",
+    ),
+    "Pasta termica Arctic": (
+        "pasta-termica-arctic.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/4/4e/W%C3%A4rmeleitpaste_Thermal_Compound.jpg",
+    ),
+    "Cargador notebook universal": (
+        "cargador-notebook-universal.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/7/79/Lenovo_65W_20V_AC_adapter_%28FRU_42T5283%29_for_ThinkPad_laptops.jpg",
+    ),
+    "Pantalla notebook 15.6": (
+        "pantalla-notebook-156.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/c/c9/Disassembled_LCD_screen_assembly_of_a_Lenovo_ThinkPad_X220.jpg",
+    ),
+    "Teclado notebook Lenovo": (
+        "teclado-notebook-lenovo.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/1/13/Laptop_Keyboard_1.jpg",
+    ),
+    "Cooler CPU universal": (
+        "cooler-cpu-universal.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/b/be/Asus_P5PL2_-_CPU_heatsink_with_cooling_fan-5293.jpg",
+    ),
+}
+
+
 PEDIDOS_DEMO = [
     ("tecnico_prueba", "repuestos_rawson", "Kit distribucion Renault", 1, "retiro", "completado", 9, 6),
     ("tecnico_prueba", "repuestos_rawson", "Bujias NGK x4", 2, "envio", "completado", 7, 7),
@@ -264,11 +350,13 @@ class Command(BaseCommand):
                 continue
 
             for nombre, descripcion, modelo, categoria, precio, stock in productos:
-                _, creado = Producto.objects.get_or_create(
+                imagen = self.obtener_imagen_producto(nombre)
+                producto, creado = Producto.objects.get_or_create(
                     proveedor=proveedor,
                     nombre=nombre,
                     defaults={
                         "descripcion": descripcion,
+                        "imagen": imagen,
                         "modelo": modelo,
                         "categoria": categoria,
                         "precio": Decimal(precio),
@@ -276,9 +364,48 @@ class Command(BaseCommand):
                         "disponible": True,
                     },
                 )
+                if imagen and producto.imagen.name != imagen:
+                    producto.imagen = imagen
+                    producto.save(update_fields=["imagen"])
                 if creado:
                     creados += 1
         return creados
+
+    def obtener_imagen_producto(self, nombre):
+        datos_imagen = PRODUCTOS_DEMO_IMAGENES.get(nombre)
+        if not datos_imagen:
+            return ""
+
+        archivo, url = datos_imagen
+        ruta = Path(settings.MEDIA_ROOT) / "productos" / archivo
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        if not ruta.exists():
+            if not self.descargar_imagen_producto(nombre, url, ruta):
+                return ""
+        return f"productos/{archivo}"
+
+    def descargar_imagen_producto(self, nombre, url, ruta):
+        for url_descarga in self.urls_descarga_imagen(url):
+            sleep(1)
+            request = Request(url_descarga, headers={"User-Agent": "gestion-repuestos-demo/1.0"})
+            try:
+                with urlopen(request, timeout=20) as response:
+                    ruta.write_bytes(response.read())
+                return True
+            except (OSError, URLError) as exc:
+                ultimo_error = exc
+
+        self.stdout.write(self.style.WARNING(f"  No se pudo descargar imagen de '{nombre}': {ultimo_error}"))
+        return False
+
+    def urls_descarga_imagen(self, url):
+        parsed = urlparse(url)
+        partes = parsed.path.split("/")
+        if parsed.netloc == "upload.wikimedia.org" and "/wikipedia/commons/" in parsed.path and "/thumb/" not in parsed.path:
+            archivo = partes[-1]
+            base = "/".join(partes[:-1]).replace("/wikipedia/commons/", "/wikipedia/commons/thumb/", 1)
+            yield f"{parsed.scheme}://{parsed.netloc}{base}/{archivo}/800px-{archivo}"
+        yield url
 
     def crear_pedidos_demo(self):
         creados = 0
