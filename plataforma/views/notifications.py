@@ -28,6 +28,10 @@ def _send_transactional_mail(subject, message, recipient_list):
 
 def notificar_proveedor_nuevo_pedido(pedido):
     """Envia email al proveedor cuando llega un nuevo pedido."""
+    comprobante = ''
+    if pedido.forma_pago == 'transferencia':
+        comprobante = '  Comprobante: disponible en el detalle del pedido\n'
+
     _send_transactional_mail(
         subject=f'[Repuestos] Nuevo pedido #{pedido.id} - {pedido.producto.nombre}',
         message=(
@@ -37,6 +41,8 @@ def notificar_proveedor_nuevo_pedido(pedido):
             f'  Cantidad : {pedido.cantidad}\n'
             f'  Monto    : ${pedido.monto_total}\n'
             f'  Entrega  : {pedido.get_forma_entrega_display()}\n'
+            f'  Pago     : {pedido.get_forma_pago_display()}\n'
+            f'{comprobante}'
             f'  Tecnico  : {pedido.tecnico.usuario.get_full_name()}\n'
             f'  Telefono : {pedido.tecnico.telefono or "No informado"}\n\n'
             f'Ingresa a la plataforma para aceptar o rechazar el pedido.\n'
@@ -76,6 +82,7 @@ def notificar_pedido_confirmado(pedido):
             f'  Cantidad  : {pedido.cantidad}\n'
             f'  Monto     : ${pedido.monto_total}\n'
             f'  Entrega   : {pedido.get_forma_entrega_display()}\n'
+            f'  Pago      : {pedido.get_forma_pago_display()}\n'
             f'  Proveedor : {pedido.proveedor.nombre_negocio}\n'
             f'  Tecnico   : {pedido.tecnico.usuario.get_full_name()}\n\n'
             f'Ya pueden ingresar a la plataforma para calificar la operacion.\n'

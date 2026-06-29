@@ -168,11 +168,21 @@ class EditarPerfilProveedorForm(forms.ModelForm):
     field_order = [
         'first_name', 'last_name', 'nombre_negocio', 'direccion', 'latitud', 'longitud',
         'rubro', 'horario_desde', 'horario_hasta', 'logo', 'imagen',
+        'banco_transferencia', 'titular_transferencia', 'cbu_transferencia', 'alias_transferencia',
     ]
 
     class Meta:
         model = Proveedor
-        fields = ('nombre_negocio', 'direccion', 'latitud', 'longitud', 'rubro', 'logo', 'imagen')
+        fields = (
+            'nombre_negocio', 'direccion', 'latitud', 'longitud', 'rubro', 'logo', 'imagen',
+            'banco_transferencia', 'titular_transferencia', 'cbu_transferencia', 'alias_transferencia',
+        )
+        labels = {
+            'banco_transferencia': 'Banco para transferencias',
+            'titular_transferencia': 'Titular de la cuenta',
+            'cbu_transferencia': 'CBU / CVU',
+            'alias_transferencia': 'Alias',
+        }
         widgets = {
             'logo': forms.FileInput(),
             'imagen': forms.FileInput(),
@@ -303,13 +313,19 @@ class PedidoForm(forms.ModelForm):
     )
     class Meta:
         model = Pedido
-        fields = ('cantidad', 'forma_entrega', 'notas')
+        fields = ('cantidad', 'forma_entrega', 'forma_pago', 'comprobante_transferencia', 'notas')
         labels = {
             'cantidad': 'Cantidad',
             'forma_entrega': 'Forma de entrega',
+            'forma_pago': 'Forma de pago',
+            'comprobante_transferencia': 'Comprobante de transferencia',
             'notas': 'Notas adicionales (opcional)',
         }
         widgets = {
+            'comprobante_transferencia': forms.FileInput(attrs={
+                'class': 'form-control border-2',
+                'accept': 'image/*,.pdf',
+            }),
             'notas': forms.Textarea(attrs={
                 'rows': 3,
                 'placeholder': 'Instrucciones especiales, dirección de entrega, etc.',
@@ -320,6 +336,7 @@ class PedidoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self._stock = stock
         self.fields['forma_entrega'].choices = Pedido.ENTREGA_CHOICES
+        self.fields['forma_pago'].choices = Pedido.FORMA_PAGO_CHOICES
         self.fields['cantidad'].widget.attrs.update({'min': 1, 'class': 'form-control rounded-pill border-2'})
         if stock is not None:
             self.fields['cantidad'].widget.attrs['max'] = stock
@@ -341,6 +358,8 @@ class PedidoForm(forms.ModelForm):
             for field_name in ('direccion_envio', 'telefono_contacto', 'franja_horaria'):
                 if not (cleaned_data.get(field_name) or '').strip():
                     self.add_error(field_name, 'Completa este dato para coordinar el envio.')
+        if cleaned_data.get('forma_pago') == 'transferencia' and not cleaned_data.get('comprobante_transferencia'):
+            self.add_error('comprobante_transferencia', 'Subi el comprobante para pagar por transferencia.')
         return cleaned_data
 
 

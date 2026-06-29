@@ -88,7 +88,7 @@ def crear_pedido(request, producto_pk):
         credito = None
 
     if request.method == 'POST':
-        form = PedidoForm(request.POST, stock=producto.stock, tecnico=tecnico)
+        form = PedidoForm(request.POST, request.FILES, stock=producto.stock, tecnico=tecnico)
         if form.is_valid():
             try:
                 pedido = form.save(commit=False)
@@ -103,18 +103,28 @@ def crear_pedido(request, producto_pk):
                 pedido.estado = 'pendiente'
                 agregar_datos_envio_a_notas(pedido, form.cleaned_data)
 
-                usa_credito = request.POST.get('usa_credito') == 'on' and credito is not None
-                if usa_credito:
+                forma_pago = form.cleaned_data['forma_pago']
+                pedido.usa_credito = forma_pago == 'credito_comercial'
+
+                if pedido.usa_credito:
+                    if credito is None:
+                        messages.error(
+                            request,
+                            f'No tenes credito comercial activo con {proveedor.nombre_negocio}. '
+                            'Elegi transferencia o MercadoPago simulado para continuar.'
+                        )
+                        return render(request, 'plataforma/crear_pedido.html', {
+                            'form': form, 'producto': producto, 'credito': credito,
+                        })
                     if pedido.monto_total > credito.saldo_disponible:
                         messages.error(
                             request,
-                            f'El monto del pedido (${pedido.monto_total}) supera tu crédito disponible '
+                            f'El monto del pedido (${pedido.monto_total}) supera tu credito disponible '
                             f'(${credito.saldo_disponible}) con {proveedor.nombre_negocio}.'
                         )
                         return render(request, 'plataforma/crear_pedido.html', {
                             'form': form, 'producto': producto, 'credito': credito,
                         })
-                    pedido.usa_credito = True
                     pedido.save()
                     credito.saldo_usado += pedido.monto_total
                     credito.save()
@@ -124,10 +134,16 @@ def crear_pedido(request, producto_pk):
                     pedido.save()
 
                 notificar_proveedor_nuevo_pedido(pedido)
+                detalle_pago = ''
+                if forma_pago == 'mercadopago':
+                    detalle_pago = ' MercadoPago esta funcionando en modo simulado.'
+                elif forma_pago == 'credito_comercial':
+                    detalle_pago = ' Se uso tu credito comercial disponible.'
                 messages.success(
                     request,
                     f'Pedido #{pedido.id} enviado correctamente. '
-                    f'{proveedor.nombre_negocio} recibirá tu solicitud.'
+                    f'Forma de pago: {pedido.get_forma_pago_display()}.'
+                    f'{detalle_pago} {proveedor.nombre_negocio} recibira tu solicitud.'
                 )
                 return redirect('mis_pedidos')
             except Exception:
@@ -214,7 +230,7 @@ def exportar_historial(request):
         response.write('\ufeff')  # BOM para compatibilidad con Excel
 
         writer = csv.writer(response)
-        writer.writerow(['#', 'Producto', 'Proveedor', 'Cantidad', 'Entrega', 'Monto ($)', 'Estado', 'Fecha'])
+        writer.writerow(['#', 'Producto', 'Proveedor', 'Cantidad', 'Entrega', 'Pago', 'Monto ($)', 'Estado', 'Fecha'])
 
         for pedido in pedidos:
             writer.writerow([
@@ -223,6 +239,7 @@ def exportar_historial(request):
                 pedido.proveedor.nombre_negocio,
                 pedido.cantidad,
                 pedido.get_forma_entrega_display(),
+                pedido.get_forma_pago_display(),
                 pedido.monto_total,
                 pedido.get_estado_display(),
                 pedido.fecha_creacion.strftime('%d/%m/%Y'),

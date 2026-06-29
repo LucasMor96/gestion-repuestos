@@ -20,7 +20,7 @@ class TecnicoAdmin(admin.ModelAdmin):
 
 @admin.register(Proveedor)
 class ProveedorAdmin(admin.ModelAdmin):
-    list_display = ('nombre_negocio', 'rubro', 'direccion', 'get_user_active', 'is_approved')
+    list_display = ('nombre_negocio', 'rubro', 'direccion', 'alias_transferencia', 'get_user_active', 'is_approved')
     search_fields = ('nombre_negocio', 'rubro', 'usuario__username')
     list_filter = ('is_approved', 'usuario__is_active')
     readonly_fields = ('usuario',)
@@ -40,10 +40,15 @@ class ProductoAdmin(admin.ModelAdmin):
 
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'tecnico', 'proveedor', 'producto', 'cantidad', 'estado')
+    list_display = ('id', 'tecnico', 'proveedor', 'producto', 'cantidad', 'forma_pago', 'tiene_comprobante', 'estado')
     search_fields = ('tecnico__usuario__username', 'proveedor__nombre_negocio', 'producto__nombre')
-    list_filter = ('estado', 'forma_entrega', 'fecha_creacion')
+    list_filter = ('estado', 'forma_entrega', 'forma_pago', 'fecha_creacion')
     readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
+
+    def tiene_comprobante(self, obj):
+        return bool(obj.comprobante_transferencia)
+    tiene_comprobante.short_description = 'Comprobante'
+    tiene_comprobante.boolean = True
 
 
 @admin.register(Credito)

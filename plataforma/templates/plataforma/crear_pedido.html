@@ -58,7 +58,7 @@
         <div class="card border-0 shadow-sm rounded-4 p-4">
             <h5 class="fw-bold mb-3">Datos del pedido</h5>
             <hr>
-            <form method="post" novalidate>
+            <form method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
 
                 <!-- Cantidad -->
@@ -181,29 +181,79 @@
                     </p>
                 </div>
 
-                <!-- Crédito comercial -->
-                {% if credito %}
-                <div class="card border rounded-3 p-3 mb-4"
-                     style="border-color: {% if credito.porcentaje_usado >= 80 %}#dc3545{% else %}#198754{% endif %} !important;">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" name="usa_credito" id="usa_credito">
-                            <label class="form-check-label fw-bold" for="usa_credito">
-                                Pagar con crédito comercial
+                <!-- Forma de pago -->
+                <div class="border rounded-3 p-3 mb-4">
+                    <label class="form-label fw-bold mb-2">{{ form.forma_pago.label }}</label>
+                    <div class="d-flex flex-column gap-2">
+                        {% for value, text in form.fields.forma_pago.choices %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio"
+                                   name="forma_pago"
+                                   id="pago_{{ value }}"
+                                   value="{{ value }}"
+                                   {% if value == 'credito_comercial' and not credito %}disabled
+                                   {% elif form.forma_pago.value == value %}checked
+                                   {% elif value == 'transferencia' and not form.forma_pago.value %}checked{% endif %}>
+                            <label class="form-check-label fw-bold" for="pago_{{ value }}">
+                                {{ text }}
                             </label>
+                            {% if value == 'mercadopago' %}
+                                <span class="text-muted small d-block ms-4">Pago ficticio por ahora, sin integracion real.</span>
+                            {% elif value == 'transferencia' %}
+                                <span class="text-muted small d-block ms-4">El proveedor coordinara los datos de transferencia al aceptar el pedido.</span>
+                            {% elif value == 'credito_comercial' %}
+                                {% if credito %}
+                                    <span class="text-muted small d-block ms-4">
+                                        Disponible: <strong class="text-success">${{ credito.saldo_disponible }}</strong>
+                                        de ${{ credito.limite }}.
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted small d-block ms-4">Este proveedor todavia no te asigno credito.</span>
+                                {% endif %}
+                            {% endif %}
                         </div>
-                        <span class="ms-auto text-muted small">
-                            Disponible: <strong class="text-success">${{ credito.saldo_disponible }}</strong>
-                            de ${{ credito.limite }}
-                        </span>
+                        {% endfor %}
                     </div>
-                    {% if credito.porcentaje_usado >= 80 %}
+
+                    <div id="transferenciaInfo" class="border rounded-3 p-3 mt-3" style="display:none;">
+                        <p class="fw-bold mb-2">Datos para transferir</p>
+                        <div class="row g-2 small mb-3">
+                            <div class="col-md-6">
+                                <span class="text-muted d-block">Banco</span>
+                                <strong>{{ producto.proveedor.banco_transferencia|default:"No informado" }}</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-muted d-block">Titular</span>
+                                <strong>{{ producto.proveedor.titular_transferencia|default:producto.proveedor.nombre_negocio }}</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-muted d-block">CBU / CVU</span>
+                                <strong>{{ producto.proveedor.cbu_transferencia|default:"No informado" }}</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-muted d-block">Alias</span>
+                                <strong>{{ producto.proveedor.alias_transferencia|default:"No informado" }}</strong>
+                            </div>
+                        </div>
+                        <label for="{{ form.comprobante_transferencia.id_for_label }}" class="form-label small fw-bold">
+                            {{ form.comprobante_transferencia.label }}
+                        </label>
+                        {{ form.comprobante_transferencia }}
+                        {% for error in form.comprobante_transferencia.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                        <p class="text-muted small mb-0 mt-2">Acepta imagen o PDF.</p>
+                    </div>
+
+                    {% for error in form.forma_pago.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                    {% if credito and credito.porcentaje_usado >= 80 %}
                         <p class="text-danger small mb-0 mt-2">
-                            Atención: usaste el {{ credito.porcentaje_usado }}% de tu crédito disponible.
+                            Atencion: usaste el {{ credito.porcentaje_usado }}% de tu credito disponible.
                         </p>
                     {% endif %}
                 </div>
-                {% endif %}
 
                 <div class="d-flex gap-3">
                     <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold">
@@ -226,8 +276,11 @@
     const spanTotal = document.getElementById('montoTotal');
     const spanCant = document.getElementById('cantDisplay');
     const radiosEntrega = document.querySelectorAll('input[name="forma_entrega"]');
+    const radiosPago = document.querySelectorAll('input[name="forma_pago"]');
     const retiroInfo = document.getElementById('retiroInfo');
     const envioInfo = document.getElementById('envioInfo');
+    const transferenciaInfo = document.getElementById('transferenciaInfo');
+    const comprobanteTransferencia = document.getElementById('{{ form.comprobante_transferencia.id_for_label }}');
     const notas = document.getElementById('{{ form.notas.id_for_label }}');
 
     function actualizar() {
@@ -250,9 +303,20 @@
         actualizar();
     }
 
+    function actualizarPago() {
+        const seleccionado = document.querySelector('input[name="forma_pago"]:checked')?.value || 'transferencia';
+        const esTransferencia = seleccionado === 'transferencia';
+        transferenciaInfo.style.display = esTransferencia ? 'block' : 'none';
+        if (comprobanteTransferencia) {
+            comprobanteTransferencia.required = esTransferencia;
+        }
+    }
+
     inputCant.addEventListener('input', actualizar);
     radiosEntrega.forEach(radio => radio.addEventListener('change', actualizarEntrega));
+    radiosPago.forEach(radio => radio.addEventListener('change', actualizarPago));
     actualizarEntrega();
+    actualizarPago();
 })();
 </script>
 

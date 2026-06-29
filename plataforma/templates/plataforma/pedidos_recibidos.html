@@ -36,6 +36,7 @@
                     <th class="py-3">Cant.</th>
                     <th class="py-3">Entrega</th>
                     <th class="py-3">Monto</th>
+                    <th class="py-3">Pago</th>
                     <th class="py-3">Estado</th>
                     <th class="py-3">Fecha</th>
                     <th class="pe-4 py-3">Acción</th>
@@ -63,6 +64,7 @@
                         {% endif %}
                     </td>
                     <td class="fw-bold text-primary">${{ pedido.monto_total }}</td>
+                    <td class="text-muted small">{{ pedido.get_forma_pago_display }}</td>
                     <td>
                         {% if pedido.estado == 'pendiente' %}
                             <span class="badge bg-warning text-dark rounded-pill">Pendiente</span>

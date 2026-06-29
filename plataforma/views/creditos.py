@@ -150,7 +150,11 @@ def detalle_deuda_tecnico(request, pk):
     credito = get_object_or_404(Credito, pk=pk, proveedor=proveedor)
     pedidos_credito = (
         Pedido.objects
-        .filter(proveedor=proveedor, tecnico=credito.tecnico, usa_credito=True)
+        .filter(
+            Q(usa_credito=True) | Q(forma_pago='credito_comercial'),
+            proveedor=proveedor,
+            tecnico=credito.tecnico,
+        )
         .exclude(estado__in=['cancelado', 'rechazado'])
         .order_by('-fecha_creacion')
     )

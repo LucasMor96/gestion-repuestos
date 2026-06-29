@@ -1,11 +1,12 @@
 import re
 
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Pedido, Producto, Proveedor, Tecnico
+from .models import Credito, Pedido, Producto, Proveedor, Tecnico
 
 
 class LoginViewTests(TestCase):
@@ -310,15 +311,76 @@ class PedidoEmailTests(TestCase):
             {
                 'cantidad': 2,
                 'forma_entrega': 'retiro',
+                'forma_pago': 'mercadopago',
                 'notas': 'Lo retiro hoy',
             },
         )
 
         self.assertRedirects(response, reverse('mis_pedidos'))
+        pedido = Pedido.objects.get(tecnico=tecnico, proveedor=proveedor, producto=producto)
+        self.assertEqual(pedido.forma_pago, 'mercadopago')
+        self.assertFalse(pedido.usa_credito)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, [proveedor.usuario.email])
         self.assertIn('Nuevo pedido', mail.outbox[0].subject)
         self.assertIn(producto.nombre, mail.outbox[0].body)
+        self.assertIn('MercadoPago (simulado)', mail.outbox[0].body)
+
+    def test_crear_pedido_con_credito_comercial_usa_saldo(self):
+        tecnico = self.crear_tecnico()
+        proveedor = self.crear_proveedor()
+        producto = self.crear_producto(proveedor)
+        credito = Credito.objects.create(
+            tecnico=tecnico,
+            proveedor=proveedor,
+            limite=5000,
+            saldo_usado=0,
+        )
+        self.client.force_login(tecnico.usuario)
+
+        response = self.client.post(
+            reverse('crear_pedido', args=[producto.pk]),
+            {
+                'cantidad': 2,
+                'forma_entrega': 'retiro',
+                'forma_pago': 'credito_comercial',
+                'notas': 'Uso credito',
+            },
+        )
+
+        self.assertRedirects(response, reverse('mis_pedidos'))
+        pedido = Pedido.objects.get(tecnico=tecnico, proveedor=proveedor, producto=producto)
+        credito.refresh_from_db()
+        self.assertEqual(pedido.forma_pago, 'credito_comercial')
+        self.assertTrue(pedido.usa_credito)
+        self.assertEqual(credito.saldo_usado, pedido.monto_total)
+
+    def test_crear_pedido_por_transferencia_guarda_comprobante(self):
+        tecnico = self.crear_tecnico()
+        proveedor = self.crear_proveedor()
+        producto = self.crear_producto(proveedor)
+        comprobante = SimpleUploadedFile(
+            'comprobante.pdf',
+            b'%PDF-1.4 comprobante de prueba',
+            content_type='application/pdf',
+        )
+        self.client.force_login(tecnico.usuario)
+
+        response = self.client.post(
+            reverse('crear_pedido', args=[producto.pk]),
+            {
+                'cantidad': 1,
+                'forma_entrega': 'retiro',
+                'forma_pago': 'transferencia',
+                'comprobante_transferencia': comprobante,
+                'notas': 'Transferido',
+            },
+        )
+
+        self.assertRedirects(response, reverse('mis_pedidos'))
+        pedido = Pedido.objects.get(tecnico=tecnico, proveedor=proveedor, producto=producto)
+        self.assertEqual(pedido.forma_pago, 'transferencia')
+        self.assertTrue(pedido.comprobante_transferencia.name.endswith('.pdf'))
 
     def test_proveedor_acepta_pedido_envia_email_al_tecnico(self):
         pedido = self.crear_pedido()

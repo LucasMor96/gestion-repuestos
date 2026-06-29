@@ -23,17 +23,25 @@ class Pedido(models.Model):
         ('envio', 'Envío'),
     ]
 
+    FORMA_PAGO_CHOICES = [
+        ('mercadopago', 'MercadoPago (simulado)'),
+        ('transferencia', 'Transferencia bancaria'),
+        ('credito_comercial', 'Credito comercial'),
+    ]
+
     tecnico = models.ForeignKey(Tecnico, on_delete=models.CASCADE, related_name='pedidos')
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='pedidos_recibidos')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='pedidos')
     cantidad = models.IntegerField()
     forma_entrega = models.CharField(max_length=10, choices=ENTREGA_CHOICES)
+    forma_pago = models.CharField(max_length=25, choices=FORMA_PAGO_CHOICES, default='transferencia')
     estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='pendiente')
     monto_total = models.DecimalField(max_digits=10, decimal_places=2)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     notas = models.TextField(blank=True, null=True)
     respuesta_proveedor = models.TextField(blank=True, null=True)
+    comprobante_transferencia = models.FileField(upload_to='comprobantes_transferencia/', blank=True, null=True)
     usa_credito = models.BooleanField(default=False)
 
     @property
