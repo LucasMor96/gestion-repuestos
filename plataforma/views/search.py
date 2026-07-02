@@ -1,10 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.shortcuts import redirect, render
 
 from ..models import Producto
-from .utils import get_tecnico_o_403, haversine
+from .utils import get_tecnico_o_403
 
 
 @login_required(login_url='login')
@@ -17,11 +17,20 @@ def buscar_repuestos(request):
     query = request.GET.get('q', '').strip()
     categoria_sel = request.GET.get('categoria', '').strip()
     orden = request.GET.get('orden', '')
-    lat_str = request.GET.get('lat', '')
-    lng_str = request.GET.get('lng', '')
 
     try:
-        productos = Producto.objects.filter(disponible=True).select_related('proveedor')
+        productos = (
+            Producto.objects
+            .filter(disponible=True)
+            .select_related('proveedor')
+            .annotate(
+                unidades_vendidas=Sum(
+                    'pedidos__cantidad',
+                    filter=Q(pedidos__estado='completado'),
+                    default=0,
+                )
+            )
+        )
 
         if query:
             productos = productos.filter(
@@ -37,6 +46,8 @@ def buscar_repuestos(request):
             productos = productos.order_by('precio')
         elif orden == 'precio_desc':
             productos = productos.order_by('-precio')
+        elif orden == 'mas_vendidos':
+            productos = productos.order_by('-unidades_vendidas', 'nombre')
 
         categorias = (
             Producto.objects
@@ -48,34 +59,12 @@ def buscar_repuestos(request):
 
         productos_lista = list(productos)
 
-        if orden == 'distancia' and lat_str and lng_str:
-            user_lat = float(lat_str)
-            user_lng = float(lng_str)
-
-            for producto in productos_lista:
-                proveedor = producto.proveedor
-                if proveedor.latitud is not None and proveedor.longitud is not None:
-                    producto.distancia_km = round(
-                        haversine(user_lat, user_lng, proveedor.latitud, proveedor.longitud),
-                        1,
-                    )
-                else:
-                    producto.distancia_km = None
-
-            productos_lista.sort(
-                key=lambda producto: producto.distancia_km
-                if producto.distancia_km is not None
-                else float('inf')
-            )
-
         context = {
             'productos': productos_lista,
             'query': query,
             'categoria_sel': categoria_sel,
             'orden': orden,
             'categorias': categorias,
-            'lat': lat_str,
-            'lng': lng_str,
             'es_tecnico': hasattr(request.user, 'tecnico'),
         }
     except Exception:
@@ -86,8 +75,6 @@ def buscar_repuestos(request):
             'categoria_sel': categoria_sel,
             'orden': orden,
             'categorias': [],
-            'lat': lat_str,
-            'lng': lng_str,
             'es_tecnico': hasattr(request.user, 'tecnico'),
         }
 

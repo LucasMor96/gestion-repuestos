@@ -107,38 +107,40 @@
                     </div>
                 </div>
             </div>
-            <div class="row g-4">
-                <div class="col-lg-6">
-                    <h6 class="fw-bold">Productos mas pedidos</h6>
-                    {% if estadisticas.productos_mas_pedidos %}
-                        <div class="list-group list-group-flush">
-                            {% for producto in estadisticas.productos_mas_pedidos %}
-                                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                                    <span>{{ producto.producto__nombre }}</span>
-                                    <span class="badge bg-secondary rounded-pill">{{ producto.cantidad_total }} u.</span>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted small mb-0">Todavia no hay productos pedidos.</p>
-                    {% endif %}
+            {% if es_proveedor %}
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <h6 class="fw-bold">Productos mas pedidos</h6>
+                        {% if estadisticas.productos_mas_pedidos %}
+                            <div class="list-group list-group-flush">
+                                {% for producto in estadisticas.productos_mas_pedidos %}
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <span>{{ producto.producto__nombre }}</span>
+                                        <span class="badge bg-secondary rounded-pill">{{ producto.cantidad_total }} u.</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted small mb-0">Todavia no hay productos pedidos.</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-lg-6">
+                        <h6 class="fw-bold">Proveedores con mas ventas</h6>
+                        {% if estadisticas.proveedores_con_mas_ventas %}
+                            <div class="list-group list-group-flush">
+                                {% for proveedor in estadisticas.proveedores_con_mas_ventas %}
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3">
+                                        <span>{{ proveedor.proveedor__nombre_negocio }}</span>
+                                        <span class="badge bg-success rounded-pill">${{ proveedor.ventas_total }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted small mb-0">Todavia no hay ventas completadas.</p>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="col-lg-6">
-                    <h6 class="fw-bold">Proveedores con mas ventas</h6>
-                    {% if estadisticas.proveedores_con_mas_ventas %}
-                        <div class="list-group list-group-flush">
-                            {% for proveedor in estadisticas.proveedores_con_mas_ventas %}
-                                <div class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3">
-                                    <span>{{ proveedor.proveedor__nombre_negocio }}</span>
-                                    <span class="badge bg-success rounded-pill">${{ proveedor.ventas_total }}</span>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted small mb-0">Todavia no hay ventas completadas.</p>
-                    {% endif %}
-                </div>
-            </div>
+            {% endif %}
         </div>
 
         {% if es_tecnico %}
