@@ -130,6 +130,49 @@
     </div>
   </div>
 </section>
+<!-- ===== CARRUSEL ===== -->
+<section class="container py-4">
+  <div class="text-center mb-4">
+    <h2 class="fw-black fs-2 mb-2" style="letter-spacing:-.5px;">Repuestos Destacados</h2>
+    <p class="text-muted">Stock en tiempo real de nuestros proveedores</p>
+  </div>
+  
+  <div id="carruselProductos" class="carousel slide shadow rounded-4 overflow-hidden" data-bs-ride="carousel" style="border: 1px solid #e2e8f0;">
+    <div class="carousel-inner">
+      {% for producto in productos_destacados %}
+        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+          <img src="{% if producto.imagen %}{{ producto.imagen.url }}{% else %}https://placehold.co/1200x400/1e293b/FFF?text=Repuesto+Disponible{% endif %}" class="d-block w-100" alt="{{ producto.nombre }}" style="object-fit: cover; height: 400px;">
+          
+          <div class="carousel-caption d-none d-md-block rounded p-3" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);">
+            <h4 class="fw-bold text-white mb-1">{{ producto.nombre }}</h4>
+            <p class="mb-0" style="color: #FF8C00; font-size: 1.1rem; font-weight: 600;">
+              ${{ producto.precio }} <span class="text-light" style="font-size: 0.9rem; font-weight: normal;">| Proveedor: {{ producto.proveedor.usuario.get_full_name|default:"Proveedor Local" }}</span>
+            </p>
+          </div>
+        </div>
+      {% empty %}
+        <div class="carousel-item active">
+          <div class="d-flex align-items-center justify-content-center" style="height: 400px; background: #f8fafc;">
+            <div class="text-center text-muted">
+              <span style="font-size: 3rem;">📦</span>
+              <h5 class="mt-2">Aún no hay repuestos destacados</h5>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    
+    <button class="carousel-control-prev" type="button" data-bs-target="#carruselProductos" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: invert(1) grayscale(100); border-radius: 50%; background: rgba(0,0,0,0.5); padding: 20px;"></span>
+      <span class="visually-hidden">Anterior</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carruselProductos" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true" style="filter: invert(1) grayscale(100); border-radius: 50%; background: rgba(0,0,0,0.5); padding: 20px;"></span>
+      <span class="visually-hidden">Siguiente</span>
+    </button>
+  </div>
+</section>
+
 
 <!-- ===== PARA QUIÉN ===== -->
 <section class="container py-5 my-2">

@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from plataforma.models.producto import Producto # <-- Asegurate de que esta línea esté arriba de todo para importar tus productos
 
 from ..forms import (
     EditarPerfilProveedorForm,
@@ -14,7 +15,7 @@ from ..forms import (
 )
 from ..models import Pedido, Proveedor, Tecnico
 from .utils import get_proveedor_o_403, get_tecnico_o_403, perfil_aprobado
-
+from plataforma.models.producto import Producto
 
 def registro_tipo(request):
     """Vista para elegir tipo de registro: técnico o proveedor."""
@@ -209,13 +210,24 @@ def espera_aprobacion(request):
     return render(request, 'plataforma/espera_aprobacion.html')
 
 
+
+
 def inicio(request):
-    """Landing page, redirige al dashboard si ya está autenticado."""
     if request.user.is_authenticated:
         return redirect('dashboard')
-    return render(request, 'plataforma/inicio.html')
+
+    productos_destacados = Producto.objects.all().order_by('-id')[:5]
+
+    print("PRODUCTOS:", productos_destacados.count())
+    for p in productos_destacados:
+        print(p.id, p.nombre)
+
+    return render(request, 'plataforma/inicio.html', {
+        'productos_destacados': productos_destacados
+    })
 
 
+    
 @login_required(login_url='login')
 def editar_perfil(request):
     """Permite al usuario editar su propio perfil."""

@@ -23,7 +23,8 @@ class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre_negocio', 'rubro', 'direccion', 'alias_transferencia', 'get_user_active', 'is_approved')
     search_fields = ('nombre_negocio', 'rubro', 'usuario__username')
     list_filter = ('is_approved', 'usuario__is_active')
-    readonly_fields = ('usuario',)
+    # readonly_fields = ('usuario',)
+   
 
     def get_user_active(self, obj):
         return obj.usuario.is_active
