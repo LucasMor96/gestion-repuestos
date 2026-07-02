@@ -52,6 +52,7 @@
         const latInput = document.querySelector(container.dataset.latInput);
         const lngInput = document.querySelector(container.dataset.lngInput);
         const button = document.querySelector(container.dataset.searchButton);
+        const currentButton = document.querySelector(container.dataset.currentButton);
         const statusEl = document.querySelector(container.dataset.status);
 
         if (!addressInput || !latInput || !lngInput || !window.L) return;
@@ -120,11 +121,77 @@
             }
         }
 
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Tu navegador no soporta geolocalizacion.'));
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 12000,
+                    maximumAge: 60000,
+                });
+            });
+        }
+
+        async function reverseGeocode(lat, lng) {
+            const url = new URL('https://nominatim.openstreetmap.org/reverse');
+            url.searchParams.set('format', 'json');
+            url.searchParams.set('lat', lat);
+            url.searchParams.set('lon', lng);
+            url.searchParams.set('zoom', '18');
+            url.searchParams.set('addressdetails', '1');
+
+            const response = await fetch(url.toString(), {
+                headers: { Accept: 'application/json' },
+            });
+            if (!response.ok) throw new Error('No se pudo consultar OpenStreetMap.');
+
+            const result = await response.json();
+            return result.display_name || '';
+        }
+
+        async function useCurrentAddress() {
+            if (!currentButton) return;
+            const originalText = currentButton.textContent;
+            currentButton.disabled = true;
+            currentButton.textContent = 'Localizando...';
+            setStatus(statusEl, 'Buscando tu ubicacion actual...', 'text-muted');
+
+            try {
+                const position = await getCurrentPosition();
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                map.setView([lat, lng], RESULT_ZOOM);
+                moveMarker(lat, lng, 'Ubicacion actual detectada. Buscando direccion...');
+
+                try {
+                    const address = await reverseGeocode(lat, lng);
+                    if (address) {
+                        addressInput.value = address;
+                        setStatus(statusEl, address, 'text-muted');
+                    } else {
+                        setStatus(statusEl, 'Ubicacion actual marcada. No pudimos obtener la direccion exacta.', 'text-warning');
+                    }
+                } catch (error) {
+                    setStatus(statusEl, 'Ubicacion actual marcada. No pudimos obtener la direccion exacta.', 'text-warning');
+                }
+            } catch (error) {
+                setStatus(statusEl, 'No pudimos obtener tu ubicacion. Revisa los permisos del navegador.', 'text-danger');
+            } finally {
+                currentButton.disabled = false;
+                currentButton.textContent = originalText;
+            }
+        }
+
         map.on('click', (event) => {
             moveMarker(event.latlng.lat, event.latlng.lng, 'Ubicacion seleccionada manualmente en el mapa.');
         });
 
         if (button) button.addEventListener('click', geocode);
+        if (currentButton) currentButton.addEventListener('click', useCurrentAddress);
         addressInput.addEventListener('input', debounce(geocode, 900));
         window.setTimeout(() => map.invalidateSize(), 250);
     }

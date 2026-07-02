@@ -61,11 +61,16 @@
                                    placeholder="{{ field.label }}">
                             {% endif %}
                             {% if field.name == 'ubicacion' %}
-                            <div class="d-flex justify-content-between align-items-center mt-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-center gap-2 mt-2 mb-2">
                                 <span class="small text-muted">Vista previa de tu direccion</span>
-                                <button type="button" id="address-map-search" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                                    Ver en mapa
-                                </button>
+                                <div class="d-flex gap-2 flex-wrap justify-content-end">
+                                    <button type="button" id="address-map-current" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        Direccion actual
+                                    </button>
+                                    <button type="button" id="address-map-search" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                        Ver en mapa
+                                    </button>
+                                </div>
                             </div>
                             <div id="address-map"
                                  class="address-map"
@@ -74,6 +79,7 @@
                                  data-lat-input="#id_latitud"
                                  data-lng-input="#id_longitud"
                                  data-search-button="#address-map-search"
+                                 data-current-button="#address-map-current"
                                  data-status="#address-map-status"></div>
                             <div id="address-map-status" class="small mt-2 text-muted">
                                 Escribi tu direccion y ajusta el marcador si hace falta.
