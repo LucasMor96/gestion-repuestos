@@ -43,6 +43,8 @@ gestion-repuestos/
 `-- .env.example
 ```
 
+Para una guia de onboarding con el mapa interno de archivos, vistas, modelos y flujos de negocio, ver [`docs/guia_desarrollador.md`](docs/guia_desarrollador.md).
+
 ## Requisitos
 
 - Python 3.11 o superior recomendado.
