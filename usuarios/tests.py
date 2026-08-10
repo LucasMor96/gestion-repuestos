@@ -1,14 +1,11 @@
-﻿import re
+
+import re
 
 from django.contrib.auth.models import User
 from django.core import mail
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from catalogo.models import Producto
-from creditos.models import Credito
-from pedidos.models import Pedido
 from usuarios.models import Proveedor, Tecnico
 
 

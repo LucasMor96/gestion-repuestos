@@ -1,7 +1,6 @@
 ﻿from datetime import timedelta
 
 from django.db import models
-from django.utils import timezone
 
 from catalogo.models import Producto
 from usuarios.models import Proveedor, Tecnico
@@ -48,11 +47,6 @@ class Pedido(models.Model):
         if self.forma_entrega != 'retiro' or self.estado != 'aceptado':
             return None
         return self.fecha_actualizacion + timedelta(hours=24)
-
-    @property
-    def retiro_vencido(self):
-        limite = self.fecha_limite_retiro
-        return limite is not None and timezone.now() > limite
 
     class Meta:
         verbose_name = "Pedido"
