@@ -9,6 +9,7 @@ from django.urls import reverse
 from apps.catalogo.models import Producto
 from apps.pedidos.models import Pedido
 from apps.usuarios.models import Proveedor, Tecnico
+from apps.core.services import formatear_tiempo_respuesta
 
 
 class DemoDataCommandTests(TestCase):
@@ -203,3 +204,10 @@ class AuthorizationTests(TestCase):
         response = self.client.post(reverse('aprobar_usuario', args=['cliente', 1]))
 
         self.assertEqual(response.status_code, 404)
+
+
+class DashboardServiceTests(TestCase):
+    def test_formatea_los_distintos_rangos_de_respuesta(self):
+        self.assertEqual(formatear_tiempo_respuesta(None), 'Sin respuestas')
+        self.assertEqual(formatear_tiempo_respuesta(120), '2 min')
+        self.assertEqual(formatear_tiempo_respuesta(7200), '2.0 h')

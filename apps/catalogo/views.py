@@ -7,6 +7,7 @@ from apps.usuarios.utils import get_proveedor_o_403
 
 from .forms import ProductoForm
 from .models import Producto
+from .selectors import productos_proveedor
 
 
 @login_required(login_url='login')
@@ -16,7 +17,7 @@ def catalogo_proveedor(request):
     if proveedor is None:
         return redirect('dashboard')
 
-    productos = proveedor.productos.all().order_by('nombre')
+    productos = productos_proveedor(proveedor)
     return render(request, 'catalogo/catalogo_proveedor.html', {'productos': productos})
 
 
@@ -86,8 +87,7 @@ def toggle_disponibilidad(request, pk):
         return redirect('dashboard')
 
     producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
-    producto.disponible = not producto.disponible
-    producto.save(update_fields=['disponible'])
+    producto.alternar_disponibilidad()
     estado = 'visible' if producto.disponible else 'oculto'
     messages.success(request, f'"{producto.nombre}" ahora esta {estado} en el catalogo.')
     return redirect('catalogo_proveedor')

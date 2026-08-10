@@ -1,9 +1,43 @@
 from datetime import timedelta
 
 from django.db import models
+from django.db.models import Exists, OuterRef, Q
 
 from apps.catalogo.models import Producto
 from apps.usuarios.models import Proveedor, Tecnico
+
+
+class PedidoQuerySet(models.QuerySet):
+    def con_relaciones(self):
+        return self.select_related('producto', 'proveedor', 'tecnico__usuario')
+
+    def para_historial(self, *, tecnico, fecha_desde='', fecha_hasta='', proveedor_id=''):
+        from apps.calificaciones.models import CalificacionProveedor
+
+        queryset = self.con_relaciones().filter(tecnico=tecnico).annotate(
+            ya_calificado=Exists(CalificacionProveedor.objects.filter(pedido=OuterRef('pk')))
+        )
+        if fecha_desde:
+            queryset = queryset.filter(fecha_creacion__date__gte=fecha_desde)
+        if fecha_hasta:
+            queryset = queryset.filter(fecha_creacion__date__lte=fecha_hasta)
+        if proveedor_id:
+            queryset = queryset.filter(proveedor_id=proveedor_id)
+        return queryset.order_by('-fecha_creacion')
+
+    def recibidos_por(self, proveedor):
+        from apps.calificaciones.models import CalificacionTecnico
+
+        return self.con_relaciones().filter(proveedor=proveedor).annotate(
+            ya_calificado=Exists(CalificacionTecnico.objects.filter(pedido=OuterRef('pk')))
+        )
+
+    def deuda_credito(self, *, proveedor, tecnico):
+        return self.filter(
+            Q(usa_credito=True) | Q(forma_pago='credito_comercial'),
+            proveedor=proveedor,
+            tecnico=tecnico,
+        ).exclude(estado__in=['cancelado', 'rechazado']).order_by('-fecha_creacion')
 
 
 class Pedido(models.Model):
@@ -41,6 +75,8 @@ class Pedido(models.Model):
     respuesta_proveedor = models.TextField(blank=True, null=True)
     comprobante_transferencia = models.FileField(upload_to='comprobantes_transferencia/', blank=True, null=True)
     usa_credito = models.BooleanField(default=False)
+
+    objects = PedidoQuerySet.as_manager()
 
     @property
     def fecha_limite_retiro(self):

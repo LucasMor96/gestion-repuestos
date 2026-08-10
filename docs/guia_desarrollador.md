@@ -18,10 +18,32 @@ Cada app expone sus rutas desde `urls.py`. `config/urls.py` incluye todos esos
 modulos sin namespace, por lo que nombres como `crear_pedido`, `mis_creditos` y
 `dashboard` se mantienen estables.
 
+## Capas dentro de cada app
+
+Las views son adaptadores HTTP: comprueban acceso, instancian formularios,
+invocan un caso de uso y traducen el resultado a mensajes, redirects o un
+template. No contienen transiciones de estado ni coordinan escrituras sobre
+varios modelos.
+
+- `forms.py`: valida y normaliza datos provenientes del usuario.
+- `services.py`: ejecuta casos de uso y reglas de negocio. Recibe modelos o
+  valores explicitos, nunca `request`; las operaciones de varias escrituras son
+  atomicas y exponen excepciones de dominio esperadas.
+- `selectors.py` y QuerySets: encapsulan consultas, filtros y anotaciones
+  reutilizables sin producir efectos secundarios.
+- `models.py`: conserva propiedades e invariantes propias de una sola entidad.
+- `notifications.py`: construye y envia avisos. Los servicios las programan con
+  `transaction.on_commit()` cuando dependen de una escritura confirmada.
+
+Los CRUD triviales pueden permanecer coordinados por una view. En cuanto una
+accion modifica mas de una entidad, cambia estados, ajusta stock o saldo, o se
+reutiliza desde otro flujo, debe convertirse en un servicio.
+
 ## Donde buscar cada cambio
 
 El recorrido habitual de una funcionalidad es `urls.py` -> `views.py` ->
-`forms.py` -> `models.py` -> `templates/<app>/`. Cada modelo se registra en el
+`forms.py` -> `services.py`/`selectors.py` -> `models.py` ->
+`templates/<app>/`. Cada modelo se registra en el
 `admin.py` de su propia app y posee una migracion inicial local.
 
 - Autenticacion, perfiles, aprobacion y permisos: `apps/usuarios/`.

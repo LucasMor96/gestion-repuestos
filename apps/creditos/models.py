@@ -3,6 +3,20 @@ from django.db import models
 from apps.usuarios.models import Proveedor, Tecnico
 
 
+class CreditoQuerySet(models.QuerySet):
+    def activos(self):
+        return self.filter(activo=True)
+
+    def para_tecnico(self, tecnico):
+        return self.select_related('proveedor').filter(tecnico=tecnico)
+
+    def para_proveedor(self, proveedor):
+        return self.select_related('tecnico__usuario').filter(proveedor=proveedor)
+
+    def con_deuda(self):
+        return self.filter(saldo_usado__gt=0).order_by('-saldo_usado')
+
+
 class Credito(models.Model):
     """Límite de crédito entre proveedor y técnico (US-10, US-11, US-12)"""
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='creditos')
@@ -11,6 +25,8 @@ class Credito(models.Model):
     saldo_usado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    objects = CreditoQuerySet.as_manager()
 
     @property
     def saldo_disponible(self):

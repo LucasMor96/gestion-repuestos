@@ -4,11 +4,22 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
+from datetime import timedelta
+from unittest.mock import patch
 
 from apps.catalogo.models import Producto
 from apps.creditos.models import Credito
 from apps.pedidos.models import Pedido
 from apps.usuarios.models import Proveedor, Tecnico
+from apps.pedidos.exceptions import EstadoPedidoInvalido
+from apps.pedidos.services import (
+    aceptar_pedido,
+    calcular_costo_envio,
+    cancelar_pedido,
+    cancelar_retiros_vencidos,
+    rechazar_pedido,
+)
 
 
 class PedidoEmailTests(TestCase):
@@ -81,15 +92,16 @@ class PedidoEmailTests(TestCase):
         producto = self.crear_producto(proveedor)
         self.client.force_login(tecnico.usuario)
 
-        response = self.client.post(
-            reverse('crear_pedido', args=[producto.pk]),
-            {
-                'cantidad': 2,
-                'forma_entrega': 'retiro',
-                'forma_pago': 'mercadopago',
-                'notas': 'Lo retiro hoy',
-            },
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse('crear_pedido', args=[producto.pk]),
+                {
+                    'cantidad': 2,
+                    'forma_entrega': 'retiro',
+                    'forma_pago': 'mercadopago',
+                    'notas': 'Lo retiro hoy',
+                },
+            )
 
         self.assertRedirects(response, reverse('mis_pedidos'))
         pedido = Pedido.objects.get(tecnico=tecnico, proveedor=proveedor, producto=producto)
@@ -161,13 +173,14 @@ class PedidoEmailTests(TestCase):
         pedido = self.crear_pedido()
         self.client.force_login(pedido.proveedor.usuario)
 
-        response = self.client.post(
-            reverse('gestionar_pedido', args=[pedido.pk]),
-            {
-                'accion': 'aceptar',
-                'respuesta': 'Listo para retirar',
-            },
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse('gestionar_pedido', args=[pedido.pk]),
+                {
+                    'accion': 'aceptar',
+                    'respuesta': 'Listo para retirar',
+                },
+            )
 
         self.assertRedirects(response, reverse('pedidos_recibidos'))
         self.assertEqual(len(mail.outbox), 1)
@@ -179,13 +192,14 @@ class PedidoEmailTests(TestCase):
         pedido = self.crear_pedido()
         self.client.force_login(pedido.proveedor.usuario)
 
-        response = self.client.post(
-            reverse('gestionar_pedido', args=[pedido.pk]),
-            {
-                'accion': 'rechazar',
-                'respuesta': 'Sin stock por ahora',
-            },
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse('gestionar_pedido', args=[pedido.pk]),
+                {
+                    'accion': 'rechazar',
+                    'respuesta': 'Sin stock por ahora',
+                },
+            )
 
         self.assertRedirects(response, reverse('pedidos_recibidos'))
         self.assertEqual(len(mail.outbox), 1)
@@ -197,7 +211,8 @@ class PedidoEmailTests(TestCase):
         pedido = self.crear_pedido(estado='aceptado')
         self.client.force_login(pedido.tecnico.usuario)
 
-        response = self.client.post(reverse('completar_pedido', args=[pedido.pk]))
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(reverse('completar_pedido', args=[pedido.pk]))
 
         self.assertRedirects(response, reverse('mis_pedidos'))
         self.assertEqual(len(mail.outbox), 1)
@@ -207,3 +222,69 @@ class PedidoEmailTests(TestCase):
         )
         self.assertIn('confirmado', mail.outbox[0].subject)
         self.assertIn('completado', mail.outbox[0].body)
+
+
+class PedidoServiceTests(TestCase):
+    def setUp(self):
+        user_tecnico = User.objects.create_user(username='svc-tec', password='Password1!')
+        user_proveedor = User.objects.create_user(username='svc-prov', password='Password1!')
+        self.tecnico = Tecnico.objects.create(
+            usuario=user_tecnico, especialidad='mecanica_automotriz', ubicacion='CABA',
+            estado='aprobado', is_approved=True,
+        )
+        self.proveedor = Proveedor.objects.create(
+            usuario=user_proveedor, nombre_negocio='Servicios', direccion='CABA',
+            rubro='mecanica_automotriz', estado='aprobado', is_approved=True,
+        )
+        self.producto = Producto.objects.create(
+            proveedor=self.proveedor, nombre='Filtro', categoria='mecanica_automotriz',
+            precio=1000, stock=5,
+        )
+
+    def pedido(self, *, estado='pendiente', usa_credito=False):
+        return Pedido.objects.create(
+            tecnico=self.tecnico, proveedor=self.proveedor, producto=self.producto,
+            cantidad=2, forma_entrega='retiro', forma_pago='credito_comercial' if usa_credito else 'mercadopago',
+            estado=estado, monto_total=2000, usa_credito=usa_credito,
+        )
+
+    def test_calculo_envio_es_regla_de_dominio(self):
+        self.assertEqual(calcular_costo_envio('retiro', 3), 0)
+        self.assertEqual(calcular_costo_envio('envio', 3), 5300)
+
+    def test_aceptar_descuenta_stock_y_rechaza_doble_transicion(self):
+        pedido = self.pedido()
+        aceptar_pedido(pedido=pedido)
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 3)
+        with self.assertRaises(EstadoPedidoInvalido):
+            aceptar_pedido(pedido=pedido)
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 3)
+
+    def test_cancelar_libera_credito(self):
+        credito = Credito.objects.create(
+            proveedor=self.proveedor, tecnico=self.tecnico, limite=2000, saldo_usado=2000,
+        )
+        cancelar_pedido(pedido=self.pedido(usa_credito=True))
+        credito.refresh_from_db()
+        self.assertEqual(credito.saldo_usado, 0)
+
+    def test_rechazo_hace_rollback_si_falla_liberar_credito(self):
+        pedido = self.pedido(usa_credito=True)
+        with patch('apps.pedidos.services.liberar_saldo', side_effect=RuntimeError('fallo')):
+            with self.assertRaises(RuntimeError):
+                rechazar_pedido(pedido=pedido)
+        pedido.refresh_from_db()
+        self.assertEqual(pedido.estado, 'pendiente')
+
+    def test_retiro_vencido_restaura_stock(self):
+        pedido = self.pedido(estado='aceptado')
+        Pedido.objects.filter(pk=pedido.pk).update(
+            fecha_actualizacion=timezone.now() - timedelta(hours=25)
+        )
+        self.assertEqual(cancelar_retiros_vencidos(Pedido.objects.filter(pk=pedido.pk)), 1)
+        pedido.refresh_from_db()
+        self.producto.refresh_from_db()
+        self.assertEqual(pedido.estado, 'cancelado')
+        self.assertEqual(self.producto.stock, 7)

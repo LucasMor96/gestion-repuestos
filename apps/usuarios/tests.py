@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.usuarios.models import Proveedor, Tecnico
+from apps.usuarios.services import cambiar_estado_perfil
 
 
 class LoginViewTests(TestCase):
@@ -32,6 +33,25 @@ class LoginViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'usuarios/login.html')
         self.assertContains(response, reverse('password_reset'))
+
+
+class ModeracionServiceTests(TestCase):
+    def test_cambia_perfil_y_usuario_en_una_operacion(self):
+        user = User.objects.create_user(
+            username='moderacion@example.com', is_active=False
+        )
+        tecnico = Tecnico.objects.create(
+            usuario=user,
+            especialidad='mecanica_automotriz',
+            ubicacion='CABA',
+            estado='pendiente',
+        )
+        cambiar_estado_perfil(perfil=tecnico, estado='aprobado')
+        tecnico.refresh_from_db()
+        user.refresh_from_db()
+        self.assertEqual(tecnico.estado, 'aprobado')
+        self.assertTrue(tecnico.is_approved)
+        self.assertTrue(user.is_active)
 
 class RegistroViewTests(TestCase):
     def test_authenticated_user_is_redirected_from_registro_to_dashboard(self):

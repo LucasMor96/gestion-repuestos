@@ -1,0 +1,83 @@
+from decimal import Decimal
+
+from django.db import transaction
+
+from .exceptions import CreditoNoDisponible, DeudaInexistente, SaldoInsuficiente
+from .models import Credito
+from .notifications import (
+    notificar_alerta_credito,
+    notificar_credito_asignado,
+    notificar_credito_revocado,
+    notificar_deuda_saldada,
+)
+
+
+@transaction.atomic
+def reservar_saldo(*, proveedor, tecnico, monto):
+    try:
+        credito = Credito.objects.select_for_update().get(
+            proveedor=proveedor,
+            tecnico=tecnico,
+            activo=True,
+        )
+    except Credito.DoesNotExist as error:
+        raise CreditoNoDisponible('No existe credito comercial activo.') from error
+    if monto > credito.saldo_disponible:
+        raise SaldoInsuficiente(disponible=credito.saldo_disponible, solicitado=monto)
+    credito.saldo_usado += Decimal(monto)
+    credito.save(update_fields=['saldo_usado'])
+    if credito.porcentaje_usado >= 80:
+        transaction.on_commit(lambda: notificar_alerta_credito(credito))
+    return credito
+
+
+@transaction.atomic
+def liberar_saldo(*, proveedor, tecnico, monto):
+    try:
+        credito = Credito.objects.select_for_update().get(
+            proveedor=proveedor,
+            tecnico=tecnico,
+        )
+    except Credito.DoesNotExist:
+        return None
+    credito.saldo_usado = max(Decimal('0'), credito.saldo_usado - Decimal(monto))
+    credito.save(update_fields=['saldo_usado'])
+    return credito
+
+
+@transaction.atomic
+def asignar_credito(*, proveedor, tecnico, limite):
+    credito, _ = Credito.objects.select_for_update().get_or_create(
+        proveedor=proveedor,
+        tecnico=tecnico,
+        defaults={'limite': limite, 'activo': True},
+    )
+    credito.limite = limite
+    credito.activo = True
+    credito.save(update_fields=['limite', 'activo'])
+    transaction.on_commit(lambda: notificar_credito_asignado(credito))
+    return credito
+
+
+@transaction.atomic
+def revocar_credito(*, credito):
+    credito = Credito.objects.select_for_update().select_related(
+        'tecnico__usuario', 'proveedor'
+    ).get(pk=credito.pk)
+    credito.activo = False
+    credito.save(update_fields=['activo'])
+    transaction.on_commit(lambda: notificar_credito_revocado(credito))
+    return credito
+
+
+@transaction.atomic
+def saldar_deuda(*, credito):
+    credito = Credito.objects.select_for_update().select_related(
+        'tecnico__usuario', 'proveedor'
+    ).get(pk=credito.pk)
+    if credito.saldo_usado <= 0:
+        raise DeudaInexistente('Este tecnico no tiene deuda pendiente.')
+    credito.saldo_usado = Decimal('0')
+    credito.save(update_fields=['saldo_usado'])
+    transaction.on_commit(lambda: notificar_deuda_saldada(credito))
+    return credito

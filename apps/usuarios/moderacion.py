@@ -5,6 +5,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .models import Proveedor, Tecnico
+from .selectors import contexto_moderacion
+from .services import cambiar_estado_perfil, guardar_nota_moderacion
 from .utils import solo_staff
 
 
@@ -25,14 +27,7 @@ def panel_moderacion(request):
     if not solo_staff(request):
         return redirect('dashboard')
 
-    context = {
-        'tecnicos_pendientes': Tecnico.objects.filter(estado='pendiente').select_related('usuario'),
-        'proveedores_pendientes': Proveedor.objects.filter(estado='pendiente').select_related('usuario'),
-        'tecnicos_activos': Tecnico.objects.filter(estado='aprobado').select_related('usuario'),
-        'proveedores_activos': Proveedor.objects.filter(estado='aprobado').select_related('usuario'),
-        'tecnicos_inactivos': Tecnico.objects.filter(estado__in=['rechazado', 'suspendido']).select_related('usuario'),
-        'proveedores_inactivos': Proveedor.objects.filter(estado__in=['rechazado', 'suspendido']).select_related('usuario'),
-    }
+    context = contexto_moderacion()
     return render(request, 'usuarios/panel_moderacion.html', context)
 
 
@@ -44,12 +39,7 @@ def aprobar_usuario(request, tipo, pk):
         return redirect('dashboard')
 
     perfil = get_perfil_moderacion(tipo, pk)
-    perfil.estado = 'aprobado'
-    perfil.is_approved = True
-    perfil.nota_admin = ''
-    perfil.save()
-    perfil.usuario.is_active = True
-    perfil.usuario.save()
+    perfil = cambiar_estado_perfil(perfil=perfil, estado='aprobado')
     messages.success(request, f'{perfil.usuario.get_full_name()} fue aprobado/a correctamente.')
     return redirect('panel_moderacion')
 
@@ -62,12 +52,9 @@ def rechazar_usuario(request, tipo, pk):
         return redirect('dashboard')
 
     perfil = get_perfil_moderacion(tipo, pk)
-    perfil.estado = 'rechazado'
-    perfil.is_approved = False
-    perfil.nota_admin = request.POST.get('nota', '')
-    perfil.save()
-    perfil.usuario.is_active = False
-    perfil.usuario.save()
+    perfil = cambiar_estado_perfil(
+        perfil=perfil, estado='rechazado', nota=request.POST.get('nota', '')
+    )
     messages.success(request, f'Solicitud de {perfil.usuario.get_full_name()} rechazada.')
     return redirect('panel_moderacion')
 
@@ -80,12 +67,9 @@ def suspender_usuario(request, tipo, pk):
         return redirect('dashboard')
 
     perfil = get_perfil_moderacion(tipo, pk)
-    perfil.estado = 'suspendido'
-    perfil.is_approved = False
-    perfil.nota_admin = request.POST.get('nota', '')
-    perfil.save()
-    perfil.usuario.is_active = False
-    perfil.usuario.save()
+    perfil = cambiar_estado_perfil(
+        perfil=perfil, estado='suspendido', nota=request.POST.get('nota', '')
+    )
     messages.success(request, f'Cuenta de {perfil.usuario.get_full_name()} suspendida.')
     return redirect('panel_moderacion')
 
@@ -98,7 +82,6 @@ def solicitar_info(request, tipo, pk):
         return redirect('dashboard')
 
     perfil = get_perfil_moderacion(tipo, pk)
-    perfil.nota_admin = request.POST.get('nota', '')
-    perfil.save()
+    perfil = guardar_nota_moderacion(perfil=perfil, nota=request.POST.get('nota', ''))
     messages.success(request, f'Nota guardada para {perfil.usuario.get_full_name()}.')
     return redirect('panel_moderacion')
