@@ -1,10 +1,11 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from ..forms import CalificacionProveedorForm, CalificacionTecnicoForm
-from ..models import Pedido
-from .utils import get_proveedor_o_403, get_tecnico_o_403
+from pedidos.models import Pedido
+from usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
+
+from .forms import CalificacionProveedorForm, CalificacionTecnicoForm
 
 
 @login_required(login_url='login')
@@ -47,7 +48,7 @@ def calificar_proveedor(request, pedido_pk):
     else:
         form = CalificacionProveedorForm()
 
-    return render(request, 'plataforma/calificar_proveedor.html', {
+    return render(request, 'calificaciones/calificar_proveedor.html', {
         'form': form,
         'pedido': pedido,
     })
@@ -91,7 +92,7 @@ def calificar_tecnico(request, pedido_pk):
     else:
         form = CalificacionTecnicoForm()
 
-    return render(request, 'plataforma/calificar_tecnico.html', {
+    return render(request, 'calificaciones/calificar_tecnico.html', {
         'form': form,
         'pedido': pedido,
     })

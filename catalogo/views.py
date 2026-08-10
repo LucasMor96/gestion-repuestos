@@ -1,11 +1,12 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from ..forms import ProductoForm
-from ..models import Producto
-from .utils import get_proveedor_o_403
+from usuarios.utils import get_proveedor_o_403
+
+from .forms import ProductoForm
+from .models import Producto
 
 
 @login_required(login_url='login')
@@ -16,7 +17,7 @@ def catalogo_proveedor(request):
         return redirect('dashboard')
 
     productos = proveedor.productos.all().order_by('nombre')
-    return render(request, 'plataforma/catalogo_proveedor.html', {'productos': productos})
+    return render(request, 'catalogo/catalogo_proveedor.html', {'productos': productos})
 
 
 @login_required(login_url='login')
@@ -37,7 +38,7 @@ def agregar_producto(request):
     else:
         form = ProductoForm()
 
-    return render(request, 'plataforma/producto_form.html', {'form': form, 'accion': 'Agregar'})
+    return render(request, 'catalogo/producto_form.html', {'form': form, 'accion': 'Agregar'})
 
 
 @login_required(login_url='login')
@@ -58,7 +59,7 @@ def editar_producto(request, pk):
     else:
         form = ProductoForm(instance=producto)
 
-    return render(request, 'plataforma/producto_form.html', {'form': form, 'accion': 'Editar', 'producto': producto})
+    return render(request, 'catalogo/producto_form.html', {'form': form, 'accion': 'Editar', 'producto': producto})
 
 
 @login_required(login_url='login')

@@ -1,10 +1,11 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
 from django.shortcuts import redirect, render
 
-from ..models import Producto
-from .utils import get_tecnico_o_403
+from usuarios.utils import get_tecnico_o_403
+
+from .models import Producto
 
 
 @login_required(login_url='login')
@@ -78,4 +79,4 @@ def buscar_repuestos(request):
             'es_tecnico': hasattr(request.user, 'tecnico'),
         }
 
-    return render(request, 'plataforma/buscar_repuestos.html', context)
+    return render(request, 'catalogo/buscar_repuestos.html', context)

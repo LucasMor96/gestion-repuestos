@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 from datetime import timedelta
 from decimal import Decimal
 
@@ -10,15 +10,20 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from ..forms import GestionarPedidoForm, PedidoForm
-from ..models import CalificacionProveedor, CalificacionTecnico, Credito, Pedido, Producto, Proveedor
+from calificaciones.models import CalificacionProveedor, CalificacionTecnico
+from catalogo.models import Producto
+from creditos.models import Credito
+from creditos.notifications import notificar_alerta_credito
+from usuarios.models import Proveedor
+from usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
+
+from .forms import GestionarPedidoForm, PedidoForm
+from .models import Pedido
 from .notifications import (
-    notificar_alerta_credito,
     notificar_pedido_confirmado,
     notificar_proveedor_nuevo_pedido,
     notificar_tecnico_estado,
 )
-from .utils import get_proveedor_o_403, get_tecnico_o_403
 
 
 def cancelar_retiros_vencidos(pedidos):
@@ -113,7 +118,7 @@ def crear_pedido(request, producto_pk):
                             f'No tenes credito comercial activo con {proveedor.nombre_negocio}. '
                             'Elegi transferencia o MercadoPago simulado para continuar.'
                         )
-                        return render(request, 'plataforma/crear_pedido.html', {
+                        return render(request, 'pedidos/crear_pedido.html', {
                             'form': form, 'producto': producto, 'credito': credito,
                         })
                     if pedido.monto_total > credito.saldo_disponible:
@@ -122,7 +127,7 @@ def crear_pedido(request, producto_pk):
                             f'El monto del pedido (${pedido.monto_total}) supera tu credito disponible '
                             f'(${credito.saldo_disponible}) con {proveedor.nombre_negocio}.'
                         )
-                        return render(request, 'plataforma/crear_pedido.html', {
+                        return render(request, 'pedidos/crear_pedido.html', {
                             'form': form, 'producto': producto, 'credito': credito,
                         })
                     pedido.save()
@@ -151,7 +156,7 @@ def crear_pedido(request, producto_pk):
     else:
         form = PedidoForm(stock=producto.stock, tecnico=tecnico)
 
-    return render(request, 'plataforma/crear_pedido.html', {'form': form, 'producto': producto, 'credito': credito})
+    return render(request, 'pedidos/crear_pedido.html', {'form': form, 'producto': producto, 'credito': credito})
 
 
 @login_required(login_url='login')
@@ -192,7 +197,7 @@ def mis_pedidos(request):
         hay_filtros = False
         fecha_desde = fecha_hasta = proveedor_id = ''
 
-    return render(request, 'plataforma/mis_pedidos.html', {
+    return render(request, 'pedidos/mis_pedidos.html', {
         'pedidos': pedidos,
         'proveedores': proveedores,
         'hay_filtros': hay_filtros,
@@ -296,7 +301,7 @@ def pedidos_recibidos(request):
         .annotate(ya_calificado=Exists(CalificacionTecnico.objects.filter(pedido=OuterRef('pk'))))
         .all()
     )
-    return render(request, 'plataforma/pedidos_recibidos.html', {'pedidos': pedidos})
+    return render(request, 'pedidos/pedidos_recibidos.html', {'pedidos': pedidos})
 
 
 @login_required(login_url='login')
@@ -315,7 +320,7 @@ def detalle_pedido_proveedor(request, pk):
     if pedido.estado == 'cancelado':
         messages.warning(request, 'Este retiro fue cancelado automaticamente porque pasaron mas de 24 hs desde la confirmacion.')
     form = GestionarPedidoForm()
-    return render(request, 'plataforma/detalle_pedido_proveedor.html', {
+    return render(request, 'pedidos/detalle_pedido_proveedor.html', {
         'pedido': pedido,
         'form': form,
         'ya_calificado': pedido.calificacion_tecnico.exists(),

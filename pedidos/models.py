@@ -1,11 +1,10 @@
-from datetime import timedelta
+﻿from datetime import timedelta
 
 from django.db import models
 from django.utils import timezone
 
-from .tecnico import Tecnico
-from .proveedor import Proveedor
-from .producto import Producto
+from catalogo.models import Producto
+from usuarios.models import Proveedor, Tecnico
 
 
 class Pedido(models.Model):

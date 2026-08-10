@@ -1,17 +1,20 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from ..forms import AsignarCreditoForm
-from ..models import Credito, Pedido, Tecnico
+from pedidos.models import Pedido
+from usuarios.models import Tecnico
+from usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
+
+from .forms import AsignarCreditoForm
+from .models import Credito
 from .notifications import (
     notificar_credito_asignado,
     notificar_credito_revocado,
     notificar_deuda_saldada,
 )
-from .utils import get_proveedor_o_403, get_tecnico_o_403
 
 
 @login_required(login_url='login')
@@ -22,7 +25,7 @@ def mis_creditos(request):
         return redirect('dashboard')
 
     creditos = tecnico.creditos.select_related('proveedor').filter(activo=True)
-    return render(request, 'plataforma/mis_creditos.html', {'creditos': creditos})
+    return render(request, 'creditos/mis_creditos.html', {'creditos': creditos})
 
 
 @login_required(login_url='login')
@@ -35,7 +38,7 @@ def gestionar_creditos_proveedor(request):
     creditos = proveedor.creditos.select_related('tecnico__usuario').filter(activo=True).order_by(
         'tecnico__usuario__last_name'
     )
-    return render(request, 'plataforma/gestionar_creditos_proveedor.html', {'creditos': creditos})
+    return render(request, 'creditos/gestionar_creditos_proveedor.html', {'creditos': creditos})
 
 
 @login_required(login_url='login')
@@ -90,7 +93,7 @@ def asignar_credito(request):
     else:
         form = AsignarCreditoForm(instance=credito_existente) if tecnico_sel else None
 
-    return render(request, 'plataforma/asignar_credito.html', {
+    return render(request, 'creditos/asignar_credito.html', {
         'busqueda': busqueda,
         'tecnicos_encontrados': tecnicos_encontrados,
         'tecnico_sel': tecnico_sel,
@@ -137,7 +140,7 @@ def deudas_tecnicos(request):
         .filter(saldo_usado__gt=0)
         .order_by('-saldo_usado')
     )
-    return render(request, 'plataforma/deudas_tecnicos.html', {'deudas': deudas})
+    return render(request, 'creditos/deudas_tecnicos.html', {'deudas': deudas})
 
 
 @login_required(login_url='login')
@@ -158,7 +161,7 @@ def detalle_deuda_tecnico(request, pk):
         .exclude(estado__in=['cancelado', 'rechazado'])
         .order_by('-fecha_creacion')
     )
-    return render(request, 'plataforma/detalle_deuda_tecnico.html', {
+    return render(request, 'creditos/detalle_deuda_tecnico.html', {
         'credito': credito,
         'pedidos_credito': pedidos_credito,
     })

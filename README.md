@@ -1,4 +1,4 @@
-# Gestion Repuestos
+﻿# Gestion Repuestos
 
 Aplicacion web desarrollada con Django para gestionar la compra y venta de repuestos entre tecnicos independientes y proveedores.
 
@@ -31,17 +31,22 @@ El sistema permite registrar tecnicos y proveedores, moderar altas de usuarios, 
 
 ```text
 gestion-repuestos/
-|-- config/                 # Configuracion global de Django
-|-- plataforma/             # App principal
-|   |-- models/             # Modelos de negocio
-|   |-- views/              # Vistas separadas por modulo
-|   |-- templates/          # Templates HTML
-|   |-- static/             # Assets estaticos
+|-- config/                 # Configuracion y composicion global de URLs
+|-- core/                   # Inicio, dashboard, 404 y recursos compartidos
+|-- usuarios/               # Tecnicos, proveedores, autenticacion y moderacion
+|-- catalogo/               # Productos, busqueda y catalogo del proveedor
+|-- pedidos/                # Flujo de pedidos y sus notificaciones
+|-- creditos/               # Credito comercial, deuda y notificaciones
+|-- calificaciones/         # Calificaciones posteriores a una operacion
 |-- media/                  # Archivos subidos por usuarios
 |-- manage.py
 |-- requeriments.txt
 `-- .env.example
 ```
+
+Cada app contiene sus propios modelos, formularios, vistas, URLs, templates,
+administracion, migraciones y pruebas cuando corresponda. Las URLs publicas se
+componen sin namespaces para conservar sus nombres historicos.
 
 Para una guia de onboarding con el mapa interno de archivos, vistas, modelos y flujos de negocio, ver [`docs/guia_desarrollador.md`](docs/guia_desarrollador.md).
 
@@ -107,11 +112,15 @@ Por defecto, Django usa el backend de consola para desarrollo local y muestra lo
 CREATE DATABASE gestion_repuestos;
 ```
 
-6. Aplicar migraciones:
+6. Aplicar migraciones sobre una base vacia:
 
 ```bash
 python manage.py migrate
 ```
+
+La historia de migraciones comienza con las seis apps actuales. Si se detectan
+tablas de la antigua app `plataforma`, una migracion de `core` importa sus datos
+a las tablas nuevas conservando IDs y relaciones.
 
 7. Crear usuarios de prueba:
 

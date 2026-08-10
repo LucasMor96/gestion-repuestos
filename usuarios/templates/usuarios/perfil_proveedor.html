@@ -1,4 +1,4 @@
-{% extends "plataforma/base.html" %}
+﻿{% extends "core/base.html" %}
 {% load static %}
 {% block title %}{{ proveedor.nombre_negocio }}{% endblock %}
 {% block extra_head %}
@@ -10,7 +10,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""></script>
-<script src="{% static 'plataforma/js/address-map.js' %}"></script>
+<script src="{% static 'core/js/address-map.js' %}"></script>
 {% endblock %}
 {% block content %}
 <div class="row justify-content-center py-4">
@@ -46,7 +46,7 @@
                 <div class="col-md-6">
                     <p class="text-muted small mb-1">Dirección</p>
                     <p class="fw-bold">{{ proveedor.direccion }}</p>
-                    {% include "plataforma/includes/static_location_map.html" with latitud=proveedor.latitud longitud=proveedor.longitud label=proveedor.direccion %}
+                    {% include "core/includes/static_location_map.html" with latitud=proveedor.latitud longitud=proveedor.longitud label=proveedor.direccion %}
                 </div>
                 {% if proveedor.horarios %}
                 <div class="col-md-6">

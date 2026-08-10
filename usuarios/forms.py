@@ -1,7 +1,9 @@
-from django import forms
-from django.contrib.auth.models import User
+﻿from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import Tecnico, Proveedor, Producto, Pedido, Credito, CalificacionProveedor, CalificacionTecnico, RUBROS_CHOICES
+from django.contrib.auth.models import User
+
+from .choices import RUBROS_CHOICES
+from .models import Proveedor, Tecnico
 
 
 class RegistroTecnicoForm(UserCreationForm):
@@ -52,7 +54,6 @@ class RegistroTecnicoForm(UserCreationForm):
                 is_approved=False,
             )
         return user
-
 
 class RegistroProveedorForm(UserCreationForm):
     """Formulario de registro para proveedores"""
@@ -116,12 +117,10 @@ class RegistroProveedorForm(UserCreationForm):
             )
         return user
 
-
 class LoginForm(forms.Form):
     """Formulario de login con email"""
     email = forms.EmailField(label="Email")
     password = forms.CharField(widget=forms.PasswordInput(), label="Contraseña")
-
 
 class EditarPerfilTecnicoForm(forms.ModelForm):
     """Formulario para que el técnico edite su perfil"""
@@ -148,7 +147,6 @@ class EditarPerfilTecnicoForm(forms.ModelForm):
         user.first_name = self.cleaned_data['first_name']
         user.last_name = self.cleaned_data['last_name']
         user.save()
-
 
 class EditarPerfilProveedorForm(forms.ModelForm):
     """Formulario para que el proveedor edite su perfil"""
@@ -217,237 +215,3 @@ class EditarPerfilProveedorForm(forms.ModelForm):
         user.first_name = self.cleaned_data['first_name']
         user.last_name = self.cleaned_data['last_name']
         user.save()
-
-
-class ProductoForm(forms.ModelForm):
-    """Formulario para crear y editar productos del catálogo (US-06)"""
-
-    class Meta:
-        model = Producto
-        fields = ('nombre', 'descripcion', 'imagen', 'modelo', 'categoria', 'precio', 'stock', 'disponible')
-        labels = {
-            'nombre': 'Nombre del producto',
-            'descripcion': 'Descripción',
-            'imagen': 'Imagen del producto',
-            'modelo': 'Modelo / Compatibilidad',
-            'categoria': 'Categoría',
-            'precio': 'Precio ($)',
-            'stock': 'Stock disponible',
-            'disponible': 'Visible en el catálogo',
-        }
-        widgets = {
-            'descripcion': forms.Textarea(attrs={'rows': 3}),
-            'imagen': forms.FileInput(),
-        }
-
-    def clean_precio(self):
-        precio = self.cleaned_data.get('precio')
-        if precio is not None and precio <= 0:
-            raise forms.ValidationError('El precio debe ser mayor a cero.')
-        return precio
-
-
-class GestionarPedidoForm(forms.Form):
-    """Formulario para que el proveedor acepte, rechace o proponga alternativa (US-08)"""
-    ACCION_CHOICES = [
-        ('aceptar', 'Aceptar pedido'),
-        ('rechazar', 'Rechazar pedido'),
-        ('alternativa', 'Proponer alternativa'),
-    ]
-    accion = forms.ChoiceField(
-        choices=ACCION_CHOICES,
-        widget=forms.RadioSelect,
-        label='Acción',
-    )
-    respuesta = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'rows': 3,
-            'placeholder': 'Motivo del rechazo o descripción de la alternativa que proponés...',
-        }),
-        required=False,
-        label='Mensaje para el técnico',
-    )
-
-    def clean(self):
-        cleaned_data = super().clean()
-        accion = cleaned_data.get('accion')
-        respuesta = (cleaned_data.get('respuesta') or '').strip()
-        if accion == 'alternativa' and not respuesta:
-            raise forms.ValidationError(
-                'Debés describir la alternativa que proponés al técnico.'
-            )
-        return cleaned_data
-
-
-class PedidoForm(forms.ModelForm):
-    """Formulario para que un tecnico solicite un repuesto (US-07)"""
-
-    direccion_envio = forms.CharField(
-        max_length=255,
-        required=False,
-        label='Direccion de entrega',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control border-2',
-            'placeholder': 'Ej: Av. San Martin 2450, Rosario',
-        }),
-    )
-    telefono_contacto = forms.CharField(
-        max_length=30,
-        required=False,
-        label='Telefono de contacto',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control border-2',
-            'placeholder': 'Ej: 341 555-0198',
-        }),
-    )
-    franja_horaria = forms.ChoiceField(
-        choices=[
-            ('', 'Selecciona una franja'),
-            ('manana', 'Manana, 9 a 13 hs'),
-            ('tarde', 'Tarde, 13 a 18 hs'),
-            ('noche', 'Ultimo reparto, 18 a 21 hs'),
-        ],
-        required=False,
-        label='Franja horaria',
-        widget=forms.Select(attrs={'class': 'form-select border-2'}),
-    )
-    class Meta:
-        model = Pedido
-        fields = ('cantidad', 'forma_entrega', 'forma_pago', 'comprobante_transferencia', 'notas')
-        labels = {
-            'cantidad': 'Cantidad',
-            'forma_entrega': 'Forma de entrega',
-            'forma_pago': 'Forma de pago',
-            'comprobante_transferencia': 'Comprobante de transferencia',
-            'notas': 'Notas adicionales (opcional)',
-        }
-        widgets = {
-            'comprobante_transferencia': forms.FileInput(attrs={
-                'class': 'form-control border-2',
-                'accept': 'image/*,.pdf',
-            }),
-            'notas': forms.Textarea(attrs={
-                'rows': 3,
-                'placeholder': 'Instrucciones especiales, dirección de entrega, etc.',
-            }),
-        }
-
-    def __init__(self, *args, stock=None, tecnico=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._stock = stock
-        self.fields['forma_entrega'].choices = Pedido.ENTREGA_CHOICES
-        self.fields['forma_pago'].choices = Pedido.FORMA_PAGO_CHOICES
-        self.fields['cantidad'].widget.attrs.update({'min': 1, 'class': 'form-control rounded-pill border-2'})
-        if stock is not None:
-            self.fields['cantidad'].widget.attrs['max'] = stock
-        if tecnico is not None:
-            self.fields['direccion_envio'].initial = tecnico.ubicacion
-            self.fields['telefono_contacto'].initial = tecnico.telefono
-
-    def clean_cantidad(self):
-        cantidad = self.cleaned_data.get('cantidad')
-        if cantidad is not None and cantidad <= 0:
-            raise forms.ValidationError('La cantidad debe ser mayor a cero.')
-        if self._stock is not None and cantidad is not None and cantidad > self._stock:
-            raise forms.ValidationError(f'Solo hay {self._stock} unidades disponibles en stock.')
-        return cantidad
-
-    def clean(self):
-        cleaned_data = super().clean()
-        if cleaned_data.get('forma_entrega') == 'envio':
-            for field_name in ('direccion_envio', 'telefono_contacto', 'franja_horaria'):
-                if not (cleaned_data.get(field_name) or '').strip():
-                    self.add_error(field_name, 'Completa este dato para coordinar el envio.')
-        if cleaned_data.get('forma_pago') == 'transferencia' and not cleaned_data.get('comprobante_transferencia'):
-            self.add_error('comprobante_transferencia', 'Subi el comprobante para pagar por transferencia.')
-        return cleaned_data
-
-
-class AsignarCreditoForm(forms.ModelForm):
-    """Formulario para que un proveedor asigne o edite el límite de crédito de un técnico (US-11)"""
-
-    class Meta:
-        model = Credito
-        fields = ('limite',)
-        labels = {'limite': 'Límite de crédito ($)'}
-        widgets = {
-            'limite': forms.NumberInput(attrs={
-                'min': '0.01',
-                'step': '0.01',
-                'placeholder': 'Ej: 50000',
-                'class': 'form-control border-2',
-            }),
-        }
-
-    def clean_limite(self):
-        limite = self.cleaned_data.get('limite')
-        if limite is not None and limite <= 0:
-            raise forms.ValidationError('El límite debe ser mayor a cero.')
-        return limite
-
-
-class CalificacionProveedorForm(forms.ModelForm):
-    """Formulario para que un técnico califique a un proveedor (US-13)"""
-    estrellas = forms.IntegerField(
-        min_value=1,
-        max_value=5,
-        widget=forms.HiddenInput(),
-        label="Calificación",
-        error_messages={
-            'required': 'Seleccioná una calificación de 1 a 5 estrellas.',
-            'min_value': 'La calificación mínima es 1 estrella.',
-            'max_value': 'La calificación máxima es 5 estrellas.',
-        },
-    )
-    comentario = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'rows': 3,
-            'placeholder': 'Compartí tu experiencia con este proveedor (opcional)...',
-            'class': 'form-control rounded-3',
-        }),
-        required=False,
-        label="Comentario (opcional)",
-    )
-
-    class Meta:
-        model = CalificacionProveedor
-        fields = ('estrellas', 'comentario')
-
-
-class CalificacionTecnicoForm(forms.ModelForm):
-    """Formulario para que un proveedor califique a un técnico (US-14)"""
-    puntualidad = forms.IntegerField(
-        min_value=1,
-        max_value=5,
-        widget=forms.HiddenInput(),
-        label="Puntualidad de pago",
-        error_messages={
-            'required': 'Seleccioná una calificación de puntualidad.',
-            'min_value': 'La calificación mínima es 1 estrella.',
-            'max_value': 'La calificación máxima es 5 estrellas.',
-        },
-    )
-    trato = forms.IntegerField(
-        min_value=1,
-        max_value=5,
-        widget=forms.HiddenInput(),
-        label="Trato",
-        error_messages={
-            'required': 'Seleccioná una calificación de trato.',
-            'min_value': 'La calificación mínima es 1 estrella.',
-            'max_value': 'La calificación máxima es 5 estrellas.',
-        },
-    )
-    comentario_privado = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'rows': 3,
-            'placeholder': 'Comentario privado sobre este técnico (visible solo para otros proveedores)...',
-            'class': 'form-control rounded-3',
-        }),
-        required=False,
-        label="Comentario privado (opcional)",
-    )
-
-    class Meta:
-        model = CalificacionTecnico
-        fields = ('puntualidad', 'trato', 'comentario_privado')

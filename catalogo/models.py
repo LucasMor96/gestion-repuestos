@@ -1,7 +1,7 @@
-from django.db import models
+﻿from django.db import models
 
-from .choices import RUBROS_CHOICES
-from .proveedor import Proveedor
+from usuarios.choices import RUBROS_CHOICES
+from usuarios.models import Proveedor
 
 
 class Producto(models.Model):

@@ -1,5 +1,5 @@
-from django.shortcuts import render
+﻿from django.shortcuts import render
 
 
 def not_found(request, exception=None, unknown_path=None):
-    return render(request, '404.html', status=404)
+    return render(request, 'core/404.html', status=404)

@@ -1,7 +1,6 @@
-from django.db import models
+﻿from django.db import models
 
-from .proveedor import Proveedor
-from .tecnico import Tecnico
+from usuarios.models import Proveedor, Tecnico
 
 
 class Credito(models.Model):

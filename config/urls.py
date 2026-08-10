@@ -1,4 +1,4 @@
-"""
+﻿"""
 URL configuration for config project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -18,11 +18,16 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from plataforma.views.errors import not_found
+from core.errors import not_found
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('plataforma.urls')),
+    path('', include('core.urls')),
+    path('', include('usuarios.urls')),
+    path('', include('catalogo.urls')),
+    path('', include('pedidos.urls')),
+    path('', include('creditos.urls')),
+    path('', include('calificaciones.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

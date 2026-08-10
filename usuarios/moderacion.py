@@ -1,10 +1,10 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from ..models import Proveedor, Tecnico
+from .models import Proveedor, Tecnico
 from .utils import solo_staff
 
 
@@ -33,7 +33,7 @@ def panel_moderacion(request):
         'tecnicos_inactivos': Tecnico.objects.filter(estado__in=['rechazado', 'suspendido']).select_related('usuario'),
         'proveedores_inactivos': Proveedor.objects.filter(estado__in=['rechazado', 'suspendido']).select_related('usuario'),
     }
-    return render(request, 'plataforma/panel_moderacion.html', context)
+    return render(request, 'usuarios/panel_moderacion.html', context)
 
 
 @login_required(login_url='login')

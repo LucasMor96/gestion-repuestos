@@ -1,9 +1,10 @@
-from django.db import models
+﻿from django.db import models
 
-from .choices import ESTRELLAS_CHOICES
-from .tecnico import Tecnico
-from .proveedor import Proveedor
-from .pedido import Pedido
+from pedidos.models import Pedido
+from usuarios.models import Proveedor, Tecnico
+
+
+ESTRELLAS_CHOICES = [(i, f"{i} estrella{'s' if i != 1 else ''}") for i in range(1, 6)]
 
 
 class CalificacionProveedor(models.Model):
