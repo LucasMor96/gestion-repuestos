@@ -6,14 +6,14 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from catalogo.models import Producto
-from pedidos.models import Pedido
-from usuarios.models import Proveedor, Tecnico
+from apps.catalogo.models import Producto
+from apps.pedidos.models import Pedido
+from apps.usuarios.models import Proveedor, Tecnico
 
 
 class DemoDataCommandTests(TestCase):
     @patch(
-        'core.management.commands.crear_usuarios_prueba.Command.obtener_imagen_producto',
+        'apps.core.management.commands.crear_usuarios_prueba.Command.obtener_imagen_producto',
         return_value='',
     )
     def test_crear_usuarios_prueba_crea_datos_en_una_base_vacia(self, _mock_image):

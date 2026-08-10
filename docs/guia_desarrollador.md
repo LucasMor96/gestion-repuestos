@@ -24,23 +24,23 @@ El recorrido habitual de una funcionalidad es `urls.py` -> `views.py` ->
 `forms.py` -> `models.py` -> `templates/<app>/`. Cada modelo se registra en el
 `admin.py` de su propia app y posee una migracion inicial local.
 
-- Autenticacion, perfiles, aprobacion y permisos: `usuarios/`.
-- Productos, filtros y busqueda: `catalogo/`.
-- Ciclo de compra, comprobantes y exportacion: `pedidos/`.
-- Limites y deuda comercial: `creditos/`.
-- Calificaciones posteriores a pedidos completados: `calificaciones/`.
-- Paginas que componen varios dominios: `core/`.
+- Autenticacion, perfiles, aprobacion y permisos: `apps/usuarios/`.
+- Productos, filtros y busqueda: `apps/catalogo/`.
+- Ciclo de compra, comprobantes y exportacion: `apps/pedidos/`.
+- Limites y deuda comercial: `apps/creditos/`.
+- Calificaciones posteriores a pedidos completados: `apps/calificaciones/`.
+- Paginas que componen varios dominios: `apps/core/`.
 
-Los helpers de rol y aprobacion viven en `usuarios/utils.py`. El calculo de
-distancia pertenece a `catalogo/utils.py`. Los emails se dividen entre
-`pedidos/notifications.py` y `creditos/notifications.py`. El contador global de
-pedidos pendientes se configura desde `pedidos/context_processors.py`.
+Los helpers de rol y aprobacion viven en `apps/usuarios/utils.py`. Los emails se
+dividen entre `apps/pedidos/notifications.py` y `apps/creditos/notifications.py`.
+El contador global de pedidos pendientes se configura desde
+`apps/pedidos/context_processors.py`.
 
 ## Templates, static y media
 
 Los templates usan el namespace de su app, por ejemplo
 `pedidos/crear_pedido.html`, y extienden `core/base.html`. Los mapas, logos y
-otros assets compartidos viven en `core/static/core/`. `media/` conserva las
+otros assets compartidos viven en `apps/core/static/core/`. `media/` conserva las
 imagenes, logos, comprobantes y demas archivos cargados por usuarios.
 
 ## Modelos y relaciones
@@ -67,11 +67,11 @@ python manage.py crear_usuarios_prueba
 python manage.py runserver
 ```
 
-Las pruebas se distribuyen por app. `core/tests.py` contiene escenarios de
-integracion transversal y 404; `usuarios/tests.py` cubre acceso y perfiles;
-`pedidos/tests.py` cubre el ciclo de pedido y sus notificaciones.
+Las pruebas se distribuyen por app. `apps/core/tests.py` contiene escenarios de
+integracion transversal y 404; `apps/usuarios/tests.py` cubre acceso y perfiles;
+`apps/pedidos/tests.py` cubre el ciclo de pedido y sus notificaciones.
 
-El comando `crear_usuarios_prueba`, ubicado en `core/management/commands/`, crea
+El comando `crear_usuarios_prueba`, ubicado en `apps/core/management/commands/`, crea
 los tres roles de demostracion y datos relacionados de varias apps. La opcion
 `--reset` elimina y vuelve a generar solo esos datos de prueba.
 

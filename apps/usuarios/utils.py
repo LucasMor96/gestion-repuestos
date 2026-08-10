@@ -1,4 +1,4 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 
 
 def solo_staff(request):

@@ -5,10 +5,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from catalogo.models import Producto
-from creditos.models import Credito
-from pedidos.models import Pedido
-from usuarios.models import Proveedor, Tecnico
+from apps.catalogo.models import Producto
+from apps.creditos.models import Credito
+from apps.pedidos.models import Pedido
+from apps.usuarios.models import Proveedor, Tecnico
 
 
 class PedidoEmailTests(TestCase):

@@ -112,4 +112,3 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(import_legacy_data, migrations.RunPython.noop),
     ]
-

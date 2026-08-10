@@ -1,10 +1,10 @@
-﻿from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
 from django.shortcuts import redirect, render
 
-from catalogo.models import Producto
-from pedidos.models import Pedido
-from usuarios.utils import perfil_aprobado
+from apps.catalogo.models import Producto
+from apps.pedidos.models import Pedido
+from apps.usuarios.utils import perfil_aprobado
 
 
 def _formatear_tiempo_respuesta(promedio_segundos):

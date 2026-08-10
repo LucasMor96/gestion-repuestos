@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 from datetime import timedelta
 from decimal import Decimal
 
@@ -10,12 +10,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from calificaciones.models import CalificacionProveedor, CalificacionTecnico
-from catalogo.models import Producto
-from creditos.models import Credito
-from creditos.notifications import notificar_alerta_credito
-from usuarios.models import Proveedor
-from usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
+from apps.calificaciones.models import CalificacionProveedor, CalificacionTecnico
+from apps.catalogo.models import Producto
+from apps.creditos.models import Credito
+from apps.creditos.notifications import notificar_alerta_credito
+from apps.usuarios.models import Proveedor
+from apps.usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
 
 from .forms import GestionarPedidoForm, PedidoForm
 from .models import Pedido

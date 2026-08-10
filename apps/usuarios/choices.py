@@ -1,4 +1,4 @@
-﻿ESTADO_USUARIO_CHOICES = [
+ESTADO_USUARIO_CHOICES = [
     ('pendiente', 'Pendiente'),
     ('aprobado', 'Aprobado'),
     ('rechazado', 'Rechazado'),

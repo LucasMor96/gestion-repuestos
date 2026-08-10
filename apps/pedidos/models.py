@@ -1,9 +1,9 @@
-﻿from datetime import timedelta
+from datetime import timedelta
 
 from django.db import models
 
-from catalogo.models import Producto
-from usuarios.models import Proveedor, Tecnico
+from apps.catalogo.models import Producto
+from apps.usuarios.models import Proveedor, Tecnico
 
 
 class Pedido(models.Model):

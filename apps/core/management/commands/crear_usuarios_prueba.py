@@ -1,4 +1,4 @@
-﻿from datetime import timedelta
+from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 from time import sleep
@@ -11,9 +11,9 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from catalogo.models import Producto
-from pedidos.models import Pedido
-from usuarios.models import Proveedor, Tecnico
+from apps.catalogo.models import Producto
+from apps.pedidos.models import Pedido
+from apps.usuarios.models import Proveedor, Tecnico
 
 
 USUARIOS = [

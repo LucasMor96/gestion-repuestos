@@ -1,12 +1,12 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from pedidos.models import Pedido
-from usuarios.models import Tecnico
-from usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
+from apps.pedidos.models import Pedido
+from apps.usuarios.models import Tecnico
+from apps.usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
 
 from .forms import AsignarCreditoForm
 from .models import Credito

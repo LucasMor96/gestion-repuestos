@@ -1,9 +1,9 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from usuarios.utils import get_proveedor_o_403
+from apps.usuarios.utils import get_proveedor_o_403
 
 from .forms import ProductoForm
 from .models import Producto

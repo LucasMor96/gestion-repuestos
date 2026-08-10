@@ -32,19 +32,20 @@ El sistema permite registrar tecnicos y proveedores, moderar altas de usuarios, 
 ```text
 gestion-repuestos/
 |-- config/                 # Configuracion y composicion global de URLs
-|-- core/                   # Inicio, dashboard, 404 y recursos compartidos
-|-- usuarios/               # Tecnicos, proveedores, autenticacion y moderacion
-|-- catalogo/               # Productos, busqueda y catalogo del proveedor
-|-- pedidos/                # Flujo de pedidos y sus notificaciones
-|-- creditos/               # Credito comercial, deuda y notificaciones
-|-- calificaciones/         # Calificaciones posteriores a una operacion
+|-- apps/                   # Aplicaciones Django del dominio
+|   |-- core/               # Inicio, dashboard, 404 y recursos compartidos
+|   |-- usuarios/           # Tecnicos, proveedores, autenticacion y moderacion
+|   |-- catalogo/           # Productos, busqueda y catalogo del proveedor
+|   |-- pedidos/            # Flujo de pedidos y sus notificaciones
+|   |-- creditos/           # Credito comercial, deuda y notificaciones
+|   `-- calificaciones/     # Calificaciones posteriores a una operacion
 |-- media/                  # Archivos subidos por usuarios
 |-- manage.py
 |-- requeriments.txt
 `-- .env.example
 ```
 
-Cada app contiene sus propios modelos, formularios, vistas, URLs, templates,
+Cada app dentro de `apps/` contiene sus propios modelos, formularios, vistas, URLs, templates,
 administracion, migraciones y pruebas cuando corresponda. Las URLs publicas se
 componen sin namespaces para conservar sus nombres historicos.
 

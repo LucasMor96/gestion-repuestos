@@ -1,9 +1,9 @@
-﻿from django.contrib import messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
 from django.shortcuts import redirect, render
 
-from usuarios.utils import get_tecnico_o_403
+from apps.usuarios.utils import get_tecnico_o_403
 
 from .models import Producto
 

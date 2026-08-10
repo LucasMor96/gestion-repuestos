@@ -1,4 +1,4 @@
-﻿from django.shortcuts import render
+from django.shortcuts import render
 
 
 def not_found(request, exception=None, unknown_path=None):

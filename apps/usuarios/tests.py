@@ -6,7 +6,7 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from usuarios.models import Proveedor, Tecnico
+from apps.usuarios.models import Proveedor, Tecnico
 
 
 class LoginViewTests(TestCase):
