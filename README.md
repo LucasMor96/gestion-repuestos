@@ -190,6 +190,18 @@ El login de la aplicacion se realiza con email y password.
 7. El tecnico puede marcar el pedido aceptado como completado.
 8. Luego ambas partes pueden calificarse.
 
+## Conservacion del historial y habilitacion de proveedores
+
+Los productos con pedidos asociados no se pueden eliminar, tampoco desde el
+administrador ni mediante borrado masivo del ORM. Se pueden ocultar del catalogo
+para impedir nuevas compras, conservando pedidos, comprobantes, calificaciones y
+credito. Los productos sin pedidos se pueden eliminar normalmente.
+
+El catalogo y sus categorias solo muestran productos visibles de proveedores con
+estado aprobado, aprobacion vigente y usuario activo. La creacion de pedidos
+vuelve a verificar esos datos bajo bloqueo transaccional para impedir compras
+con formularios abiertos antes de una suspension.
+
 ## Comandos frecuentes
 
 ```bash

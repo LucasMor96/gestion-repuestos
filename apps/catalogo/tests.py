@@ -12,6 +12,7 @@ class CatalogoDomainTests(TestCase):
         proveedor = Proveedor.objects.create(
             usuario=User.objects.create_user(username='cat-prov'),
             nombre_negocio='Catalogo', direccion='CABA', rubro='mecanica_automotriz',
+            estado='aprobado', is_approved=True,
         )
         self.producto = Producto.objects.create(
             proveedor=proveedor, nombre='Filtro premium', modelo='X1',

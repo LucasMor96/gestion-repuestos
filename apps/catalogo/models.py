@@ -6,7 +6,12 @@ from apps.usuarios.models import Proveedor
 
 class ProductoQuerySet(models.QuerySet):
     def publicados(self):
-        return self.filter(disponible=True)
+        return self.filter(
+            disponible=True,
+            proveedor__estado='aprobado',
+            proveedor__is_approved=True,
+            proveedor__usuario__is_active=True,
+        )
 
     def del_proveedor(self, proveedor):
         return self.filter(proveedor=proveedor)

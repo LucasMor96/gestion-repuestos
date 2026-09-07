@@ -7,8 +7,10 @@ from django.utils import timezone
 
 from apps.catalogo.models import Producto
 from apps.creditos.services import asignar_credito, liberar_saldo, reservar_saldo
+from apps.usuarios.models import Proveedor
+from apps.usuarios.utils import perfil_aprobado
 
-from .exceptions import EstadoPedidoInvalido, LimiteCreditoInvalido, StockInsuficiente
+from .exceptions import EstadoPedidoInvalido, LimiteCreditoInvalido, ProveedorNoHabilitado, StockInsuficiente
 from .models import Pedido
 from .notifications import (
     notificar_pedido_confirmado,
@@ -45,12 +47,19 @@ def _notas_con_envio(notas, datos):
 def crear_pedido(*, tecnico, producto, datos):
     clave_operacion = UUID(str(datos['clave_operacion']))
     # Serializa envios del mismo producto antes de comprobar la clave y reservar saldo.
-    producto = Producto.objects.select_for_update(of=('self',)).select_related('proveedor').get(pk=producto.pk)
+    producto = Producto.objects.select_for_update(of=('self',)).get(pk=producto.pk)
     existente = Pedido.objects.filter(
         tecnico=tecnico, producto=producto, clave_operacion=clave_operacion,
     ).first()
     if existente is not None:
         return existente
+    # Revalida y mantiene estable la habilitacion hasta confirmar la compra.
+    proveedor = Proveedor.objects.select_related('usuario').select_for_update(
+        of=('self', 'usuario'), no_key=True,
+    ).get(pk=producto.proveedor_id)
+    if not perfil_aprobado(proveedor):
+        raise ProveedorNoHabilitado('Este proveedor no está habilitado para recibir nuevas compras.')
+    producto.proveedor = proveedor
     cantidad = datos['cantidad']
     if not producto.disponible or producto.stock < cantidad:
         raise StockInsuficiente(disponible=producto.stock, solicitado=cantidad)

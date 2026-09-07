@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -71,10 +73,23 @@ def eliminar_producto(request, pk):
     if proveedor is None:
         return redirect('dashboard')
 
-    producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
-    nombre = producto.nombre
-    producto.delete()
-    messages.success(request, f'Producto "{nombre}" eliminado del catalogo.')
+    try:
+        # La compra tambien bloquea el producto: no puede aparecer un pedido
+        # entre la comprobacion de relaciones y la eliminacion.
+        with transaction.atomic():
+            producto = get_object_or_404(
+                Producto.objects.select_for_update(), pk=pk, proveedor=proveedor,
+            )
+            nombre = producto.nombre
+            producto.delete()
+    except ProtectedError:
+        messages.warning(
+            request,
+            f'No se puede eliminar "{nombre}" porque tiene pedidos asociados. '
+            'Podés ocultarlo del catálogo para evitar nuevas compras y conservar el historial.',
+        )
+    else:
+        messages.success(request, f'Producto "{nombre}" eliminado del catalogo.')
     return redirect('catalogo_proveedor')
 
 

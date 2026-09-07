@@ -64,7 +64,7 @@ class Pedido(models.Model):
 
     tecnico = models.ForeignKey(Tecnico, on_delete=models.CASCADE, related_name='pedidos')
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='pedidos_recibidos')
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='pedidos')
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='pedidos')
     cantidad = models.IntegerField()
     forma_entrega = models.CharField(max_length=10, choices=ENTREGA_CHOICES)
     forma_pago = models.CharField(max_length=25, choices=FORMA_PAGO_CHOICES, default='transferencia')

@@ -9,7 +9,7 @@ from apps.creditos.exceptions import CreditoNoDisponible, SaldoInsuficiente
 from apps.creditos.models import Credito
 from apps.usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
 
-from .exceptions import EstadoPedidoInvalido, LimiteCreditoInvalido, StockInsuficiente
+from .exceptions import EstadoPedidoInvalido, LimiteCreditoInvalido, ProveedorNoHabilitado, StockInsuficiente
 from .exporters import exportar_historial_csv
 from .forms import GestionarPedidoForm, PedidoForm
 from .models import Pedido
@@ -37,7 +37,7 @@ def crear_pedido(request, producto_pk):
     tecnico = get_tecnico_o_403(request)
     if tecnico is None:
         return redirect('dashboard')
-    producto = get_object_or_404(Producto, pk=producto_pk, disponible=True)
+    producto = get_object_or_404(Producto.objects.publicados(), pk=producto_pk)
     credito = Credito.objects.filter(
         proveedor=producto.proveedor, tecnico=tecnico, activo=True
     ).first()
@@ -70,7 +70,7 @@ def crear_pedido(request, producto_pk):
                     f'El monto del pedido (${error.solicitado}) supera tu crédito disponible '
                     f'(${error.disponible}) con {producto.proveedor.nombre_negocio}.',
                 )
-            except StockInsuficiente as error:
+            except (StockInsuficiente, ProveedorNoHabilitado) as error:
                 messages.error(request, str(error))
             except DatabaseError:
                 messages.error(request, 'Ocurrió un error al procesar el pedido. Intentá de nuevo.')

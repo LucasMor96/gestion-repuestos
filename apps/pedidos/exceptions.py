@@ -10,6 +10,10 @@ class LimiteCreditoInvalido(PedidoError):
     pass
 
 
+class ProveedorNoHabilitado(PedidoError):
+    pass
+
+
 class StockInsuficiente(PedidoError):
     def __init__(self, *, disponible, solicitado):
         self.disponible = disponible

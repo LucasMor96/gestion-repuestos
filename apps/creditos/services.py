@@ -64,7 +64,7 @@ def asignar_credito(*, proveedor, tecnico, limite):
 
 @transaction.atomic
 def revocar_credito(*, credito):
-    credito = Credito.objects.select_for_update().select_related(
+    credito = Credito.objects.select_for_update(of=('self',)).select_related(
         'tecnico__usuario', 'proveedor'
     ).get(pk=credito.pk)
     credito.activo = False
