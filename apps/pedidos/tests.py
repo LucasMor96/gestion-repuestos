@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 from unittest.mock import patch
+from uuid import uuid4
 
 from apps.catalogo.models import Producto
 from apps.creditos.models import Credito
@@ -96,6 +97,7 @@ class PedidoEmailTests(TestCase):
             response = self.client.post(
                 reverse('crear_pedido', args=[producto.pk]),
                 {
+                    'clave_operacion': str(uuid4()),
                     'cantidad': 2,
                     'forma_entrega': 'retiro',
                     'forma_pago': 'mercadopago',
@@ -128,6 +130,7 @@ class PedidoEmailTests(TestCase):
         response = self.client.post(
             reverse('crear_pedido', args=[producto.pk]),
             {
+                'clave_operacion': str(uuid4()),
                 'cantidad': 2,
                 'forma_entrega': 'retiro',
                 'forma_pago': 'credito_comercial',
@@ -156,6 +159,7 @@ class PedidoEmailTests(TestCase):
         response = self.client.post(
             reverse('crear_pedido', args=[producto.pk]),
             {
+                'clave_operacion': str(uuid4()),
                 'cantidad': 1,
                 'forma_entrega': 'retiro',
                 'forma_pago': 'transferencia',

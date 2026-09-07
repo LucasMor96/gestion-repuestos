@@ -1,13 +1,14 @@
 from datetime import timedelta
 from decimal import Decimal
+from uuid import UUID
 
 from django.db import transaction
 from django.utils import timezone
 
 from apps.catalogo.models import Producto
-from apps.creditos.services import liberar_saldo, reservar_saldo
+from apps.creditos.services import asignar_credito, liberar_saldo, reservar_saldo
 
-from .exceptions import EstadoPedidoInvalido, StockInsuficiente
+from .exceptions import EstadoPedidoInvalido, LimiteCreditoInvalido, StockInsuficiente
 from .models import Pedido
 from .notifications import (
     notificar_pedido_confirmado,
@@ -42,14 +43,22 @@ def _notas_con_envio(notas, datos):
 
 @transaction.atomic
 def crear_pedido(*, tecnico, producto, datos):
-    producto = Producto.objects.select_for_update().select_related('proveedor').get(pk=producto.pk)
+    clave_operacion = UUID(str(datos['clave_operacion']))
+    # Serializa envios del mismo producto antes de comprobar la clave y reservar saldo.
+    producto = Producto.objects.select_for_update(of=('self',)).select_related('proveedor').get(pk=producto.pk)
+    existente = Pedido.objects.filter(
+        tecnico=tecnico, producto=producto, clave_operacion=clave_operacion,
+    ).first()
+    if existente is not None:
+        return existente
     cantidad = datos['cantidad']
     if not producto.disponible or producto.stock < cantidad:
         raise StockInsuficiente(disponible=producto.stock, solicitado=cantidad)
     usa_credito = datos['forma_pago'] == 'credito_comercial'
     monto_total = producto.precio * cantidad + calcular_costo_envio(datos['forma_entrega'], cantidad)
+    credito = None
     if usa_credito:
-        reservar_saldo(
+        credito = reservar_saldo(
             proveedor=producto.proveedor,
             tecnico=tecnico,
             monto=monto_total,
@@ -66,13 +75,15 @@ def crear_pedido(*, tecnico, producto, datos):
         monto_total=monto_total,
         estado='pendiente',
         usa_credito=usa_credito,
+        ciclo_credito=credito.ciclo if credito else 0,
+        clave_operacion=clave_operacion,
     )
     transaction.on_commit(lambda: notificar_proveedor_nuevo_pedido(pedido))
     return pedido
 
 
 def _pedido_bloqueado(pedido):
-    return Pedido.objects.select_for_update().con_relaciones().get(pk=pedido.pk)
+    return Pedido.objects.select_for_update(of=('self',)).con_relaciones().get(pk=pedido.pk)
 
 
 def _exigir_estado(pedido, estado):
@@ -81,17 +92,31 @@ def _exigir_estado(pedido, estado):
 
 
 @transaction.atomic
-def aceptar_pedido(*, pedido, respuesta=''):
+def aceptar_pedido(*, pedido, respuesta='', limite_credito=None):
     pedido = _pedido_bloqueado(pedido)
     _exigir_estado(pedido, 'pendiente')
     producto = Producto.objects.select_for_update().get(pk=pedido.producto_id)
     if producto.stock < pedido.cantidad:
         raise StockInsuficiente(disponible=producto.stock, solicitado=pedido.cantidad)
+    if pedido.forma_pago == 'solicitud_credito':
+        if limite_credito is None or limite_credito <= 0:
+            raise LimiteCreditoInvalido('Indicá un límite de crédito mayor a cero.')
+        # Otorgamiento, reserva y aceptacion se confirman juntos o se revierten juntos.
+        asignar_credito(
+            proveedor=pedido.proveedor, tecnico=pedido.tecnico, limite=limite_credito,
+        )
+        credito = reservar_saldo(
+            proveedor=pedido.proveedor, tecnico=pedido.tecnico, monto=pedido.monto_total,
+        )
+        pedido.usa_credito = True
+        pedido.ciclo_credito = credito.ciclo
     producto.stock -= pedido.cantidad
     producto.save(update_fields=['stock'])
     pedido.estado = 'aceptado'
     pedido.respuesta_proveedor = respuesta or None
-    pedido.save(update_fields=['estado', 'respuesta_proveedor', 'fecha_actualizacion'])
+    pedido.save(update_fields=[
+        'estado', 'respuesta_proveedor', 'fecha_actualizacion', 'usa_credito', 'ciclo_credito',
+    ])
     transaction.on_commit(lambda: notificar_tecnico_estado(pedido))
     return pedido
 
@@ -110,6 +135,7 @@ def rechazar_pedido(*, pedido, respuesta='', alternativa=False):
             proveedor=pedido.proveedor,
             tecnico=pedido.tecnico,
             monto=pedido.monto_total,
+            ciclo=pedido.ciclo_credito,
         )
     transaction.on_commit(lambda: notificar_tecnico_estado(pedido))
     return pedido
@@ -126,6 +152,7 @@ def cancelar_pedido(*, pedido):
             proveedor=pedido.proveedor,
             tecnico=pedido.tecnico,
             monto=pedido.monto_total,
+            ciclo=pedido.ciclo_credito,
         )
     return pedido
 
@@ -143,7 +170,7 @@ def completar_pedido(*, pedido):
 @transaction.atomic
 def cancelar_retiros_vencidos(pedidos):
     ids = list(pedidos.values_list('pk', flat=True)) if hasattr(pedidos, 'values_list') else [p.pk for p in pedidos]
-    vencidos = Pedido.objects.select_for_update().filter(
+    vencidos = Pedido.objects.select_for_update(of=('self',)).filter(
         pk__in=ids,
         estado='aceptado',
         forma_entrega='retiro',
@@ -164,6 +191,7 @@ def cancelar_retiros_vencidos(pedidos):
                 proveedor=pedido.proveedor,
                 tecnico=pedido.tecnico,
                 monto=pedido.monto_total,
+                ciclo=pedido.ciclo_credito,
             )
         cantidad += 1
     return cantidad

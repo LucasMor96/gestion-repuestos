@@ -1,3 +1,6 @@
+from decimal import Decimal
+from uuid import uuid4
+
 from django import forms
 
 from .models import Pedido
@@ -23,11 +26,27 @@ class GestionarPedidoForm(forms.Form):
         required=False,
         label='Mensaje para el técnico',
     )
+    limite_credito = forms.DecimalField(
+        required=False, min_value=Decimal('0.01'), max_digits=12, decimal_places=2,
+        label='Límite total del cupo reutilizable ($)',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+    )
+
+    def __init__(self, *args, solicitud_credito=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.solicitud_credito = solicitud_credito
+        if not solicitud_credito:
+            self.fields.pop('limite_credito')
+        elif self.is_bound and self.data.get('accion') != 'aceptar':
+            # El rechazo no depende del valor de un cupo que no se va a otorgar.
+            self.fields['limite_credito'].disabled = True
 
     def clean(self):
         cleaned_data = super().clean()
         accion = cleaned_data.get('accion')
         respuesta = (cleaned_data.get('respuesta') or '').strip()
+        if self.solicitud_credito and accion == 'aceptar' and cleaned_data.get('limite_credito') is None:
+            self.add_error('limite_credito', 'Indicá el límite de crédito que querés otorgar.')
         if accion == 'alternativa' and not respuesta:
             raise forms.ValidationError(
                 'Debés describir la alternativa que proponés al técnico.'
@@ -36,6 +55,15 @@ class GestionarPedidoForm(forms.Form):
 
 class PedidoForm(forms.ModelForm):
     """Formulario para que un tecnico solicite un repuesto (US-07)"""
+
+    clave_operacion = forms.UUIDField(
+        initial=uuid4,
+        widget=forms.HiddenInput,
+        error_messages={
+            'required': 'Recargá la página para iniciar un nuevo pedido.',
+            'invalid': 'La solicitud no es válida. Recargá la página e intentá nuevamente.',
+        },
+    )
 
     direccion_envio = forms.CharField(
         max_length=255,

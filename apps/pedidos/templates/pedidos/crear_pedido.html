@@ -58,8 +58,12 @@
         <div class="card border-0 shadow-sm rounded-4 p-4">
             <h5 class="fw-bold mb-3">Datos del pedido</h5>
             <hr>
-            <form method="post" enctype="multipart/form-data" novalidate>
+            <form id="pedidoForm" method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
+                {{ form.clave_operacion }}
+                {% for error in form.clave_operacion.errors %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endfor %}
 
                 <!-- Cantidad -->
                 <div class="mb-4">
@@ -201,6 +205,8 @@
                                 <span class="text-muted small d-block ms-4">Pago ficticio por ahora, sin integracion real.</span>
                             {% elif value == 'transferencia' %}
                                 <span class="text-muted small d-block ms-4">El proveedor coordinara los datos de transferencia al aceptar el pedido.</span>
+                            {% elif value == 'solicitud_credito' %}
+                                <span class="text-muted small d-block ms-4">Solicitá un cupo reutilizable para esta compra y futuras compras. El proveedor define el límite y puede aprobarlo o rechazarlo; no se genera deuda hasta su aprobación.</span>
                             {% elif value == 'credito_comercial' %}
                                 {% if credito %}
                                     <span class="text-muted small d-block ms-4">
@@ -270,6 +276,23 @@
 
 <script>
 (function () {
+    const formulario = document.getElementById('pedidoForm');
+    const botonEnviar = formulario.querySelector('button[type="submit"]');
+    let enviando = false;
+    formulario.addEventListener('submit', function (event) {
+        if (enviando) {
+            event.preventDefault();
+            return;
+        }
+        enviando = true;
+        botonEnviar.disabled = true;
+        botonEnviar.textContent = 'Enviando…';
+    });
+    window.addEventListener('pageshow', function () {
+        enviando = false;
+        botonEnviar.disabled = false;
+        botonEnviar.textContent = 'Enviar pedido';
+    });
     const precioStr = '{{ producto.precio }}';
     const precioUnit = parseFloat(precioStr.replace(',', '.')) || 0;
     const inputCant = document.querySelector('input[name="cantidad"]');

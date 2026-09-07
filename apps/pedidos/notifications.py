@@ -30,8 +30,17 @@ def notificar_proveedor_nuevo_pedido(pedido):
     if pedido.forma_pago == 'transferencia':
         comprobante = '  Comprobante: disponible en el detalle del pedido\n'
 
+    solicitud_credito = pedido.forma_pago == 'solicitud_credito'
+    tipo = 'Solicitud de crédito' if solicitud_credito else 'Nuevo pedido'
+    instruccion = (
+        'El técnico solicita financiar esta compra. Ingresa al detalle del pedido '
+        'para aprobar el crédito y aceptar el pedido, o rechazar la solicitud.\n'
+        if solicitud_credito else
+        'Ingresa a la plataforma para aceptar o rechazar el pedido.\n'
+    )
+
     _send_transactional_mail(
-        subject=f'[Repuestos] Nuevo pedido #{pedido.id} - {pedido.producto.nombre}',
+        subject=f'[Repuestos] {tipo} #{pedido.id} - {pedido.producto.nombre}',
         message=(
             f'Hola {pedido.proveedor.usuario.first_name},\n\n'
             f'Recibiste un nuevo pedido en la plataforma:\n\n'
@@ -43,18 +52,25 @@ def notificar_proveedor_nuevo_pedido(pedido):
             f'{comprobante}'
             f'  Tecnico  : {pedido.tecnico.usuario.get_full_name()}\n'
             f'  Telefono : {pedido.tecnico.telefono or "No informado"}\n\n'
-            f'Ingresa a la plataforma para aceptar o rechazar el pedido.\n'
+            f'{instruccion}'
         ),
         recipient_list=[pedido.proveedor.usuario.email],
     )
 
 def notificar_tecnico_estado(pedido):
     """Envia email al tecnico cuando el proveedor cambia el estado de su pedido."""
+    detalle_credito = ''
+    if pedido.forma_pago == 'solicitud_credito':
+        if pedido.estado == 'aceptado':
+            detalle_credito = 'Tu solicitud de crédito fue aprobada. Se habilitó un cupo reutilizable y esta compra se descontó de su saldo disponible.\n\n'
+        elif pedido.estado == 'rechazado':
+            detalle_credito = 'Tu solicitud de crédito fue rechazada. No se generó deuda.\n\n'
     _send_transactional_mail(
         subject=f'[Repuestos] Pedido #{pedido.id} - {pedido.get_estado_display()}',
         message=(
             f'Hola {pedido.tecnico.usuario.first_name},\n\n'
             f'Tu pedido fue actualizado:\n\n'
+            f'{detalle_credito}'
             f'  Producto  : {pedido.producto.nombre}\n'
             f'  Estado    : {pedido.get_estado_display()}\n'
             f'  Proveedor : {pedido.proveedor.nombre_negocio}\n'

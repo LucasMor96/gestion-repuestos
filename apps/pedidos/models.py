@@ -59,6 +59,7 @@ class Pedido(models.Model):
         ('mercadopago', 'MercadoPago (simulado)'),
         ('transferencia', 'Transferencia bancaria'),
         ('credito_comercial', 'Credito comercial'),
+        ('solicitud_credito', 'Solicitud de crédito'),
     ]
 
     tecnico = models.ForeignKey(Tecnico, on_delete=models.CASCADE, related_name='pedidos')
@@ -75,6 +76,8 @@ class Pedido(models.Model):
     respuesta_proveedor = models.TextField(blank=True, null=True)
     comprobante_transferencia = models.FileField(upload_to='comprobantes_transferencia/', blank=True, null=True)
     usa_credito = models.BooleanField(default=False)
+    ciclo_credito = models.PositiveIntegerField(default=0, editable=False)
+    clave_operacion = models.UUIDField(null=True, blank=True, editable=False)
 
     objects = PedidoQuerySet.as_manager()
 
@@ -88,6 +91,12 @@ class Pedido(models.Model):
         verbose_name = "Pedido"
         verbose_name_plural = "Pedidos"
         ordering = ['-fecha_creacion']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tecnico', 'producto', 'clave_operacion'],
+                name='pedido_operacion_unica',
+            ),
+        ]
 
     def __str__(self):
         return f"Pedido {self.id} - {self.tecnico} a {self.proveedor}"

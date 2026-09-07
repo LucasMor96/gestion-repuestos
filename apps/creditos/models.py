@@ -23,6 +23,7 @@ class Credito(models.Model):
     tecnico = models.ForeignKey(Tecnico, on_delete=models.CASCADE, related_name='creditos')
     limite = models.DecimalField(max_digits=12, decimal_places=2)
     saldo_usado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    ciclo = models.PositiveIntegerField(default=0, editable=False)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 

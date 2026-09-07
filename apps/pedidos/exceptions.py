@@ -6,6 +6,10 @@ class EstadoPedidoInvalido(PedidoError):
     pass
 
 
+class LimiteCreditoInvalido(PedidoError):
+    pass
+
+
 class StockInsuficiente(PedidoError):
     def __init__(self, *, disponible, solicitado):
         self.disponible = disponible

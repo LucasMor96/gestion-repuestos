@@ -61,6 +61,19 @@
             <p class="text-muted small mb-1">Forma de pago</p>
             <p class="fw-bold mb-3">{{ pedido.get_forma_pago_display }}</p>
 
+            {% if pedido.forma_pago == 'solicitud_credito' %}
+            <div class="alert alert-info rounded-3 mb-3">
+                {% if pedido.estado == 'pendiente' %}
+                    <strong>Solicitud de crédito por ${{ pedido.monto_total }}</strong>
+                    <p class="small mb-0">El técnico solicita un cupo reutilizable para esta compra y futuras compras. Revisá sus datos y definí el límite antes de aprobar.</p>
+                {% elif pedido.usa_credito %}
+                    <p class="mb-0">Aprobaste esta compra y habilitaste un cupo de crédito reutilizable.</p>
+                {% else %}
+                    <p class="mb-0">Esta solicitud no generó deuda.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
             {% if pedido.forma_pago == 'transferencia' %}
             <div class="alert alert-light border rounded-3 mb-3">
                 <p class="text-muted small fw-bold mb-1">Comprobante</p>
@@ -137,6 +150,12 @@
             <hr>
             <form method="post" action="{% url 'gestionar_pedido' pedido.pk %}" id="formGestion">
                 {% csrf_token %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endfor %}
+                {% for error in form.accion.errors %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endfor %}
 
                 <!-- Opciones de acción -->
                 <div class="mb-4">
@@ -144,23 +163,28 @@
                     <div class="d-flex flex-column gap-2 mt-2">
                         <div class="form-check p-3 border rounded-3 cursor-pointer" id="opcion-aceptar">
                             <input class="form-check-input" type="radio" name="accion"
-                                   id="accion_aceptar" value="aceptar" checked>
+                                   id="accion_aceptar" value="aceptar" {% if form.accion.value == 'aceptar' or not form.accion.value %}checked{% endif %}>
                             <label class="form-check-label fw-bold text-success" for="accion_aceptar">
-                                ✓ Aceptar pedido
-                                <span class="text-muted fw-normal small d-block">El técnico será notificado de que su pedido fue confirmado.</span>
+                                {% if pedido.forma_pago == 'solicitud_credito' %}
+                                    ✓ Aprobar crédito y aceptar pedido
+                                    <span class="text-muted fw-normal small d-block">Habilitás el cupo indicado y financiás ${{ pedido.monto_total }} de esta compra. El saldo restante podrá usarse en futuras compras.</span>
+                                {% else %}
+                                    ✓ Aceptar pedido
+                                    <span class="text-muted fw-normal small d-block">El técnico será notificado de que su pedido fue confirmado.</span>
+                                {% endif %}
                             </label>
                         </div>
                         <div class="form-check p-3 border rounded-3" id="opcion-rechazar">
                             <input class="form-check-input" type="radio" name="accion"
-                                   id="accion_rechazar" value="rechazar">
+                                   id="accion_rechazar" value="rechazar" {% if form.accion.value == 'rechazar' %}checked{% endif %}>
                             <label class="form-check-label fw-bold text-danger" for="accion_rechazar">
-                                ✕ Rechazar pedido
+                                {% if pedido.forma_pago == 'solicitud_credito' %}✕ Rechazar solicitud de crédito{% else %}✕ Rechazar pedido{% endif %}
                                 <span class="text-muted fw-normal small d-block">Podés indicar el motivo en el campo de abajo.</span>
                             </label>
                         </div>
                         <div class="form-check p-3 border rounded-3" id="opcion-alternativa">
                             <input class="form-check-input" type="radio" name="accion"
-                                   id="accion_alternativa" value="alternativa">
+                                   id="accion_alternativa" value="alternativa" {% if form.accion.value == 'alternativa' %}checked{% endif %}>
                             <label class="form-check-label fw-bold text-primary" for="accion_alternativa">
                                 ↔ Proponer alternativa
                                 <span class="text-muted fw-normal small d-block">Sugerí un producto o condición alternativa al técnico.</span>
@@ -169,6 +193,17 @@
                     </div>
                 </div>
 
+                {% if form.limite_credito %}
+                <div class="mb-4" id="campoCredito">
+                    <label for="{{ form.limite_credito.id_for_label }}" class="form-label fw-bold">{{ form.limite_credito.label }}</label>
+                    {{ form.limite_credito }}
+                    <p class="text-muted small mt-1">Es el límite total, no un importe adicional. Debe cubrir la deuda actual más los ${{ pedido.monto_total }} de este pedido. Al saldar la deuda, el cupo vuelve a estar disponible.</p>
+                    {% for error in form.limite_credito.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <!-- Campo de respuesta -->
                 <div class="mb-4" id="campoRespuesta">
                     <label for="id_respuesta" class="form-label fw-bold">
@@ -176,7 +211,10 @@
                         <span id="labelObligatorio" class="text-danger small" style="display:none;">*obligatorio</span>
                     </label>
                     <textarea name="respuesta" id="id_respuesta" class="form-control" rows="3"
-                              placeholder="Escribí aquí tu mensaje, motivo o alternativa..."></textarea>
+                              placeholder="Escribí aquí tu mensaje, motivo o alternativa...">{{ form.respuesta.value|default:'' }}</textarea>
+                    {% for error in form.respuesta.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
                     <p class="text-muted small mt-1" id="hintRespuesta">Opcional al aceptar o rechazar.</p>
                 </div>
 
@@ -229,6 +267,7 @@
     const hintRespuesta = document.getElementById('hintRespuesta');
     const labelObligatorio = document.getElementById('labelObligatorio');
     const textarea = document.getElementById('id_respuesta');
+    if (!textarea) return;
 
     const opciones = {
         aceptar: { placeholder: 'Opcional: agregá un mensaje o instrucción para el técnico.', hint: 'Opcional al aceptar.', required: false },
@@ -242,6 +281,13 @@
         textarea.placeholder = cfg.placeholder;
         hintRespuesta.textContent = cfg.hint;
         labelObligatorio.style.display = cfg.required ? 'inline' : 'none';
+        const campoCredito = document.getElementById('campoCredito');
+        if (campoCredito) {
+            campoCredito.style.display = seleccionado === 'aceptar' ? 'block' : 'none';
+            const limite = campoCredito.querySelector('input');
+            limite.disabled = seleccionado !== 'aceptar';
+            limite.required = seleccionado === 'aceptar';
+        }
     }
 
     radios.forEach(r => r.addEventListener('change', actualizarFormulario));

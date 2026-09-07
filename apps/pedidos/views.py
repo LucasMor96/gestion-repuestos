@@ -9,7 +9,7 @@ from apps.creditos.exceptions import CreditoNoDisponible, SaldoInsuficiente
 from apps.creditos.models import Credito
 from apps.usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
 
-from .exceptions import EstadoPedidoInvalido, StockInsuficiente
+from .exceptions import EstadoPedidoInvalido, LimiteCreditoInvalido, StockInsuficiente
 from .exporters import exportar_historial_csv
 from .forms import GestionarPedidoForm, PedidoForm
 from .models import Pedido
@@ -44,7 +44,14 @@ def crear_pedido(request, producto_pk):
 
     if request.method == 'POST':
         form = PedidoForm(request.POST, request.FILES, stock=producto.stock, tecnico=tecnico)
-        if form.is_valid():
+        valido = form.is_valid()
+        clave = form.cleaned_data.get('clave_operacion')
+        if clave and Pedido.objects.filter(
+            tecnico=tecnico, producto=producto, clave_operacion=clave,
+        ).exists():
+            messages.info(request, 'Este pedido ya fue enviado correctamente.')
+            return redirect('mis_pedidos')
+        if valido:
             try:
                 pedido = crear_pedido_servicio(
                     tecnico=tecnico,
@@ -73,6 +80,8 @@ def crear_pedido(request, producto_pk):
                     detalle_pago = ' MercadoPago esta funcionando en modo simulado.'
                 elif pedido.forma_pago == 'credito_comercial':
                     detalle_pago = ' Se usó tu crédito comercial disponible.'
+                elif pedido.forma_pago == 'solicitud_credito':
+                    detalle_pago = ' Tu solicitud de crédito quedó pendiente de aprobación del proveedor.'
                 messages.success(
                     request,
                     f'Pedido #{pedido.id} enviado correctamente. '
@@ -142,6 +151,25 @@ def pedidos_recibidos(request):
     })
 
 
+def _contexto_detalle_pedido(pedido, form=None):
+    if form is None:
+        initial = {}
+        solicitud = pedido.forma_pago == 'solicitud_credito'
+        if solicitud:
+            credito = Credito.objects.filter(
+                proveedor=pedido.proveedor, tecnico=pedido.tecnico,
+            ).first()
+            initial['limite_credito'] = (
+                max(credito.limite, credito.saldo_usado + pedido.monto_total)
+                if credito else pedido.monto_total
+            )
+        form = GestionarPedidoForm(solicitud_credito=solicitud, initial=initial)
+    return {
+        'pedido': pedido, 'form': form,
+        'ya_calificado': pedido.calificacion_tecnico.exists(),
+    }
+
+
 @login_required(login_url='login')
 def detalle_pedido_proveedor(request, pk):
     proveedor = get_proveedor_o_403(request)
@@ -155,11 +183,7 @@ def detalle_pedido_proveedor(request, pk):
             request,
             'Este retiro fue cancelado automaticamente porque pasaron mas de 24 hs desde la confirmacion.',
         )
-    return render(request, 'pedidos/detalle_pedido_proveedor.html', {
-        'pedido': pedido,
-        'form': GestionarPedidoForm(),
-        'ya_calificado': pedido.calificacion_tecnico.exists(),
-    })
+    return render(request, 'pedidos/detalle_pedido_proveedor.html', _contexto_detalle_pedido(pedido))
 
 
 @login_required(login_url='login')
@@ -169,16 +193,19 @@ def gestionar_pedido(request, pk):
     if proveedor is None:
         return redirect('dashboard')
     pedido = get_object_or_404(Pedido, pk=pk, proveedor=proveedor)
-    form = GestionarPedidoForm(request.POST)
+    form = GestionarPedidoForm(
+        request.POST, solicitud_credito=pedido.forma_pago == 'solicitud_credito',
+    )
     if not form.is_valid():
-        for error in form.non_field_errors():
-            messages.error(request, error)
-        return redirect('detalle_pedido_proveedor', pk=pk)
+        return render(request, 'pedidos/detalle_pedido_proveedor.html', _contexto_detalle_pedido(pedido, form))
     accion = form.cleaned_data['accion']
     respuesta = (form.cleaned_data['respuesta'] or '').strip()
     try:
         if accion == 'aceptar':
-            aceptar_pedido(pedido=pedido, respuesta=respuesta)
+            aceptar_pedido(
+                pedido=pedido, respuesta=respuesta,
+                limite_credito=form.cleaned_data.get('limite_credito'),
+            )
             mensaje = f'Pedido #{pedido.id} aceptado. El técnico fue notificado.'
         else:
             rechazar_pedido(
@@ -194,6 +221,14 @@ def gestionar_pedido(request, pk):
     except EstadoPedidoInvalido:
         messages.error(request, 'Solo podés gestionar pedidos en estado pendiente.')
         return redirect('detalle_pedido_proveedor', pk=pk)
+    except (SaldoInsuficiente, LimiteCreditoInvalido) as error:
+        mensaje = (
+            'El límite debe cubrir la deuda actual más el importe de este pedido. '
+            'Revisá el cupo antes de aprobar.'
+            if isinstance(error, SaldoInsuficiente) else str(error)
+        )
+        form.add_error('limite_credito', mensaje)
+        return render(request, 'pedidos/detalle_pedido_proveedor.html', _contexto_detalle_pedido(pedido, form))
     except StockInsuficiente as error:
         messages.error(request, str(error))
         return redirect('detalle_pedido_proveedor', pk=pk)

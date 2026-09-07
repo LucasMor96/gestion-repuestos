@@ -32,7 +32,7 @@ def reservar_saldo(*, proveedor, tecnico, monto):
 
 
 @transaction.atomic
-def liberar_saldo(*, proveedor, tecnico, monto):
+def liberar_saldo(*, proveedor, tecnico, monto, ciclo):
     try:
         credito = Credito.objects.select_for_update().get(
             proveedor=proveedor,
@@ -40,6 +40,9 @@ def liberar_saldo(*, proveedor, tecnico, monto):
         )
     except Credito.DoesNotExist:
         return None
+    # Una cancelacion de un ciclo ya saldado no libera deuda del ciclo actual.
+    if credito.ciclo != ciclo:
+        return credito
     credito.saldo_usado = max(Decimal('0'), credito.saldo_usado - Decimal(monto))
     credito.save(update_fields=['saldo_usado'])
     return credito
@@ -72,12 +75,13 @@ def revocar_credito(*, credito):
 
 @transaction.atomic
 def saldar_deuda(*, credito):
-    credito = Credito.objects.select_for_update().select_related(
+    credito = Credito.objects.select_for_update(of=('self',)).select_related(
         'tecnico__usuario', 'proveedor'
     ).get(pk=credito.pk)
     if credito.saldo_usado <= 0:
         raise DeudaInexistente('Este tecnico no tiene deuda pendiente.')
     credito.saldo_usado = Decimal('0')
-    credito.save(update_fields=['saldo_usado'])
+    credito.ciclo += 1
+    credito.save(update_fields=['saldo_usado', 'ciclo'])
     transaction.on_commit(lambda: notificar_deuda_saldada(credito))
     return credito
