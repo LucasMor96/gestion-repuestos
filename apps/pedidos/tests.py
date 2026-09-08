@@ -211,6 +211,60 @@ class PedidoEmailTests(TestCase):
         self.assertIn('Rechazado', mail.outbox[0].subject)
         self.assertIn('Sin stock por ahora', mail.outbox[0].body)
 
+    def test_proveedor_propone_otro_producto_de_su_catalogo(self):
+        pedido = self.crear_pedido()
+        alternativa = Producto.objects.create(
+            proveedor=pedido.proveedor,
+            nombre='Filtro premium',
+            modelo='FP-200',
+            categoria='mecanica_automotriz',
+            precio=1500,
+            stock=pedido.cantidad,
+            disponible=True,
+        )
+        self.client.force_login(pedido.proveedor.usuario)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse('gestionar_pedido', args=[pedido.pk]),
+                {
+                    'accion': 'alternativa',
+                    'producto_alternativo': alternativa.pk,
+                    'respuesta': 'Es compatible con tu vehículo.',
+                },
+            )
+
+        self.assertRedirects(response, reverse('pedidos_recibidos'))
+        pedido.refresh_from_db()
+        self.assertEqual(pedido.estado, 'rechazado')
+        self.assertEqual(pedido.producto_alternativo, alternativa)
+        self.assertIn('Es compatible con tu vehículo.', mail.outbox[0].body)
+        self.assertIn('Filtro premium', mail.outbox[0].body)
+
+        self.client.force_login(pedido.tecnico.usuario)
+        historial = self.client.get(reverse('mis_pedidos'))
+        self.assertContains(historial, 'Ver propuesta alternativa')
+        self.assertContains(historial, reverse('crear_pedido', args=[alternativa.pk]))
+
+    def test_proveedor_ve_cancelar_si_no_tiene_producto_alternativo(self):
+        pedido = self.crear_pedido()
+        self.client.force_login(pedido.proveedor.usuario)
+
+        detalle = self.client.get(reverse('detalle_pedido_proveedor', args=[pedido.pk]))
+        self.assertContains(detalle, 'Cancelar pedido')
+        self.assertNotContains(detalle, 'Proponer alternativa')
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse('gestionar_pedido', args=[pedido.pk]),
+                {'accion': 'cancelar', 'respuesta': 'No hay reemplazo disponible.'},
+            )
+
+        self.assertRedirects(response, reverse('pedidos_recibidos'))
+        pedido.refresh_from_db()
+        self.assertEqual(pedido.estado, 'cancelado')
+        self.assertIn('No hay reemplazo disponible.', mail.outbox[0].body)
+
     def test_completar_pedido_envia_email_a_tecnico_y_proveedor(self):
         pedido = self.crear_pedido(estado='aceptado')
         self.client.force_login(pedido.tecnico.usuario)

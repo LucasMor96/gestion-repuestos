@@ -89,7 +89,12 @@
                             <br><small class="text-muted">Tu nota: {{ pedido.notas|truncatechars:40 }}</small>
                         {% endif %}
                         {% if pedido.respuesta_proveedor %}
-                            <br><small class="text-danger fw-bold">Proveedor: {{ pedido.respuesta_proveedor|truncatechars:50 }}</small>
+                            <small class="text-body-secondary d-block mt-1">Mensaje del proveedor: {{ pedido.respuesta_proveedor }}</small>
+                        {% endif %}
+                        {% if pedido.producto_alternativo %}
+                            <small class="text-body-secondary d-block mt-1">
+                                Alternativa ofrecida: <strong>{{ pedido.producto_alternativo.nombre }}</strong>
+                            </small>
                         {% endif %}
                     </td>
                     <td class="text-muted small">{{ pedido.proveedor.nombre_negocio }}</td>
@@ -117,7 +122,12 @@
                     </td>
                     <td class="text-muted small">{{ pedido.fecha_creacion|date:"d/m/Y" }}</td>
                     <td class="pe-4">
-                        {% if pedido.estado == 'pendiente' %}
+                        {% if pedido.producto_alternativo %}
+                            <a href="{% url 'crear_pedido' pedido.producto_alternativo.pk %}"
+                               class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold text-nowrap">
+                                Ver propuesta alternativa
+                            </a>
+                        {% elif pedido.estado == 'pendiente' %}
                         <form method="post" action="{% url 'cancelar_pedido' pedido.pk %}"
                               onsubmit="return confirm('¿Cancelar el pedido #{{ pedido.id }}? Esta acción no se puede deshacer.')">
                             {% csrf_token %}

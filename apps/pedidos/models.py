@@ -9,7 +9,9 @@ from apps.usuarios.models import Proveedor, Tecnico
 
 class PedidoQuerySet(models.QuerySet):
     def con_relaciones(self):
-        return self.select_related('producto', 'proveedor', 'tecnico__usuario')
+        return self.select_related(
+            'producto', 'producto_alternativo', 'proveedor', 'tecnico__usuario',
+        )
 
     def para_historial(self, *, tecnico, fecha_desde='', fecha_hasta='', proveedor_id=''):
         from apps.calificaciones.models import CalificacionProveedor
@@ -65,6 +67,13 @@ class Pedido(models.Model):
     tecnico = models.ForeignKey(Tecnico, on_delete=models.CASCADE, related_name='pedidos')
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='pedidos_recibidos')
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='pedidos')
+    producto_alternativo = models.ForeignKey(
+        Producto,
+        on_delete=models.PROTECT,
+        related_name='pedidos_como_alternativa',
+        blank=True,
+        null=True,
+    )
     cantidad = models.IntegerField()
     forma_entrega = models.CharField(max_length=10, choices=ENTREGA_CHOICES)
     forma_pago = models.CharField(max_length=25, choices=FORMA_PAGO_CHOICES, default='transferencia')

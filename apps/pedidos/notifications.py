@@ -60,6 +60,14 @@ def notificar_proveedor_nuevo_pedido(pedido):
 def notificar_tecnico_estado(pedido):
     """Envia email al tecnico cuando el proveedor cambia el estado de su pedido."""
     detalle_credito = ''
+    detalle_alternativa = ''
+    if pedido.producto_alternativo_id:
+        detalle_alternativa = (
+            '\nEl proveedor te ofreció una alternativa:\n'
+            f'  Producto  : {pedido.producto_alternativo.nombre}\n'
+            f'  Precio    : ${pedido.producto_alternativo.precio}\n'
+            'Ingresá a Mis pedidos para verla y comprarla.\n'
+        )
     if pedido.forma_pago == 'solicitud_credito':
         if pedido.estado == 'aceptado':
             detalle_credito = 'Tu solicitud de crédito fue aprobada. Se habilitó un cupo reutilizable y esta compra se descontó de su saldo disponible.\n\n'
@@ -74,6 +82,7 @@ def notificar_tecnico_estado(pedido):
             f'  Producto  : {pedido.producto.nombre}\n'
             f'  Estado    : {pedido.get_estado_display()}\n'
             f'  Proveedor : {pedido.proveedor.nombre_negocio}\n'
+            f'{detalle_alternativa}'
             + (
                 f'  Retiro hasta: {pedido.fecha_limite_retiro.strftime("%d/%m/%Y %H:%M")}\n'
                 if pedido.fecha_limite_retiro else ''

@@ -21,7 +21,7 @@
             {% elif pedido.estado == 'completado' %}
                 <span class="badge bg-info text-dark fs-6 rounded-pill">Completado</span>
             {% elif pedido.estado == 'cancelado' %}
-                <span class="badge bg-secondary fs-6 rounded-pill">Cancelado por técnico</span>
+                <span class="badge bg-secondary fs-6 rounded-pill">Cancelado</span>
             {% endif %}
         </div>
         <p class="text-muted small mt-1 mb-0">Recibido el {{ pedido.fecha_creacion|date:"d/m/Y \a \l\a\s H:i" }}</p>
@@ -174,6 +174,7 @@
                                 {% endif %}
                             </label>
                         </div>
+                        {% if hay_alternativas %}
                         <div class="form-check p-3 border rounded-3" id="opcion-rechazar">
                             <input class="form-check-input" type="radio" name="accion"
                                    id="accion_rechazar" value="rechazar" {% if form.accion.value == 'rechazar' %}checked{% endif %}>
@@ -187,11 +188,35 @@
                                    id="accion_alternativa" value="alternativa" {% if form.accion.value == 'alternativa' %}checked{% endif %}>
                             <label class="form-check-label fw-bold text-primary" for="accion_alternativa">
                                 ↔ Proponer alternativa
-                                <span class="text-muted fw-normal small d-block">Sugerí un producto o condición alternativa al técnico.</span>
+                                <span class="text-muted fw-normal small d-block">Elegí otro producto disponible de tu catálogo para ofrecérselo al técnico.</span>
                             </label>
                         </div>
+                        {% else %}
+                        <div class="form-check p-3 border rounded-3" id="opcion-cancelar">
+                            <input class="form-check-input" type="radio" name="accion"
+                                   id="accion_cancelar" value="cancelar" {% if form.accion.value == 'cancelar' %}checked{% endif %}>
+                            <label class="form-check-label fw-bold text-danger" for="accion_cancelar">
+                                ✕ Cancelar pedido
+                                <span class="text-muted fw-normal small d-block">No tenés otro producto disponible para ofrecer como alternativa.</span>
+                            </label>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
+
+                {% if hay_alternativas %}
+                <div class="mb-4" id="campoProductoAlternativo">
+                    <label for="{{ form.producto_alternativo.id_for_label }}" class="form-label fw-bold">
+                        {{ form.producto_alternativo.label }}
+                        <span class="text-danger small">*obligatorio</span>
+                    </label>
+                    {{ form.producto_alternativo }}
+                    {% for error in form.producto_alternativo.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                    {% endfor %}
+                    <p class="text-muted small mt-1 mb-0">Solo se muestran productos disponibles con stock suficiente para las {{ pedido.cantidad }} unidad{{ pedido.cantidad|pluralize }} solicitadas.</p>
+                </div>
+                {% endif %}
 
                 {% if form.limite_credito %}
                 <div class="mb-4" id="campoCredito">
@@ -211,7 +236,7 @@
                         <span id="labelObligatorio" class="text-danger small" style="display:none;">*obligatorio</span>
                     </label>
                     <textarea name="respuesta" id="id_respuesta" class="form-control" rows="3"
-                              placeholder="Escribí aquí tu mensaje, motivo o alternativa...">{{ form.respuesta.value|default:'' }}</textarea>
+                              placeholder="Escribí aquí tu mensaje o motivo...">{{ form.respuesta.value|default:'' }}</textarea>
                     {% for error in form.respuesta.errors %}
                         <div class="text-danger small">{{ error }}</div>
                     {% endfor %}
@@ -267,12 +292,15 @@
     const hintRespuesta = document.getElementById('hintRespuesta');
     const labelObligatorio = document.getElementById('labelObligatorio');
     const textarea = document.getElementById('id_respuesta');
+    const campoProductoAlternativo = document.getElementById('campoProductoAlternativo');
+    const productoAlternativo = document.getElementById('id_producto_alternativo');
     if (!textarea) return;
 
     const opciones = {
         aceptar: { placeholder: 'Opcional: agregá un mensaje o instrucción para el técnico.', hint: 'Opcional al aceptar.', required: false },
         rechazar: { placeholder: 'Opcional: indicá el motivo del rechazo.', hint: 'Opcional al rechazar.', required: false },
-        alternativa: { placeholder: 'Describí la alternativa que proponés (producto similar, otro modelo, etc.)', hint: 'Obligatorio al proponer alternativa.', required: true },
+        alternativa: { placeholder: 'Opcional: agregá un mensaje para acompañar la alternativa.', hint: 'El producto alternativo es obligatorio; el mensaje es opcional.', required: false },
+        cancelar: { placeholder: 'Opcional: indicá el motivo de la cancelación.', hint: 'Opcional al cancelar.', required: false },
     };
 
     function actualizarFormulario() {
@@ -281,6 +309,12 @@
         textarea.placeholder = cfg.placeholder;
         hintRespuesta.textContent = cfg.hint;
         labelObligatorio.style.display = cfg.required ? 'inline' : 'none';
+        if (campoProductoAlternativo && productoAlternativo) {
+            const esAlternativa = seleccionado === 'alternativa';
+            campoProductoAlternativo.style.display = esAlternativa ? 'block' : 'none';
+            productoAlternativo.disabled = !esAlternativa;
+            productoAlternativo.required = esAlternativa;
+        }
         const campoCredito = document.getElementById('campoCredito');
         if (campoCredito) {
             campoCredito.style.display = seleccionado === 'aceptar' ? 'block' : 'none';

@@ -131,14 +131,15 @@ def aceptar_pedido(*, pedido, respuesta='', limite_credito=None):
 
 
 @transaction.atomic
-def rechazar_pedido(*, pedido, respuesta='', alternativa=False):
+def rechazar_pedido(*, pedido, respuesta='', alternativa=False, producto_alternativo=None):
     pedido = _pedido_bloqueado(pedido)
     _exigir_estado(pedido, 'pendiente')
     pedido.estado = 'rechazado'
-    pedido.respuesta_proveedor = (
-        f'Alternativa propuesta: {respuesta}' if alternativa else (respuesta or None)
-    )
-    pedido.save(update_fields=['estado', 'respuesta_proveedor', 'fecha_actualizacion'])
+    pedido.producto_alternativo = producto_alternativo if alternativa else None
+    pedido.respuesta_proveedor = respuesta or None
+    pedido.save(update_fields=[
+        'estado', 'producto_alternativo', 'respuesta_proveedor', 'fecha_actualizacion',
+    ])
     if pedido.usa_credito:
         liberar_saldo(
             proveedor=pedido.proveedor,
@@ -151,11 +152,12 @@ def rechazar_pedido(*, pedido, respuesta='', alternativa=False):
 
 
 @transaction.atomic
-def cancelar_pedido(*, pedido):
+def cancelar_pedido(*, pedido, respuesta='', notificar=False):
     pedido = _pedido_bloqueado(pedido)
     _exigir_estado(pedido, 'pendiente')
     pedido.estado = 'cancelado'
-    pedido.save(update_fields=['estado', 'fecha_actualizacion'])
+    pedido.respuesta_proveedor = respuesta or None
+    pedido.save(update_fields=['estado', 'respuesta_proveedor', 'fecha_actualizacion'])
     if pedido.usa_credito:
         liberar_saldo(
             proveedor=pedido.proveedor,
@@ -163,6 +165,8 @@ def cancelar_pedido(*, pedido):
             monto=pedido.monto_total,
             ciclo=pedido.ciclo_credito,
         )
+    if notificar:
+        transaction.on_commit(lambda: notificar_tecnico_estado(pedido))
     return pedido
 
 

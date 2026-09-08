@@ -152,6 +152,10 @@ def pedidos_recibidos(request):
 
 
 def _contexto_detalle_pedido(pedido, form=None):
+    productos_alternativos = Producto.objects.del_proveedor(pedido.proveedor).filter(
+        disponible=True,
+        stock__gte=pedido.cantidad,
+    ).exclude(pk=pedido.producto_id).order_by('nombre', 'modelo')
     if form is None:
         initial = {}
         solicitud = pedido.forma_pago == 'solicitud_credito'
@@ -163,9 +167,14 @@ def _contexto_detalle_pedido(pedido, form=None):
                 max(credito.limite, credito.saldo_usado + pedido.monto_total)
                 if credito else pedido.monto_total
             )
-        form = GestionarPedidoForm(solicitud_credito=solicitud, initial=initial)
+        form = GestionarPedidoForm(
+            solicitud_credito=solicitud,
+            productos_alternativos=productos_alternativos,
+            initial=initial,
+        )
     return {
         'pedido': pedido, 'form': form,
+        'hay_alternativas': form.fields['producto_alternativo'].queryset.exists(),
         'ya_calificado': pedido.calificacion_tecnico.exists(),
     }
 
@@ -193,8 +202,14 @@ def gestionar_pedido(request, pk):
     if proveedor is None:
         return redirect('dashboard')
     pedido = get_object_or_404(Pedido, pk=pk, proveedor=proveedor)
+    productos_alternativos = Producto.objects.del_proveedor(pedido.proveedor).filter(
+        disponible=True,
+        stock__gte=pedido.cantidad,
+    ).exclude(pk=pedido.producto_id).order_by('nombre', 'modelo')
     form = GestionarPedidoForm(
-        request.POST, solicitud_credito=pedido.forma_pago == 'solicitud_credito',
+        request.POST,
+        solicitud_credito=pedido.forma_pago == 'solicitud_credito',
+        productos_alternativos=productos_alternativos,
     )
     if not form.is_valid():
         return render(request, 'pedidos/detalle_pedido_proveedor.html', _contexto_detalle_pedido(pedido, form))
@@ -207,17 +222,21 @@ def gestionar_pedido(request, pk):
                 limite_credito=form.cleaned_data.get('limite_credito'),
             )
             mensaje = f'Pedido #{pedido.id} aceptado. El técnico fue notificado.'
-        else:
+        elif accion == 'alternativa':
+            producto_alternativo = form.cleaned_data['producto_alternativo']
             rechazar_pedido(
                 pedido=pedido,
                 respuesta=respuesta,
-                alternativa=accion == 'alternativa',
+                alternativa=True,
+                producto_alternativo=producto_alternativo,
             )
-            mensaje = (
-                f'Alternativa enviada al técnico para el pedido #{pedido.id}.'
-                if accion == 'alternativa'
-                else f'Pedido #{pedido.id} rechazado. El técnico fue notificado.'
-            )
+            mensaje = f'Alternativa enviada al técnico para el pedido #{pedido.id}.'
+        elif accion == 'cancelar':
+            cancelar_pedido_servicio(pedido=pedido, respuesta=respuesta, notificar=True)
+            mensaje = f'Pedido #{pedido.id} cancelado. El técnico fue notificado.'
+        else:
+            rechazar_pedido(pedido=pedido, respuesta=respuesta)
+            mensaje = f'Pedido #{pedido.id} rechazado. El técnico fue notificado.'
     except EstadoPedidoInvalido:
         messages.error(request, 'Solo podés gestionar pedidos en estado pendiente.')
         return redirect('detalle_pedido_proveedor', pk=pk)

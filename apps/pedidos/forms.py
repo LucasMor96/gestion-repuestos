@@ -3,6 +3,8 @@ from uuid import uuid4
 
 from django import forms
 
+from apps.catalogo.models import Producto
+
 from .models import Pedido
 
 
@@ -12,6 +14,7 @@ class GestionarPedidoForm(forms.Form):
         ('aceptar', 'Aceptar pedido'),
         ('rechazar', 'Rechazar pedido'),
         ('alternativa', 'Proponer alternativa'),
+        ('cancelar', 'Cancelar pedido'),
     ]
     accion = forms.ChoiceField(
         choices=ACCION_CHOICES,
@@ -26,15 +29,24 @@ class GestionarPedidoForm(forms.Form):
         required=False,
         label='Mensaje para el técnico',
     )
+    producto_alternativo = forms.ModelChoiceField(
+        queryset=Producto.objects.none(),
+        required=False,
+        empty_label='Elegí un producto de tu catálogo',
+        label='Producto alternativo',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
     limite_credito = forms.DecimalField(
         required=False, min_value=Decimal('0.01'), max_digits=12, decimal_places=2,
         label='Límite total del cupo reutilizable ($)',
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
     )
 
-    def __init__(self, *args, solicitud_credito=False, **kwargs):
+    def __init__(self, *args, solicitud_credito=False, productos_alternativos=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.solicitud_credito = solicitud_credito
+        if productos_alternativos is not None:
+            self.fields['producto_alternativo'].queryset = productos_alternativos
         if not solicitud_credito:
             self.fields.pop('limite_credito')
         elif self.is_bound and self.data.get('accion') != 'aceptar':
@@ -47,10 +59,8 @@ class GestionarPedidoForm(forms.Form):
         respuesta = (cleaned_data.get('respuesta') or '').strip()
         if self.solicitud_credito and accion == 'aceptar' and cleaned_data.get('limite_credito') is None:
             self.add_error('limite_credito', 'Indicá el límite de crédito que querés otorgar.')
-        if accion == 'alternativa' and not respuesta:
-            raise forms.ValidationError(
-                'Debés describir la alternativa que proponés al técnico.'
-            )
+        if accion == 'alternativa' and not cleaned_data.get('producto_alternativo'):
+            self.add_error('producto_alternativo', 'Elegí el producto que querés ofrecer como alternativa.')
         return cleaned_data
 
 class PedidoForm(forms.ModelForm):

@@ -453,7 +453,7 @@ class Command(BaseCommand):
                 estado=estado,
                 monto_total=producto.precio * Decimal(cantidad),
                 notas=marcador,
-                respuesta_proveedor="Confirmado para demo." if estado != "pendiente" else None,
+                respuesta_proveedor=None,
             )
             fecha_creacion = ahora - timedelta(days=dias_atras)
             fecha_actualizacion = fecha_creacion + timedelta(hours=horas_respuesta)
