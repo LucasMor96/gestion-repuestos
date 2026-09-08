@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Solicitar Repuesto{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Solicitar Repuesto{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -35,7 +35,7 @@
                 <p class="text-muted small mb-3">{{ producto.descripcion }}</p>
             {% endif %}
 
-            <p class="fs-2 fw-bold text-primary mb-0">${{ producto.precio }}</p>
+            <p class="fs-2 fw-bold text-primary mb-0">{{ producto.precio|ars }}</p>
             <p class="text-muted small mb-3">por unidad</p>
 
             {% if producto.stock > 5 %}
@@ -181,7 +181,7 @@
                         <span id="montoTotal" class="text-primary fw-bold fs-4"></span>
                     </div>
                     <p class="text-muted small mb-0 mt-1">
-                        Precio unitario: ${{ producto.precio }} × <span id="cantDisplay">1</span> unidad(es)
+                        Precio unitario: {{ producto.precio|ars }} × <span id="cantDisplay">1</span> unidad(es)
                     </p>
                 </div>
 
@@ -210,8 +210,8 @@
                             {% elif value == 'credito_comercial' %}
                                 {% if credito %}
                                     <span class="text-muted small d-block ms-4">
-                                        Disponible: <strong class="text-success">${{ credito.saldo_disponible }}</strong>
-                                        de ${{ credito.limite }}.
+                                        Disponible: <strong class="text-success">{{ credito.saldo_disponible|ars }}</strong>
+                                        de {{ credito.limite|ars }}.
                                     </span>
                                 {% else %}
                                     <span class="text-muted small d-block ms-4">Este proveedor todavia no te asigno credito.</span>
@@ -311,7 +311,12 @@
         const envioSeleccionado = document.querySelector('input[name="forma_entrega"]:checked')?.value === 'envio';
         const costoEnvio = envioSeleccionado ? 3500 + Math.max(cant - 1, 0) * 900 : 0;
         const total = precioUnit * cant + costoEnvio;
-        spanTotal.textContent = '$' + total.toFixed(2);
+        spanTotal.textContent = new Intl.NumberFormat('es-AR', {
+            style: 'currency',
+            currency: 'ARS',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        }).format(total).replace('ARS', '$').replace(/\u00a0/g, ' ');
         spanCant.textContent = cant;
     }
 
@@ -344,3 +349,5 @@
 </script>
 
 {% endblock %}
+
+

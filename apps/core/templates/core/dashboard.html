@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% load static %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% load static %}
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -97,7 +97,7 @@
                 <div class="col-md-4">
                     <div class="border rounded-4 p-3 h-100">
                         <p class="text-muted small mb-1">{% if es_proveedor %}Ventas completadas{% else %}Compras completadas{% endif %}</p>
-                        <p class="fs-3 fw-bold mb-0">${{ estadisticas.ventas_total }}</p>
+                        <p class="fs-3 fw-bold mb-0">{{ estadisticas.ventas_total|ars }}</p>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -131,7 +131,7 @@
                                 {% for proveedor in estadisticas.proveedores_con_mas_ventas %}
                                     <div class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3">
                                         <span>{{ proveedor.proveedor__nombre_negocio }}</span>
-                                        <span class="badge bg-success rounded-pill">${{ proveedor.ventas_total }}</span>
+                                        <span class="badge bg-success rounded-pill">{{ proveedor.ventas_total|ars }}</span>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -165,7 +165,7 @@
                                     <td>{{ p.id }}</td>
                                     <td>{{ p.producto.nombre }}</td>
                                     <td>{{ p.proveedor.nombre_negocio }}</td>
-                                    <td>${{ p.monto_total }}</td>
+                                    <td>{{ p.monto_total|ars }}</td>
                                     <td><span class="badge bg-secondary">{{ p.get_estado_display }}</span></td>
                                 </tr>
                                 {% endfor %}
@@ -213,7 +213,7 @@
                                     <td>{{ p.id }}</td>
                                     <td>{{ p.producto.nombre }}</td>
                                     <td>{{ p.tecnico.usuario.get_full_name }}</td>
-                                    <td>${{ p.monto_total }}</td>
+                                    <td>{{ p.monto_total|ars }}</td>
                                     <td><span class="badge bg-secondary">{{ p.get_estado_display }}</span></td>
                                 </tr>
                                 {% endfor %}
@@ -235,3 +235,5 @@
     </div>
 </div>
 {% endblock %}
+
+

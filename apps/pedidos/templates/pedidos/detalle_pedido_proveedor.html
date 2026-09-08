@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Pedido #{{ pedido.id }}{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Pedido #{{ pedido.id }}{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -56,7 +56,7 @@
             </div>
 
             <p class="text-muted small mb-1">Monto total</p>
-            <p class="fs-3 fw-bold text-primary mb-3">${{ pedido.monto_total }}</p>
+            <p class="fs-3 fw-bold text-primary mb-3">{{ pedido.monto_total|ars }}</p>
 
             <p class="text-muted small mb-1">Forma de pago</p>
             <p class="fw-bold mb-3">{{ pedido.get_forma_pago_display }}</p>
@@ -64,7 +64,7 @@
             {% if pedido.forma_pago == 'solicitud_credito' %}
             <div class="alert alert-info rounded-3 mb-3">
                 {% if pedido.estado == 'pendiente' %}
-                    <strong>Solicitud de crédito por ${{ pedido.monto_total }}</strong>
+                    <strong>Solicitud de crédito por {{ pedido.monto_total|ars }}</strong>
                     <p class="small mb-0">El técnico solicita un cupo reutilizable para esta compra y futuras compras. Revisá sus datos y definí el límite antes de aprobar.</p>
                 {% elif pedido.usa_credito %}
                     <p class="mb-0">Aprobaste esta compra y habilitaste un cupo de crédito reutilizable.</p>
@@ -167,7 +167,7 @@
                             <label class="form-check-label fw-bold text-success" for="accion_aceptar">
                                 {% if pedido.forma_pago == 'solicitud_credito' %}
                                     ✓ Aprobar crédito y aceptar pedido
-                                    <span class="text-muted fw-normal small d-block">Habilitás el cupo indicado y financiás ${{ pedido.monto_total }} de esta compra. El saldo restante podrá usarse en futuras compras.</span>
+                                    <span class="text-muted fw-normal small d-block">Habilitás el cupo indicado y financiás {{ pedido.monto_total|ars }} de esta compra. El saldo restante podrá usarse en futuras compras.</span>
                                 {% else %}
                                     ✓ Aceptar pedido
                                     <span class="text-muted fw-normal small d-block">El técnico será notificado de que su pedido fue confirmado.</span>
@@ -197,7 +197,7 @@
                 <div class="mb-4" id="campoCredito">
                     <label for="{{ form.limite_credito.id_for_label }}" class="form-label fw-bold">{{ form.limite_credito.label }}</label>
                     {{ form.limite_credito }}
-                    <p class="text-muted small mt-1">Es el límite total, no un importe adicional. Debe cubrir la deuda actual más los ${{ pedido.monto_total }} de este pedido. Al saldar la deuda, el cupo vuelve a estar disponible.</p>
+                    <p class="text-muted small mt-1">Es el límite total, no un importe adicional. Debe cubrir la deuda actual más los {{ pedido.monto_total|ars }} de este pedido. Al saldar la deuda, el cupo vuelve a estar disponible.</p>
                     {% for error in form.limite_credito.errors %}
                         <div class="text-danger small">{{ error }}</div>
                     {% endfor %}
@@ -296,3 +296,5 @@
 </script>
 
 {% endblock %}
+
+

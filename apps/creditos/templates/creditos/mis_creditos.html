@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Mis Créditos{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Mis Créditos{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -31,15 +31,15 @@
                 <div class="row text-center mb-3">
                     <div class="col-4">
                         <p class="text-muted small mb-0">Límite total</p>
-                        <p class="fw-bold fs-6 mb-0">${{ credito.limite }}</p>
+                        <p class="fw-bold fs-6 mb-0">{{ credito.limite|ars }}</p>
                     </div>
                     <div class="col-4">
                         <p class="text-muted small mb-0">Usado</p>
-                        <p class="fw-bold fs-6 mb-0 text-danger">${{ credito.saldo_usado }}</p>
+                        <p class="fw-bold fs-6 mb-0 text-danger">{{ credito.saldo_usado|ars }}</p>
                     </div>
                     <div class="col-4">
                         <p class="text-muted small mb-0">Disponible</p>
-                        <p class="fw-bold fs-6 mb-0 text-success">${{ credito.saldo_disponible }}</p>
+                        <p class="fw-bold fs-6 mb-0 text-success">{{ credito.saldo_disponible|ars }}</p>
                     </div>
                 </div>
 
@@ -85,3 +85,5 @@
 {% endif %}
 
 {% endblock %}
+
+

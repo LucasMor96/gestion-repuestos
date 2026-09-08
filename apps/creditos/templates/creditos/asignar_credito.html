@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Asignar Crédito{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Asignar Crédito{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -59,7 +59,7 @@
 
     {% if credito_existente %}
         <div class="alert alert-info rounded-3 small py-2 mb-3">
-            Este técnico ya tiene un crédito activo de ${{ credito_existente.limite }}.
+            Este técnico ya tiene un crédito activo de {{ credito_existente.limite|ars }}.
             Podés modificar el límite o revocar el crédito desde la pantalla anterior.
         </div>
     {% endif %}
@@ -86,3 +86,5 @@
 {% endif %}
 
 {% endblock %}
+
+

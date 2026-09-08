@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Pedidos Recibidos{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Pedidos Recibidos{% endblock %}
 {% block content %}
 
 <div class="row mb-4 align-items-center">
@@ -63,7 +63,7 @@
                             <br><span class="text-warning fw-bold">Limite: {{ pedido.fecha_limite_retiro|date:"d/m/Y H:i" }}</span>
                         {% endif %}
                     </td>
-                    <td class="fw-bold text-primary">${{ pedido.monto_total }}</td>
+                    <td class="fw-bold text-primary">{{ pedido.monto_total|ars }}</td>
                     <td class="text-muted small">{{ pedido.get_forma_pago_display }}</td>
                     <td>
                         {% if pedido.estado == 'pendiente' %}
@@ -126,3 +126,5 @@
 {% endif %}
 
 {% endblock %}
+
+

@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% load static %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% load static %}
 {% block title %}Perfil de {{ tecnico.usuario.get_full_name }}{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -73,7 +73,7 @@
                         <tr>
                             <td>{{ p.producto.nombre }}</td>
                             <td>{{ p.proveedor.nombre_negocio }}</td>
-                            <td>${{ p.monto_total }}</td>
+                            <td>{{ p.monto_total|ars }}</td>
                             <td><span class="badge bg-secondary">{{ p.get_estado_display }}</span></td>
                         </tr>
                         {% endfor %}
@@ -110,3 +110,5 @@
     </div>
 </div>
 {% endblock %}
+
+

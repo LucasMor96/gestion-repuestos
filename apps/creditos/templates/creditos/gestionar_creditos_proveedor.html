@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Gestionar Créditos{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Gestionar Créditos{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -34,9 +34,9 @@
                             <p class="fw-bold mb-0">{{ credito.tecnico.usuario.get_full_name }}</p>
                             <p class="text-muted small mb-0">ID: {{ credito.tecnico.pk }} · {{ credito.tecnico.especialidad }}</p>
                         </td>
-                        <td>${{ credito.limite }}</td>
-                        <td class="text-danger fw-bold">${{ credito.saldo_usado }}</td>
-                        <td class="text-success fw-bold">${{ credito.saldo_disponible }}</td>
+                        <td>{{ credito.limite|ars }}</td>
+                        <td class="text-danger fw-bold">{{ credito.saldo_usado|ars }}</td>
+                        <td class="text-success fw-bold">{{ credito.saldo_disponible|ars }}</td>
                         <td style="min-width: 120px;">
                             <div class="progress rounded-pill" style="height:8px;">
                                 <div class="progress-bar
@@ -72,3 +72,5 @@
 {% endif %}
 
 {% endblock %}
+
+

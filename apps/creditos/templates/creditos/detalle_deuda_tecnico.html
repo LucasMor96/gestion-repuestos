@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Detalle de Deuda{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Detalle de Deuda{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -28,11 +28,11 @@
             <div class="row text-center mb-3">
                 <div class="col-6">
                     <p class="text-muted small mb-0">Límite</p>
-                    <p class="fw-bold mb-0">${{ credito.limite }}</p>
+                    <p class="fw-bold mb-0">{{ credito.limite|ars }}</p>
                 </div>
                 <div class="col-6">
                     <p class="text-muted small mb-0">Deuda</p>
-                    <p class="fw-bold mb-0 text-danger">${{ credito.saldo_usado }}</p>
+                    <p class="fw-bold mb-0 text-danger">{{ credito.saldo_usado|ars }}</p>
                 </div>
             </div>
             <div class="progress rounded-pill mb-3" style="height:10px;">
@@ -46,7 +46,7 @@
 
             {% if credito.saldo_usado > 0 %}
             <form method="post" action="{% url 'marcar_deuda_saldada' credito.pk %}"
-                  onsubmit="return confirm('¿Confirmar que el técnico saldó su deuda de ${{ credito.saldo_usado }}?')">
+                  onsubmit="return confirm('¿Confirmar que el técnico saldó su deuda de {{ credito.saldo_usado|ars }}?')">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-success rounded-pill w-100 fw-bold">
                     Marcar deuda como saldada
@@ -84,7 +84,7 @@
                                 <td>{{ pedido.id }}</td>
                                 <td>{{ pedido.producto.nombre }}</td>
                                 <td>{{ pedido.cantidad }}</td>
-                                <td class="fw-bold">${{ pedido.monto_total }}</td>
+                                <td class="fw-bold">{{ pedido.monto_total|ars }}</td>
                                 <td>
                                     <span class="badge
                                         {% if pedido.estado == 'completado' %}bg-success
@@ -108,3 +108,5 @@
 </div>
 
 {% endblock %}
+
+

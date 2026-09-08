@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Buscar Repuestos{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Buscar Repuestos{% endblock %}
 {% block content %}
 
 <div class="row mb-4">
@@ -88,7 +88,7 @@
                     <span class="badge bg-light text-dark border">{{ producto.categoria }}</span>
                 </p>
 
-                <p class="fs-4 fw-bold text-primary mb-3">${{ producto.precio }}</p>
+                <p class="fs-4 fw-bold text-primary mb-3">{{ producto.precio|ars }}</p>
 
                 <!-- Proveedor -->
                 <div class="border-top pt-3">
@@ -144,3 +144,5 @@
 {% endif %}
 
 {% endblock %}
+
+

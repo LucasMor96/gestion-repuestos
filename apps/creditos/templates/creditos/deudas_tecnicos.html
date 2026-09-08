@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Deudas Pendientes{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Deudas Pendientes{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -45,9 +45,9 @@
                                 {% endif %}
                             </p>
                         </td>
-                        <td>${{ deuda.limite }}</td>
-                        <td class="fw-bold text-danger">${{ deuda.saldo_usado }}</td>
-                        <td class="text-success">${{ deuda.saldo_disponible }}</td>
+                        <td>{{ deuda.limite|ars }}</td>
+                        <td class="fw-bold text-danger">{{ deuda.saldo_usado|ars }}</td>
+                        <td class="text-success">{{ deuda.saldo_disponible|ars }}</td>
                         <td>
                             {% if deuda.porcentaje_usado >= 100 %}
                                 <span class="badge bg-danger rounded-pill">Límite alcanzado</span>
@@ -62,7 +62,7 @@
                                class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-1">Ver detalle</a>
                             <form method="post" action="{% url 'marcar_deuda_saldada' deuda.pk %}"
                                   class="d-inline"
-                                  onsubmit="return confirm('¿Confirmar que {{ deuda.tecnico.usuario.get_full_name }} saldó su deuda de ${{ deuda.saldo_usado }}?')">
+                                  onsubmit="return confirm('¿Confirmar que {{ deuda.tecnico.usuario.get_full_name }} saldó su deuda de {{ deuda.saldo_usado|ars }}?')">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-success btn-sm rounded-pill px-3">Marcar saldada</button>
                             </form>
@@ -80,3 +80,5 @@
 {% endif %}
 
 {% endblock %}
+
+

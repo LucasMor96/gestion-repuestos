@@ -1,5 +1,5 @@
-﻿{% extends "core/base.html" %}
-{% block title %}Mi Catálogo{% endblock %}
+{% extends "core/base.html" %}
+{% load moneda %}`r`n{% block title %}Mi Catálogo{% endblock %}
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -51,7 +51,7 @@
                     <td>
                         <span class="badge bg-light text-dark border">{{ p.categoria }}</span>
                     </td>
-                    <td class="fw-bold">${{ p.precio }}</td>
+                    <td class="fw-bold">{{ p.precio|ars }}</td>
                     <td>
                         {% if p.stock > 5 %}
                             <span class="badge bg-success rounded-pill">{{ p.stock }}</span>
@@ -125,3 +125,5 @@
 {% endfor %}
 
 {% endblock %}
+
+
