@@ -39,11 +39,4 @@ def estadisticas_dashboard(*, perfil, es_tecnico, es_proveedor):
         'productos_mas_pedidos': pedidos.values('producto__nombre').annotate(
             cantidad_total=Sum('cantidad'), pedidos_total=Count('id')
         ).order_by('-cantidad_total', 'producto__nombre')[:5],
-        'proveedores_con_mas_ventas': Pedido.objects.filter(estado='completado').values(
-            'proveedor__nombre_negocio'
-        ).annotate(
-            ventas_total=Sum('monto_total'),
-            cantidad_total=Sum('cantidad'),
-            pedidos_total=Count('id'),
-        ).order_by('-ventas_total', 'proveedor__nombre_negocio')[:5],
     }
