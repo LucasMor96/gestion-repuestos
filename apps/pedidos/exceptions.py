@@ -6,6 +6,10 @@ class EstadoPedidoInvalido(PedidoError):
     pass
 
 
+class FormaPagoInvalida(PedidoError):
+    pass
+
+
 class LimiteCreditoInvalido(PedidoError):
     pass
 

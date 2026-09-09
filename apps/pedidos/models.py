@@ -58,7 +58,6 @@ class Pedido(models.Model):
     ]
 
     FORMA_PAGO_CHOICES = [
-        ('mercadopago', 'MercadoPago (simulado)'),
         ('transferencia', 'Transferencia bancaria'),
         ('credito_comercial', 'Credito comercial'),
         ('solicitud_credito', 'Solicitud de crédito'),
@@ -89,6 +88,10 @@ class Pedido(models.Model):
     clave_operacion = models.UUIDField(null=True, blank=True, editable=False)
 
     objects = PedidoQuerySet.as_manager()
+
+    def get_forma_pago_display(self):
+        # Conserva los pedidos históricos sin ofrecer nuevamente el medio retirado.
+        return dict(self.FORMA_PAGO_CHOICES).get(self.forma_pago, 'Medio de pago retirado (histórico)')
 
     @property
     def fecha_limite_retiro(self):

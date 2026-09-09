@@ -10,7 +10,7 @@ from apps.creditos.services import asignar_credito, liberar_saldo, reservar_sald
 from apps.usuarios.models import Proveedor
 from apps.usuarios.utils import perfil_aprobado
 
-from .exceptions import EstadoPedidoInvalido, LimiteCreditoInvalido, ProveedorNoHabilitado, StockInsuficiente
+from .exceptions import EstadoPedidoInvalido, FormaPagoInvalida, LimiteCreditoInvalido, ProveedorNoHabilitado, StockInsuficiente
 from .models import Pedido
 from .notifications import (
     notificar_pedido_confirmado,
@@ -45,6 +45,8 @@ def _notas_con_envio(notas, datos):
 
 @transaction.atomic
 def crear_pedido(*, tecnico, producto, datos):
+    if datos.get('forma_pago') not in dict(Pedido.FORMA_PAGO_CHOICES):
+        raise FormaPagoInvalida('Elegí una forma de pago disponible.')
     clave_operacion = UUID(str(datos['clave_operacion']))
     # Serializa envios del mismo producto antes de comprobar la clave y reservar saldo.
     producto = Producto.objects.select_for_update(of=('self',)).get(pk=producto.pk)

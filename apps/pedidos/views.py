@@ -9,7 +9,7 @@ from apps.creditos.exceptions import CreditoNoDisponible, SaldoInsuficiente
 from apps.creditos.models import Credito
 from apps.usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
 
-from .exceptions import EstadoPedidoInvalido, LimiteCreditoInvalido, ProveedorNoHabilitado, StockInsuficiente
+from .exceptions import EstadoPedidoInvalido, FormaPagoInvalida, LimiteCreditoInvalido, ProveedorNoHabilitado, StockInsuficiente
 from .exporters import exportar_historial_csv
 from .forms import GestionarPedidoForm, PedidoForm
 from .models import Pedido
@@ -62,7 +62,7 @@ def crear_pedido(request, producto_pk):
                 messages.error(
                     request,
                     f'No tenés crédito comercial activo con {producto.proveedor.nombre_negocio}. '
-                    'Elegí transferencia o MercadoPago simulado para continuar.',
+                    'Elegí transferencia o solicitá crédito para continuar.',
                 )
             except SaldoInsuficiente as error:
                 messages.error(
@@ -70,15 +70,13 @@ def crear_pedido(request, producto_pk):
                     f'El monto del pedido (${error.solicitado}) supera tu crédito disponible '
                     f'(${error.disponible}) con {producto.proveedor.nombre_negocio}.',
                 )
-            except (StockInsuficiente, ProveedorNoHabilitado) as error:
+            except (StockInsuficiente, ProveedorNoHabilitado, FormaPagoInvalida) as error:
                 messages.error(request, str(error))
             except DatabaseError:
                 messages.error(request, 'Ocurrió un error al procesar el pedido. Intentá de nuevo.')
             else:
                 detalle_pago = ''
-                if pedido.forma_pago == 'mercadopago':
-                    detalle_pago = ' MercadoPago esta funcionando en modo simulado.'
-                elif pedido.forma_pago == 'credito_comercial':
+                if pedido.forma_pago == 'credito_comercial':
                     detalle_pago = ' Se usó tu crédito comercial disponible.'
                 elif pedido.forma_pago == 'solicitud_credito':
                     detalle_pago = ' Tu solicitud de crédito quedó pendiente de aprobación del proveedor.'

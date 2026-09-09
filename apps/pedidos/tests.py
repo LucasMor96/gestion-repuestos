@@ -100,20 +100,20 @@ class PedidoEmailTests(TestCase):
                     'clave_operacion': str(uuid4()),
                     'cantidad': 2,
                     'forma_entrega': 'retiro',
-                    'forma_pago': 'mercadopago',
+                    'forma_pago': 'solicitud_credito',
                     'notas': 'Lo retiro hoy',
                 },
             )
 
         self.assertRedirects(response, reverse('mis_pedidos'))
         pedido = Pedido.objects.get(tecnico=tecnico, proveedor=proveedor, producto=producto)
-        self.assertEqual(pedido.forma_pago, 'mercadopago')
+        self.assertEqual(pedido.forma_pago, 'solicitud_credito')
         self.assertFalse(pedido.usa_credito)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, [proveedor.usuario.email])
-        self.assertIn('Nuevo pedido', mail.outbox[0].subject)
+        self.assertIn('Solicitud de crédito', mail.outbox[0].subject)
         self.assertIn(producto.nombre, mail.outbox[0].body)
-        self.assertIn('MercadoPago (simulado)', mail.outbox[0].body)
+        self.assertIn('Solicitud de crédito', mail.outbox[0].body)
 
     def test_crear_pedido_con_credito_comercial_usa_saldo(self):
         tecnico = self.crear_tecnico()
@@ -302,7 +302,7 @@ class PedidoServiceTests(TestCase):
     def pedido(self, *, estado='pendiente', usa_credito=False):
         return Pedido.objects.create(
             tecnico=self.tecnico, proveedor=self.proveedor, producto=self.producto,
-            cantidad=2, forma_entrega='retiro', forma_pago='credito_comercial' if usa_credito else 'mercadopago',
+            cantidad=2, forma_entrega='retiro', forma_pago='credito_comercial' if usa_credito else 'transferencia',
             estado=estado, monto_total=2000, usa_credito=usa_credito,
         )
 

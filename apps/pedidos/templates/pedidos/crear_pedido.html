@@ -201,9 +201,7 @@
                             <label class="form-check-label fw-bold" for="pago_{{ value }}">
                                 {{ text }}
                             </label>
-                            {% if value == 'mercadopago' %}
-                                <span class="text-muted small d-block ms-4">Pago ficticio por ahora, sin integracion real.</span>
-                            {% elif value == 'transferencia' %}
+                            {% if value == 'transferencia' %}
                                 <span class="text-muted small d-block ms-4">El proveedor coordinara los datos de transferencia al aceptar el pedido.</span>
                             {% elif value == 'solicitud_credito' %}
                                 <span class="text-muted small d-block ms-4">Solicitá un cupo reutilizable para esta compra y futuras compras. El proveedor define el límite y puede aprobarlo o rechazarlo; no se genera deuda hasta su aprobación.</span>
