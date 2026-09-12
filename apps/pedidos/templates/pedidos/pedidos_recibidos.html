@@ -1,5 +1,6 @@
 {% extends "core/base.html" %}
-{% load moneda %}`r`n{% block title %}Pedidos Recibidos{% endblock %}
+{% load moneda %}
+{% block title %}Pedidos Recibidos{% endblock %}
 {% block content %}
 
 <div class="row mb-4 align-items-center">
@@ -54,7 +55,7 @@
                     </td>
                     <td class="small">
                         <span class="fw-bold">{{ pedido.tecnico.usuario.get_full_name }}</span>
-                        <br><span class="text-muted">{{ pedido.tecnico.especialidad }}</span>
+                        <br><span class="text-muted">{{ pedido.tecnico.get_especialidad_display }}</span>
                     </td>
                     <td>{{ pedido.cantidad }}</td>
                     <td class="text-muted small">

@@ -1,5 +1,6 @@
 {% extends "core/base.html" %}
-{% load moneda %}`r`n{% block title %}Pedido #{{ pedido.id }}{% endblock %}
+{% load moneda %}
+{% block title %}Pedido #{{ pedido.id }}{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -39,7 +40,7 @@
             {% if pedido.producto.modelo %}
                 <p class="text-muted small mb-2">Modelo: {{ pedido.producto.modelo }}</p>
             {% endif %}
-            <span class="badge bg-light text-dark border mb-3">{{ pedido.producto.categoria }}</span>
+            <span class="badge bg-light text-dark border mb-3">{{ pedido.producto.get_categoria_display }}</span>
 
             <div class="row g-3 mb-3">
                 <div class="col-6">
@@ -116,7 +117,7 @@
                 </div>
                 <div class="col-sm-6">
                     <p class="text-muted small mb-1">Especialidad</p>
-                    <p class="fw-bold mb-0">{{ pedido.tecnico.especialidad }}</p>
+                    <p class="fw-bold mb-0">{{ pedido.tecnico.get_especialidad_display }}</p>
                 </div>
                 {% if pedido.tecnico.telefono %}
                 <div class="col-sm-6">

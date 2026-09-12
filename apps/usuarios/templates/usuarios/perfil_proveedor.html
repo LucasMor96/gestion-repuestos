@@ -27,7 +27,7 @@
                 <div>
                     <h2 class="fw-bold mb-0">{{ proveedor.nombre_negocio }}</h2>
                     <span class="badge bg-warning bg-opacity-20 text-dark px-3 py-1 rounded-pill">
-                        {{ proveedor.rubro }}
+                        {{ proveedor.get_rubro_display }}
                     </span>
                     {% if proveedor.calificacion_promedio %}
                         <span class="ms-2 text-warning fw-bold">{{ proveedor.calificacion_promedio }} ★</span>

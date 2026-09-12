@@ -1,5 +1,6 @@
 {% extends "core/base.html" %}
-{% load moneda %}`r`n{% block title %}Buscar Repuestos{% endblock %}
+{% load moneda rubros %}
+{% block title %}Buscar Repuestos{% endblock %}
 {% block content %}
 
 <div class="row mb-4">
@@ -24,7 +25,7 @@
                 <select name="categoria" class="form-select rounded-pill border-2">
                     <option value="">Todas las categorías</option>
                     {% for cat in categorias %}
-                        <option value="{{ cat }}" {% if cat == categoria_sel %}selected{% endif %}>{{ cat }}</option>
+                        <option value="{{ cat }}" {% if cat == categoria_sel %}selected{% endif %}>{{ cat|rubro_display }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -85,7 +86,7 @@
                     <p class="text-muted small mb-1">Modelo: <strong>{{ producto.modelo }}</strong></p>
                 {% endif %}
                 <p class="text-muted small mb-2">
-                    <span class="badge bg-light text-dark border">{{ producto.categoria }}</span>
+                    <span class="badge bg-light text-dark border">{{ producto.get_categoria_display }}</span>
                 </p>
 
                 <p class="fs-4 fw-bold text-primary mb-3">{{ producto.precio|ars }}</p>

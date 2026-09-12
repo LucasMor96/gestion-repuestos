@@ -1,5 +1,6 @@
 {% extends "core/base.html" %}
-{% load moneda %}`r`n{% block title %}Solicitar Repuesto{% endblock %}
+{% load moneda %}
+{% block title %}Solicitar Repuesto{% endblock %}
 {% block content %}
 
 <div class="row mb-3">
@@ -29,7 +30,7 @@
             {% if producto.modelo %}
                 <p class="text-muted small mb-2">Modelo: <strong>{{ producto.modelo }}</strong></p>
             {% endif %}
-            <span class="badge bg-light text-dark border mb-3">{{ producto.categoria }}</span>
+            <span class="badge bg-light text-dark border mb-3">{{ producto.get_categoria_display }}</span>
 
             {% if producto.descripcion %}
                 <p class="text-muted small mb-3">{{ producto.descripcion }}</p>

@@ -52,7 +52,7 @@
                         <td class="fw-bold">{{ t.usuario.get_full_name }}</td>
                         <td>{{ t.usuario.email }}</td>
                         <td>{{ t.cuit }}</td>
-                        <td>{{ t.especialidad }}</td>
+                        <td>{{ t.get_especialidad_display }}</td>
                         <td>
                             {% if t.nota_admin %}
                                 <span class="badge bg-info text-dark">{{ t.nota_admin|truncatechars:30 }}</span>
@@ -92,7 +92,7 @@
                         <td class="fw-bold">{{ p.nombre_negocio }}</td>
                         <td>{{ p.usuario.email }}</td>
                         <td>{{ p.cuit }}</td>
-                        <td>{{ p.rubro }}</td>
+                        <td>{{ p.get_rubro_display }}</td>
                         <td>
                             {% if p.nota_admin %}
                                 <span class="badge bg-info text-dark">{{ p.nota_admin|truncatechars:30 }}</span>
@@ -136,7 +136,7 @@
                     <tr>
                         <td class="fw-bold">{{ t.usuario.get_full_name }}</td>
                         <td>{{ t.usuario.email }}</td>
-                        <td>{{ t.especialidad }}</td>
+                        <td>{{ t.get_especialidad_display }}</td>
                         <td>{% if t.calificacion_promedio %}{{ t.calificacion_promedio }} ★{% else %}-{% endif %}</td>
                         <td>
                             <button class="btn btn-warning btn-sm rounded-pill"
@@ -161,7 +161,7 @@
                     <tr>
                         <td class="fw-bold">{{ p.nombre_negocio }}</td>
                         <td>{{ p.usuario.email }}</td>
-                        <td>{{ p.rubro }}</td>
+                        <td>{{ p.get_rubro_display }}</td>
                         <td>{% if p.calificacion_promedio %}{{ p.calificacion_promedio }} ★{% else %}-{% endif %}</td>
                         <td>
                             <button class="btn btn-warning btn-sm rounded-pill"
