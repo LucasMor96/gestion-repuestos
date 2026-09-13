@@ -158,6 +158,7 @@
                             <a href="{% url 'panel_moderacion' %}" class="btn btn-outline-warning btn-sm rounded-pill px-3 me-lg-2">Moderaci&oacute;n</a>
                         {% endif %}
                         <a href="{% url 'dashboard' %}" class="btn btn-outline-dark btn-sm rounded-pill px-3">Mi Panel</a>
+                        <a href="{% url 'password_change' %}" class="btn btn-link text-muted btn-sm text-decoration-none">Cambiar contraseña</a>
                         <a href="{% url 'logout' %}" class="btn btn-link text-muted btn-sm text-decoration-none">Salir</a>
                     {% else %}
                         <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4 me-lg-2">Ingresar</a>

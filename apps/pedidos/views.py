@@ -230,7 +230,7 @@ def gestionar_pedido(request, pk):
             )
             mensaje = f'Alternativa enviada al técnico para el pedido #{pedido.id}.'
         elif accion == 'cancelar':
-            cancelar_pedido_servicio(pedido=pedido, respuesta=respuesta, notificar=True)
+            cancelar_pedido_servicio(pedido=pedido, respuesta=respuesta)
             mensaje = f'Pedido #{pedido.id} cancelado. El técnico fue notificado.'
         else:
             rechazar_pedido(pedido=pedido, respuesta=respuesta)

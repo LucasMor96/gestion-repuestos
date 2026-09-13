@@ -35,8 +35,8 @@ class UrlCompatibilityTests(TestCase):
         routes = {
             'inicio': [], 'registro_tipo': [], 'registro_tecnico': [],
             'registro_proveedor': [], 'login': [], 'logout': [],
-            'password_reset': [], 'password_reset_done': [],
-            'password_reset_complete': [], 'espera_aprobacion': [],
+            'password_reset': [], 'password_change': [],
+            'password_change_done': [], 'espera_aprobacion': [],
             'dashboard': [], 'editar_perfil': [], 'buscar_repuestos': [],
             'catalogo_proveedor': [], 'agregar_producto': [], 'mis_pedidos': [],
             'exportar_historial': [], 'pedidos_recibidos': [], 'mis_creditos': [],

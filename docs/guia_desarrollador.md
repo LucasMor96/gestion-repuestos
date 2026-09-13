@@ -9,8 +9,8 @@ proyecto global se llama `config`; no existe una app central con todos los model
 | --- | --- | --- |
 | `usuarios` | Tecnicos, proveedores, registro, login, perfiles y moderacion | Django auth |
 | `catalogo` | Productos, busqueda y gestion del catalogo | `usuarios` |
-| `creditos` | Limites, saldos, deudas y emails de credito | `usuarios`; consulta pedidos desde sus vistas |
-| `pedidos` | Solicitudes, estados, pagos, exportacion y emails de pedidos | `usuarios`, `catalogo`, `creditos` |
+| `creditos` | Limites, saldos y deudas | `usuarios`; consulta pedidos desde sus vistas |
+| `pedidos` | Solicitudes, estados, pagos y exportacion | `usuarios`, `catalogo`, `creditos` |
 | `calificaciones` | Opiniones de tecnicos y proveedores | `usuarios`, `pedidos` |
 | `core` | Inicio, dashboard, 404, layout, assets y datos de demostracion | Compone las apps de dominio |
 
@@ -32,8 +32,6 @@ varios modelos.
 - `selectors.py` y QuerySets: encapsulan consultas, filtros y anotaciones
   reutilizables sin producir efectos secundarios.
 - `models.py`: conserva propiedades e invariantes propias de una sola entidad.
-- `notifications.py`: construye y envia avisos. Los servicios las programan con
-  `transaction.on_commit()` cuando dependen de una escritura confirmada.
 
 Los CRUD triviales pueden permanecer coordinados por una view. En cuanto una
 accion modifica mas de una entidad, cambia estados, ajusta stock o saldo, o se
@@ -53,8 +51,7 @@ El recorrido habitual de una funcionalidad es `urls.py` -> `views.py` ->
 - Calificaciones posteriores a pedidos completados: `apps/calificaciones/`.
 - Paginas que componen varios dominios: `apps/core/`.
 
-Los helpers de rol y aprobacion viven en `apps/usuarios/utils.py`. Los emails se
-dividen entre `apps/pedidos/notifications.py` y `apps/creditos/notifications.py`.
+Los helpers de rol y aprobacion viven en `apps/usuarios/utils.py`.
 El contador global de pedidos pendientes se configura desde
 `apps/pedidos/context_processors.py`.
 

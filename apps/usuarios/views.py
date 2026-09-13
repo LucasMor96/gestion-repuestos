@@ -76,6 +76,10 @@ def logout_view(request):
     return redirect('login')
 
 
+def password_recovery(request):
+    return render(request, 'usuarios/password_recovery.html')
+
+
 def espera_aprobacion(request):
     return render(request, 'usuarios/espera_aprobacion.html')
 

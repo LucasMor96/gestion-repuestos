@@ -1,9 +1,6 @@
 
-import re
-
 from django.contrib.auth.models import User
-from django.core import mail
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 
 from apps.usuarios.models import Proveedor, Tecnico
@@ -190,80 +187,13 @@ class RegistroViewTests(TestCase):
         self.assertContains(response, 'value="password123"')
 
 
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-
-class PasswordResetTests(TestCase):
-    def test_password_reset_pages_are_available(self):
+class PasswordRecoveryTests(TestCase):
+    def test_password_recovery_explains_admin_procedure(self):
         response = self.client.get(reverse('password_reset'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'usuarios/password_reset_form.html')
-
-    def test_user_can_reset_password_from_email_link(self):
-        user = User.objects.create_user(
-            username='tecnico@example.com',
-            email='tecnico@example.com',
-            password='password123',
-            is_active=True,
-        )
-
-        response = self.client.post(
-            reverse('password_reset'),
-            {'email': user.email},
-        )
-
-        self.assertRedirects(response, reverse('password_reset_done'))
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertIn('Restablecer contrasena en LUMA', mail.outbox[0].subject)
-        self.assertEqual(len(mail.outbox[0].alternatives), 1)
-        self.assertEqual(mail.outbox[0].alternatives[0][1], 'text/html')
-        self.assertIn('Crear nueva contrasena', mail.outbox[0].alternatives[0][0])
-
-        reset_url = re.search(r'http://testserver(?P<path>/password-reset/\S+)', mail.outbox[0].body).group('path')
-        response = self.client.get(reset_url, follow=True)
-        reset_confirm_path = response.request['PATH_INFO']
-
-        response = self.client.post(
-            reset_confirm_path,
-            {
-                'new_password1': 'New-password123!',
-                'new_password2': 'New-password123!',
-            },
-        )
-
-        self.assertRedirects(response, reverse('password_reset_complete'))
-        user.refresh_from_db()
-        self.assertTrue(user.check_password('New-password123!'))
-
-    def test_password_reset_rechaza_contrasena_simple(self):
-        user = User.objects.create_user(
-            username='reset-simple@example.com',
-            email='reset-simple@example.com',
-            password='Password123!',
-            is_active=True,
-        )
-
-        response = self.client.post(reverse('password_reset'), {'email': user.email})
-        self.assertRedirects(response, reverse('password_reset_done'))
-        reset_url = re.search(r'http://testserver(?P<path>/password-reset/\S+)', mail.outbox[0].body).group('path')
-        response = self.client.get(reset_url, follow=True)
-        reset_confirm_path = response.request['PATH_INFO']
-
-        response = self.client.post(
-            reset_confirm_path,
-            {
-                'new_password1': 'password123',
-                'new_password2': 'password123',
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'La contrasena debe incluir una letra mayuscula, un simbolo.')
-        user.refresh_from_db()
-        self.assertFalse(user.check_password('password123'))
-
-
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+        self.assertTemplateUsed(response, 'usuarios/password_recovery.html')
+        self.assertContains(response, 'administrador')
 
 class LocationMapTests(TestCase):
     def crear_tecnico(self, email='map-tecnico@example.com', cuit='27-33333333-3'):

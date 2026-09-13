@@ -1,6 +1,5 @@
 
 from django.contrib.auth.models import User
-from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -23,7 +22,7 @@ from apps.pedidos.services import (
 )
 
 
-class PedidoEmailTests(TestCase):
+class PedidoWorkflowTests(TestCase):
     def crear_tecnico(self, email='tecnico-pedido@example.com'):
         user = User.objects.create_user(
             username=email,
@@ -87,7 +86,7 @@ class PedidoEmailTests(TestCase):
         )
         return pedido
 
-    def test_crear_pedido_envia_email_al_proveedor(self):
+    def test_crear_pedido_guarda_solicitud(self):
         tecnico = self.crear_tecnico()
         proveedor = self.crear_proveedor()
         producto = self.crear_producto(proveedor)
@@ -109,11 +108,6 @@ class PedidoEmailTests(TestCase):
         pedido = Pedido.objects.get(tecnico=tecnico, proveedor=proveedor, producto=producto)
         self.assertEqual(pedido.forma_pago, 'solicitud_credito')
         self.assertFalse(pedido.usa_credito)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, [proveedor.usuario.email])
-        self.assertIn('Solicitud de crédito', mail.outbox[0].subject)
-        self.assertIn(producto.nombre, mail.outbox[0].body)
-        self.assertIn('Solicitud de crédito', mail.outbox[0].body)
 
     def test_crear_pedido_con_credito_comercial_usa_saldo(self):
         tecnico = self.crear_tecnico()
@@ -173,7 +167,7 @@ class PedidoEmailTests(TestCase):
         self.assertEqual(pedido.forma_pago, 'transferencia')
         self.assertTrue(pedido.comprobante_transferencia.name.endswith('.pdf'))
 
-    def test_proveedor_acepta_pedido_envia_email_al_tecnico(self):
+    def test_proveedor_acepta_pedido(self):
         pedido = self.crear_pedido()
         self.client.force_login(pedido.proveedor.usuario)
 
@@ -187,12 +181,8 @@ class PedidoEmailTests(TestCase):
             )
 
         self.assertRedirects(response, reverse('pedidos_recibidos'))
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, [pedido.tecnico.usuario.email])
-        self.assertIn('Aceptado', mail.outbox[0].subject)
-        self.assertIn('Listo para retirar', mail.outbox[0].body)
 
-    def test_proveedor_rechaza_pedido_envia_email_al_tecnico(self):
+    def test_proveedor_rechaza_pedido(self):
         pedido = self.crear_pedido()
         self.client.force_login(pedido.proveedor.usuario)
 
@@ -206,10 +196,6 @@ class PedidoEmailTests(TestCase):
             )
 
         self.assertRedirects(response, reverse('pedidos_recibidos'))
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, [pedido.tecnico.usuario.email])
-        self.assertIn('Rechazado', mail.outbox[0].subject)
-        self.assertIn('Sin stock por ahora', mail.outbox[0].body)
 
     def test_proveedor_propone_otro_producto_de_su_catalogo(self):
         pedido = self.crear_pedido()
@@ -238,8 +224,6 @@ class PedidoEmailTests(TestCase):
         pedido.refresh_from_db()
         self.assertEqual(pedido.estado, 'rechazado')
         self.assertEqual(pedido.producto_alternativo, alternativa)
-        self.assertIn('Es compatible con tu vehículo.', mail.outbox[0].body)
-        self.assertIn('Filtro premium', mail.outbox[0].body)
 
         self.client.force_login(pedido.tecnico.usuario)
         historial = self.client.get(reverse('mis_pedidos'))
@@ -263,9 +247,8 @@ class PedidoEmailTests(TestCase):
         self.assertRedirects(response, reverse('pedidos_recibidos'))
         pedido.refresh_from_db()
         self.assertEqual(pedido.estado, 'cancelado')
-        self.assertIn('No hay reemplazo disponible.', mail.outbox[0].body)
 
-    def test_completar_pedido_envia_email_a_tecnico_y_proveedor(self):
+    def test_completar_pedido(self):
         pedido = self.crear_pedido(estado='aceptado')
         self.client.force_login(pedido.tecnico.usuario)
 
@@ -273,13 +256,6 @@ class PedidoEmailTests(TestCase):
             response = self.client.post(reverse('completar_pedido', args=[pedido.pk]))
 
         self.assertRedirects(response, reverse('mis_pedidos'))
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(
-            mail.outbox[0].to,
-            [pedido.tecnico.usuario.email, pedido.proveedor.usuario.email],
-        )
-        self.assertIn('confirmado', mail.outbox[0].subject)
-        self.assertIn('completado', mail.outbox[0].body)
 
 
 class PedidoServiceTests(TestCase):

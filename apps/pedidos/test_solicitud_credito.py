@@ -1,6 +1,5 @@
 from datetime import timedelta
 from decimal import Decimal
-from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -28,13 +27,8 @@ class SolicitudCreditoTests(DatosPedidoMixin, TestCase):
         url = reverse('crear_pedido', args=[self.producto.pk])
         self.assertContains(self.client.get(url), 'Solicitud de crédito')
         datos = self.datos(forma_pago='solicitud_credito')
-        with patch('apps.pedidos.notifications.send_mail') as enviar:
-            with self.captureOnCommitCallbacks(execute=True):
-                for _ in range(3):
-                    self.assertRedirects(self.client.post(url, datos), reverse('mis_pedidos'))
-            enviar.assert_called_once()
-            self.assertIn('Solicitud de crédito', enviar.call_args.kwargs['subject'])
-            self.assertEqual(enviar.call_args.kwargs['recipient_list'], [self.proveedor.usuario.email])
+        for _ in range(3):
+            self.assertRedirects(self.client.post(url, datos), reverse('mis_pedidos'))
         pedido = Pedido.objects.get()
         self.assertFalse(pedido.usa_credito)
         self.assertEqual(pedido.estado, 'pendiente')
@@ -51,12 +45,9 @@ class SolicitudCreditoTests(DatosPedidoMixin, TestCase):
         self.credito.delete()
         pedido = self.solicitar()
         self.client.force_login(self.proveedor.usuario)
-        with patch('apps.pedidos.notifications.send_mail') as enviar:
-            with self.captureOnCommitCallbacks(execute=True):
-                response = self.client.post(reverse('gestionar_pedido', args=[pedido.pk]), {
-                    'accion': 'aceptar', 'limite_credito': '5000.00',
-                })
-            self.assertIn('solicitud de crédito fue aprobada', enviar.call_args.kwargs['message'])
+        response = self.client.post(reverse('gestionar_pedido', args=[pedido.pk]), {
+            'accion': 'aceptar', 'limite_credito': '5000.00',
+        })
         self.assertRedirects(response, reverse('pedidos_recibidos'))
         credito = Credito.objects.get()
         pedido.refresh_from_db()
@@ -100,12 +91,9 @@ class SolicitudCreditoTests(DatosPedidoMixin, TestCase):
         self.credito.delete()
         pedido = self.solicitar()
         self.client.force_login(self.proveedor.usuario)
-        with patch('apps.pedidos.notifications.send_mail') as enviar:
-            with self.captureOnCommitCallbacks(execute=True):
-                response = self.client.post(reverse('gestionar_pedido', args=[pedido.pk]), {
-                    'accion': 'rechazar', 'limite_credito': 'invalido', 'respuesta': 'No autorizado',
-                })
-            self.assertIn('solicitud de crédito fue rechazada', enviar.call_args.kwargs['message'])
+        response = self.client.post(reverse('gestionar_pedido', args=[pedido.pk]), {
+            'accion': 'rechazar', 'limite_credito': 'invalido', 'respuesta': 'No autorizado',
+        })
         self.assertRedirects(response, reverse('pedidos_recibidos'))
         self.assertFalse(Credito.objects.exists())
 

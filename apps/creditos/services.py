@@ -4,12 +4,6 @@ from django.db import transaction
 
 from .exceptions import CreditoNoDisponible, DeudaInexistente, SaldoInsuficiente
 from .models import Credito
-from .notifications import (
-    notificar_alerta_credito,
-    notificar_credito_asignado,
-    notificar_credito_revocado,
-    notificar_deuda_saldada,
-)
 
 
 @transaction.atomic
@@ -26,8 +20,6 @@ def reservar_saldo(*, proveedor, tecnico, monto):
         raise SaldoInsuficiente(disponible=credito.saldo_disponible, solicitado=monto)
     credito.saldo_usado += Decimal(monto)
     credito.save(update_fields=['saldo_usado'])
-    if credito.porcentaje_usado >= 80:
-        transaction.on_commit(lambda: notificar_alerta_credito(credito))
     return credito
 
 
@@ -58,7 +50,6 @@ def asignar_credito(*, proveedor, tecnico, limite):
     credito.limite = limite
     credito.activo = True
     credito.save(update_fields=['limite', 'activo'])
-    transaction.on_commit(lambda: notificar_credito_asignado(credito))
     return credito
 
 
@@ -69,7 +60,6 @@ def revocar_credito(*, credito):
     ).get(pk=credito.pk)
     credito.activo = False
     credito.save(update_fields=['activo'])
-    transaction.on_commit(lambda: notificar_credito_revocado(credito))
     return credito
 
 
@@ -83,5 +73,4 @@ def saldar_deuda(*, credito):
     credito.saldo_usado = Decimal('0')
     credito.ciclo += 1
     credito.save(update_fields=['saldo_usado', 'ciclo'])
-    transaction.on_commit(lambda: notificar_deuda_saldada(credito))
     return credito

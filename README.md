@@ -25,7 +25,6 @@ El sistema permite registrar tecnicos y proveedores, moderar altas de usuarios, 
 - Django 5.2.13
 - PostgreSQL
 - HTML templates de Django
-- Emails transaccionales configurables desde Django
 
 ## Estructura principal
 
@@ -101,11 +100,9 @@ DB_USER=postgres
 DB_PASSWORD=tu_password_aqui
 DB_HOST=localhost
 DB_PORT=5432
-EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
-DEFAULT_FROM_EMAIL=LUMA <no-reply@luma.local>
 ```
 
-Por defecto, Django usa el backend de consola para desarrollo local y muestra los emails en la terminal. Para enviar emails reales, configura `EMAIL_BACKEND` con el backend SMTP o proveedor que vayas a usar y ajusta `DEFAULT_FROM_EMAIL`.
+La recuperación de contraseña se gestiona sin email: el administrador puede restablecerla desde el panel de Django. Los usuarios autenticados pueden cambiarla desde “Cambiar contraseña”.
 
 5. Crear la base de datos en PostgreSQL si todavia no existe:
 

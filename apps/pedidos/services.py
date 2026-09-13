@@ -12,11 +12,6 @@ from apps.usuarios.utils import perfil_aprobado
 
 from .exceptions import EstadoPedidoInvalido, FormaPagoInvalida, LimiteCreditoInvalido, ProveedorNoHabilitado, StockInsuficiente
 from .models import Pedido
-from .notifications import (
-    notificar_pedido_confirmado,
-    notificar_proveedor_nuevo_pedido,
-    notificar_tecnico_estado,
-)
 
 
 def calcular_costo_envio(forma_entrega, cantidad):
@@ -89,7 +84,6 @@ def crear_pedido(*, tecnico, producto, datos):
         ciclo_credito=credito.ciclo if credito else 0,
         clave_operacion=clave_operacion,
     )
-    transaction.on_commit(lambda: notificar_proveedor_nuevo_pedido(pedido))
     return pedido
 
 
@@ -128,7 +122,6 @@ def aceptar_pedido(*, pedido, respuesta='', limite_credito=None):
     pedido.save(update_fields=[
         'estado', 'respuesta_proveedor', 'fecha_actualizacion', 'usa_credito', 'ciclo_credito',
     ])
-    transaction.on_commit(lambda: notificar_tecnico_estado(pedido))
     return pedido
 
 
@@ -149,12 +142,11 @@ def rechazar_pedido(*, pedido, respuesta='', alternativa=False, producto_alterna
             monto=pedido.monto_total,
             ciclo=pedido.ciclo_credito,
         )
-    transaction.on_commit(lambda: notificar_tecnico_estado(pedido))
     return pedido
 
 
 @transaction.atomic
-def cancelar_pedido(*, pedido, respuesta='', notificar=False):
+def cancelar_pedido(*, pedido, respuesta=''):
     pedido = _pedido_bloqueado(pedido)
     _exigir_estado(pedido, 'pendiente')
     pedido.estado = 'cancelado'
@@ -167,8 +159,6 @@ def cancelar_pedido(*, pedido, respuesta='', notificar=False):
             monto=pedido.monto_total,
             ciclo=pedido.ciclo_credito,
         )
-    if notificar:
-        transaction.on_commit(lambda: notificar_tecnico_estado(pedido))
     return pedido
 
 
@@ -178,7 +168,6 @@ def completar_pedido(*, pedido):
     _exigir_estado(pedido, 'aceptado')
     pedido.estado = 'completado'
     pedido.save(update_fields=['estado', 'fecha_actualizacion'])
-    transaction.on_commit(lambda: notificar_pedido_confirmado(pedido))
     return pedido
 
 

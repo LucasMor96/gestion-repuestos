@@ -124,14 +124,11 @@ class IntegridadPedidoTests(DatosPedidoMixin, TestCase):
         self.assertEqual(self.credito.saldo_usado, 1000)
         self.assertEqual(self.credito.ciclo, 2)
 
-    def test_reintento_no_reserva_ni_notifica_dos_veces(self):
+    def test_reintento_no_reserva_dos_veces(self):
         datos = self.datos()
-        with patch('apps.pedidos.services.notificar_proveedor_nuevo_pedido') as notificar:
-            with self.captureOnCommitCallbacks(execute=True):
-                primero = self.comprar(datos)
-                for _ in range(5):
-                    self.assertEqual(self.comprar(datos).pk, primero.pk)
-            notificar.assert_called_once()
+        primero = self.comprar(datos)
+        for _ in range(5):
+            self.assertEqual(self.comprar(datos).pk, primero.pk)
         self.assertEqual(Pedido.objects.count(), 1)
         self.credito.refresh_from_db()
         self.assertEqual(self.credito.saldo_usado, 1000)
@@ -229,8 +226,7 @@ class ConcurrenciaPedidoTests(DatosPedidoMixin, TransactionTestCase):
             tareas = [executor.submit(ejecutar, accion) for accion in acciones]
             return [tarea.result(timeout=15) for tarea in tareas]
 
-    @patch('apps.pedidos.services.notificar_proveedor_nuevo_pedido')
-    def test_compras_simultaneas_crean_un_solo_pedido(self, notificar):
+    def test_compras_simultaneas_crean_un_solo_pedido(self):
         datos = self.datos()
         ids = self.ejecutar_juntos(
             lambda: self.comprar(datos).pk,
@@ -240,12 +236,8 @@ class ConcurrenciaPedidoTests(DatosPedidoMixin, TransactionTestCase):
         self.assertEqual(Pedido.objects.count(), 1)
         self.credito.refresh_from_db()
         self.assertEqual(self.credito.saldo_usado, 1000)
-        notificar.assert_called_once()
 
-    @patch('apps.creditos.services.notificar_credito_asignado')
-    @patch('apps.pedidos.services.notificar_tecnico_estado')
-    @patch('apps.pedidos.services.notificar_proveedor_nuevo_pedido')
-    def test_aprobaciones_simultaneas_otorgan_credito_una_vez(self, _nuevo, estado, asignado):
+    def test_aprobaciones_simultaneas_otorgan_credito_una_vez(self):
         self.credito.delete()
         pedido = self.comprar(self.datos(forma_pago='solicitud_credito'))
 
@@ -263,12 +255,8 @@ class ConcurrenciaPedidoTests(DatosPedidoMixin, TransactionTestCase):
         self.assertEqual(credito.saldo_disponible, 4000)
         self.producto.refresh_from_db()
         self.assertEqual(self.producto.stock, 9)
-        estado.assert_called_once()
-        asignado.assert_called_once()
 
-    @patch('apps.creditos.services.notificar_deuda_saldada')
-    @patch('apps.pedidos.services.notificar_proveedor_nuevo_pedido')
-    def test_saldar_y_comprar_simultaneamente_conservan_el_ciclo(self, *_mocks):
+    def test_saldar_y_comprar_simultaneamente_conservan_el_ciclo(self):
         self.comprar()
         _, nuevo = self.ejecutar_juntos(
             lambda: saldar_deuda(credito=self.credito),
@@ -281,9 +269,7 @@ class ConcurrenciaPedidoTests(DatosPedidoMixin, TransactionTestCase):
         self.credito.refresh_from_db()
         self.assertEqual(self.credito.saldo_usado, 0)
 
-    @patch('apps.creditos.services.notificar_deuda_saldada')
-    @patch('apps.pedidos.services.notificar_proveedor_nuevo_pedido')
-    def test_saldar_y_cancelar_simultaneamente_no_corrompen_saldo(self, *_mocks):
+    def test_saldar_y_cancelar_simultaneamente_no_corrompen_saldo(self):
         anterior = self.comprar()
         self.comprar()
         self.ejecutar_juntos(
