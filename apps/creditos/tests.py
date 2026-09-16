@@ -4,8 +4,11 @@ from django.test import TestCase
 from apps.usuarios.models import Proveedor, Tecnico
 
 from .exceptions import DeudaInexistente, SaldoInsuficiente
-from .models import Credito
-from .services import asignar_credito, reservar_saldo, revocar_credito, saldar_deuda
+from .models import Credito, PagoCredito
+from .services import (
+    asignar_credito, reservar_saldo, resolver_pago, revocar_credito,
+    saldar_deuda, solicitar_pago,
+)
 
 
 class CreditoServiceTests(TestCase):
@@ -51,3 +54,25 @@ class CreditoServiceTests(TestCase):
         self.assertEqual(credito.saldo_usado, 0)
         with self.assertRaises(DeudaInexistente):
             saldar_deuda(credito=credito)
+
+    def test_pago_pendiente_no_libera_hasta_confirmacion(self):
+        credito = Credito.objects.create(
+            proveedor=self.proveedor, tecnico=self.tecnico, limite=1000, saldo_usado=400
+        )
+        pago = solicitar_pago(credito=credito)
+        credito.refresh_from_db()
+        self.assertEqual(credito.saldo_usado, 400)
+        self.assertEqual(pago.estado, 'pendiente')
+        resolver_pago(pago=pago, confirmado=True)
+        credito.refresh_from_db()
+        pago.refresh_from_db()
+        self.assertEqual(credito.saldo_usado, 0)
+        self.assertEqual(pago.estado, 'confirmado')
+
+    def test_no_se_puede_generar_dos_solicitudes_pendientes(self):
+        credito = Credito.objects.create(
+            proveedor=self.proveedor, tecnico=self.tecnico, limite=1000, saldo_usado=400
+        )
+        solicitar_pago(credito=credito)
+        with self.assertRaises(ValueError):
+            solicitar_pago(credito=credito)

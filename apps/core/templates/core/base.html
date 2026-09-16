@@ -145,6 +145,12 @@
                             <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-lg-2">Buscar repuestos</a>
                             <a href="{% url 'mis_pedidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-lg-2">Mis pedidos</a>
                         {% elif user.proveedor %}
+                            <a href="{% url 'gestionar_creditos_proveedor' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-lg-2 position-relative">
+                                Créditos
+                                {% if pagos_credito_pendientes_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.65rem;">{{ pagos_credito_pendientes_count }}</span>
+                                {% endif %}
+                            </a>
                             <a href="{% url 'pedidos_recibidos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 me-lg-2 position-relative">
                                 Pedidos
                                 {% if pedidos_pendientes_count > 0 %}

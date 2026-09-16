@@ -46,3 +46,33 @@ class Credito(models.Model):
 
     def __str__(self):
         return f"Crédito {self.tecnico.usuario.username} con {self.proveedor.nombre_negocio}"
+
+    @property
+    def pago_pendiente(self):
+        pagos_prefetched = getattr(self, 'pagos_pendientes', None)
+        if pagos_prefetched is not None:
+            return next((pago for pago in pagos_prefetched if pago.ciclo == self.ciclo), None)
+        return self.pagos.filter(ciclo=self.ciclo, estado='pendiente').first()
+
+
+class PagoCredito(models.Model):
+    """Solicitud de pago de una deuda de crédito, confirmable por el proveedor."""
+
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente de confirmación'),
+        ('confirmado', 'Confirmado'),
+        ('rechazado', 'Rechazado'),
+    ]
+
+    credito = models.ForeignKey(Credito, on_delete=models.CASCADE, related_name='pagos')
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    ciclo = models.PositiveIntegerField()
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='pendiente')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_resolucion = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f'Pago {self.monto} de {self.credito.tecnico.usuario.username}'

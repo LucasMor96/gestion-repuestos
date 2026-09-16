@@ -69,6 +69,13 @@
                 {% endif %}
 
                 <div class="mt-3">
+                    {% if credito.saldo_usado > 0 %}
+                        {% if credito.pago_pendiente %}
+                                <div class="alert alert-warning rounded-3 small py-2 mb-2">Transferencia informada. Pendiente de confirmación del proveedor.</div>
+                            {% else %}
+                                <a href="{% url 'pagar_credito' credito.pk %}" class="btn btn-success btn-sm rounded-pill px-3 me-2">Saldar deuda</a>
+                            {% endif %}
+                    {% endif %}
                     <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
                         Buscar repuestos
                     </a>

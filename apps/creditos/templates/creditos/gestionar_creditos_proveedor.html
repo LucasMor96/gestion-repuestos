@@ -14,6 +14,31 @@
     </div>
 </div>
 
+{% if pagos_pendientes %}
+<div class="alert alert-info border-0 shadow-sm rounded-4" role="status">
+    <h5 class="fw-bold mb-2">Pagos de crédito para confirmar</h5>
+    <p class="small mb-3">Estos técnicos informaron que realizaron la transferencia. Verificá el ingreso en tu cuenta antes de confirmar.</p>
+    {% for pago in pagos_pendientes %}
+    <div class="bg-white rounded-3 p-3 mb-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <strong>{{ pago.credito.tecnico.usuario.get_full_name }}</strong>
+            <span class="text-muted small"> · {{ pago.monto|ars }} · {{ pago.fecha_creacion|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="d-flex gap-2">
+            <form method="post" action="{% url 'confirmar_pago_credito' pago.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-sm rounded-pill px-3">Confirmar pago</button>
+            </form>
+            <form method="post" action="{% url 'rechazar_pago_credito' pago.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">Rechazar</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 {% if creditos %}
     <div class="card border-0 shadow-sm rounded-4 p-0 overflow-hidden">
         <div class="table-responsive">

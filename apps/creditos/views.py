@@ -8,7 +8,7 @@ from apps.usuarios.utils import get_proveedor_o_403, get_tecnico_o_403
 
 from .exceptions import DeudaInexistente
 from .forms import AsignarCreditoForm
-from .models import Credito
+from .models import Credito, PagoCredito
 from .selectors import (
     buscar_tecnicos_aprobados,
     creditos_activos_proveedor,
@@ -19,6 +19,8 @@ from .selectors import (
 from .services import asignar_credito as asignar_credito_servicio
 from .services import revocar_credito as revocar_credito_servicio
 from .services import saldar_deuda
+from .services import resolver_pago, solicitar_pago
+from .selectors import pagos_pendientes_proveedor
 
 
 @login_required(login_url='login')
@@ -32,12 +34,38 @@ def mis_creditos(request):
 
 
 @login_required(login_url='login')
+def pagar_credito(request, pk):
+    tecnico = get_tecnico_o_403(request)
+    if tecnico is None:
+        return redirect('dashboard')
+    credito = get_object_or_404(
+        Credito.objects.select_related('proveedor'), pk=pk, tecnico=tecnico, activo=True
+    )
+    pago_pendiente = credito.pagos.filter(ciclo=credito.ciclo, estado='pendiente').first()
+    if request.method == 'POST':
+        try:
+            solicitar_pago(credito=credito)
+        except ValueError as error:
+            messages.info(request, str(error))
+        except DeudaInexistente:
+            messages.warning(request, 'Este crédito no tiene deuda pendiente.')
+        else:
+            messages.success(request, 'Avisamos al proveedor que realizaste la transferencia. Esperá su confirmación.')
+        return redirect('mis_creditos')
+    return render(request, 'creditos/pagar_credito.html', {
+        'credito': credito,
+        'pago_pendiente': pago_pendiente,
+    })
+
+
+@login_required(login_url='login')
 def gestionar_creditos_proveedor(request):
     proveedor = get_proveedor_o_403(request)
     if proveedor is None:
         return redirect('dashboard')
     return render(request, 'creditos/gestionar_creditos_proveedor.html', {
         'creditos': creditos_activos_proveedor(proveedor),
+        'pagos_pendientes': pagos_pendientes_proveedor(proveedor),
     })
 
 
@@ -136,3 +164,27 @@ def marcar_deuda_saldada(request, pk):
             'El crédito disponible se restableció.',
         )
     return redirect('deudas_tecnicos')
+
+
+@login_required(login_url='login')
+@require_POST
+def confirmar_pago_credito(request, pk):
+    proveedor = get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+    pago = get_object_or_404(PagoCredito, pk=pk, credito__proveedor=proveedor)
+    resolver_pago(pago=pago, confirmado=True)
+    messages.success(request, 'Pago confirmado. La deuda fue saldada y el crédito quedó disponible.')
+    return redirect('gestionar_creditos_proveedor')
+
+
+@login_required(login_url='login')
+@require_POST
+def rechazar_pago_credito(request, pk):
+    proveedor = get_proveedor_o_403(request)
+    if proveedor is None:
+        return redirect('dashboard')
+    pago = get_object_or_404(PagoCredito, pk=pk, credito__proveedor=proveedor)
+    resolver_pago(pago=pago, confirmado=False)
+    messages.info(request, 'La solicitud de pago fue rechazada. El técnico deberá verificar la transferencia.')
+    return redirect('gestionar_creditos_proveedor')

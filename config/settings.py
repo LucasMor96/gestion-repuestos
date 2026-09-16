@@ -71,6 +71,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.creditos.context_processors.pagos_credito_pendientes',
                 'apps.pedidos.context_processors.pedidos_pendientes',
             ],
         },
