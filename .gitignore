@@ -55,3 +55,4 @@ db.sqlite3-journal
 
 # Other
 .git/info/exclude
+private_media/

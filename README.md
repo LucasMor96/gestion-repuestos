@@ -187,6 +187,15 @@ El login de la aplicacion se realiza con email y password.
 7. El tecnico puede marcar el pedido aceptado como completado.
 8. Luego ambas partes pueden calificarse.
 
+Cuando el administrador pide informacion, la cuenta permanece pendiente. Al ingresar
+con su email y contrasena, el usuario puede leer la solicitud y responder con texto
+o hasta cinco imagenes JPG, PNG o WebP (5 MB por imagen). Este acceso solo permite
+consultar la revision durante una hora; no habilita las funciones de una cuenta aprobada.
+El panel de moderacion conserva las respuestas y permite ampliar las imagenes.
+Los adjuntos se guardan en `private_media/`, fuera del directorio publico `media/`,
+y se entregan unicamente al propietario o al staff. Incluir este directorio en los
+respaldos y no publicarlo directamente desde el servidor web.
+
 ## Conservacion del historial y habilitacion de proveedores
 
 Los productos con pedidos asociados no se pueden eliminar, tampoco desde el

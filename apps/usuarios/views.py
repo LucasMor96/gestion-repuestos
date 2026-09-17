@@ -1,6 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core import signing
+from django.db import transaction
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import (
@@ -9,8 +13,9 @@ from .forms import (
     LoginForm,
     RegistroProveedorForm,
     RegistroTecnicoForm,
+    RespuestaModeracionForm,
 )
-from .models import Proveedor, Tecnico
+from .models import ImagenModeracion, Proveedor, RespuestaModeracion, Tecnico
 from .selectors import articulos_vendidos_proveedor
 from .services import autenticar_por_email
 from .utils import get_proveedor_o_403, get_tecnico_o_403, perfil_aprobado
@@ -55,7 +60,14 @@ def login_view(request):
         return redirect('dashboard')
     form = LoginForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
+        request.session.pop('acceso_moderacion', None)
         resultado = autenticar_por_email(**form.cleaned_data)
+        if resultado.usuario and resultado.estado != 'aprobado':
+            request.session.cycle_key()
+            request.session['acceso_moderacion'] = signing.dumps({
+                'usuario': resultado.usuario.pk,
+                'hash': resultado.usuario.get_session_auth_hash(),
+            }, salt='moderacion')
         if resultado.estado == 'aprobado':
             login(request, resultado.usuario)
             messages.success(request, f'Bienvenido, {resultado.usuario.first_name}!')
@@ -80,8 +92,61 @@ def password_recovery(request):
     return render(request, 'usuarios/password_recovery.html')
 
 
+def usuario_moderacion(request):
+    if request.user.is_authenticated:
+        return request.user
+    try:
+        datos = signing.loads(request.session.get('acceso_moderacion', ''),
+                              salt='moderacion', max_age=3600)
+        usuario = User.objects.get(pk=datos['usuario'])
+        if datos['hash'] == usuario.get_session_auth_hash():
+            return usuario
+    except (signing.BadSignature, User.DoesNotExist, KeyError):
+        pass
+    return None
+
+
 def espera_aprobacion(request):
-    return render(request, 'usuarios/espera_aprobacion.html')
+    usuario = usuario_moderacion(request)
+    perfil = (getattr(usuario, 'tecnico', None) or getattr(usuario, 'proveedor', None)) if usuario else None
+    form = None
+    if perfil and perfil.estado == 'pendiente' and perfil.nota_admin:
+        form = RespuestaModeracionForm(request.POST if request.method == 'POST' else None, request.FILES)
+        if request.method == 'POST' and form.is_valid():
+            with transaction.atomic():
+                perfil = type(perfil).objects.select_for_update().get(pk=perfil.pk)
+                if perfil.estado != 'pendiente' or not perfil.nota_admin:
+                    return redirect('espera_aprobacion')
+                respuesta = RespuestaModeracion.objects.create(
+                    usuario=usuario, solicitud=perfil.nota_admin, texto=form.cleaned_data['texto'])
+                for archivo in form.cleaned_data['imagenes']:
+                    extension = {'JPEG': '.jpg', 'PNG': '.png', 'WEBP': '.webp'}[archivo.image.format]
+                    ImagenModeracion.objects.create(respuesta=respuesta, imagen=archivo, extension=extension)
+            messages.success(request, 'Información enviada. El administrador revisará tu respuesta.')
+            return redirect('espera_aprobacion')
+    elif request.method == 'POST':
+        return redirect('login')
+    return render(request, 'usuarios/espera_aprobacion.html', {
+        'perfil': perfil, 'form': form,
+        'respuestas': usuario.respuestas_moderacion.prefetch_related('imagenes').all() if usuario else [],
+    })
+
+
+def imagen_moderacion(request, pk):
+    usuario = usuario_moderacion(request)
+    if usuario is None:
+        raise Http404
+    imagen = get_object_or_404(ImagenModeracion.objects.select_related('respuesta'), pk=pk)
+    if not (usuario.is_active and usuario.is_staff) and imagen.respuesta.usuario_id != usuario.pk:
+        raise Http404
+    try:
+        archivo = imagen.imagen.open('rb')
+    except FileNotFoundError:
+        raise Http404
+    response = FileResponse(archivo, content_type={'.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp'}[imagen.extension])
+    response['Cache-Control'] = 'private, no-store'
+    response['X-Content-Type-Options'] = 'nosniff'
+    return response
 
 
 @login_required(login_url='login')

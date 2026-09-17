@@ -31,6 +31,7 @@ urlpatterns = [
         name='password_change_done',
     ),
     path('espera-aprobacion/', views.espera_aprobacion, name='espera_aprobacion'),
+    path('moderacion/imagenes/<int:pk>/', views.imagen_moderacion, name='imagen_moderacion'),
     path('perfil/editar/', views.editar_perfil, name='editar_perfil'),
     path('perfil/tecnico/<int:pk>/', views.perfil_tecnico, name='perfil_tecnico'),
     path('perfil/proveedor/<int:pk>/', views.perfil_proveedor, name='perfil_proveedor'),

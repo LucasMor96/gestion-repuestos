@@ -82,6 +82,10 @@ def solicitar_info(request, tipo, pk):
         return redirect('dashboard')
 
     perfil = get_perfil_moderacion(tipo, pk)
-    perfil = guardar_nota_moderacion(perfil=perfil, nota=request.POST.get('nota', ''))
+    nota = request.POST.get('nota', '').strip()
+    if perfil.estado != 'pendiente' or not nota:
+        messages.error(request, 'Indicá la información requerida para una cuenta pendiente.')
+        return redirect('panel_moderacion')
+    perfil = guardar_nota_moderacion(perfil=perfil, nota=nota)
     messages.success(request, f'Nota guardada para {perfil.usuario.get_full_name()}.')
     return redirect('panel_moderacion')

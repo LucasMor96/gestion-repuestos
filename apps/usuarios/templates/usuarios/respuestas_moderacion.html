@@ -1,0 +1,15 @@
+{% for respuesta in respuestas %}
+<div class="border rounded p-3 mb-3">
+    <p class="fw-bold mb-1">Respuesta enviada · {{ respuesta.creada|date:"d/m/Y H:i" }}</p>
+    <p class="text-muted">Solicitud: {{ respuesta.solicitud }}</p>
+    {% if respuesta.texto %}<p>{{ respuesta.texto|linebreaksbr }}</p>{% endif %}
+    <div class="d-flex flex-wrap gap-2">
+        {% for imagen in respuesta.imagenes.all %}
+        <a href="{% url 'imagen_moderacion' imagen.pk %}" target="_blank" rel="noopener">
+            <img src="{% url 'imagen_moderacion' imagen.pk %}" alt="Imagen adjunta {{ forloop.counter }}" loading="lazy"
+                 class="img-thumbnail" style="width: 140px; height: 110px; object-fit: contain;">
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}

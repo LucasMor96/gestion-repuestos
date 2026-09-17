@@ -6,6 +6,42 @@ from .choices import RUBROS_CHOICES
 from .models import Proveedor, Tecnico
 
 
+class MultipleImageInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class ImagenesModeracionField(forms.ImageField):
+    widget = MultipleImageInput
+
+    def clean(self, data, initial=None):
+        archivos = data if isinstance(data, (list, tuple)) else ([data] if data else [])
+        if len(archivos) > 5:
+            raise forms.ValidationError('Podés enviar hasta 5 imágenes por respuesta.')
+        imagenes = []
+        for archivo in archivos:
+            if archivo.size > 5 * 1024 * 1024:
+                raise forms.ValidationError('Cada imagen debe pesar como máximo 5 MB.')
+            imagen = super().clean(archivo, initial)
+            if imagen.image.format not in {'JPEG', 'PNG', 'WEBP'}:
+                raise forms.ValidationError('Usá imágenes JPG, PNG o WebP.')
+            imagenes.append(imagen)
+        return imagenes
+
+
+class RespuestaModeracionForm(forms.Form):
+    texto = forms.CharField(label='Información adicional', required=False, max_length=5000,
+                           widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}))
+    imagenes = ImagenesModeracionField(label='Imágenes', required=False,
+        help_text='Hasta 5 imágenes JPG, PNG o WebP, de 5 MB cada una.',
+        widget=MultipleImageInput(attrs={'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}))
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get('texto') and not cleaned.get('imagenes'):
+            raise forms.ValidationError('Escribí una respuesta o adjuntá al menos una imagen.')
+        return cleaned
+
+
 class RegistroTecnicoForm(UserCreationForm):
     """Formulario de registro para técnicos"""
     first_name = forms.CharField(max_length=30, required=True, label="Nombre")

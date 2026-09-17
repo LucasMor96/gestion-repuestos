@@ -3,6 +3,23 @@ from django.db import models
 from django.db.models import Avg
 
 from .choices import ESTADO_USUARIO_CHOICES, RUBROS_CHOICES
+from .storage import almacenamiento_moderacion, ruta_imagen_moderacion
+
+
+class RespuestaModeracion(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='respuestas_moderacion')
+    solicitud = models.TextField()
+    texto = models.TextField(blank=True)
+    creada = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-creada', '-pk']
+
+
+class ImagenModeracion(models.Model):
+    respuesta = models.ForeignKey(RespuestaModeracion, on_delete=models.CASCADE, related_name='imagenes')
+    extension = models.CharField(max_length=5)
+    imagen = models.ImageField(storage=almacenamiento_moderacion, upload_to=ruta_imagen_moderacion)
 
 
 class Tecnico(models.Model):

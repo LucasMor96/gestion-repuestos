@@ -1,30 +1,31 @@
-﻿{% extends "core/base.html" %}
-{% block notifications %}{% endblock %}
+{% extends "core/base.html" %}
 {% block content %}
 <div class="row justify-content-center py-5">
-    <div class="col-md-6 text-center">
-        {% if messages %}
-            {% for message in messages %}
-                {% if message.tags == 'error' %}
-                    <div class="display-1 mb-4 text-danger">&times;</div>
-                    <h2 class="fw-bold text-danger">Solicitud rechazada</h2>
-                    <p class="lead text-muted mb-4">{{ message }}</p>
-                {% elif message.tags == 'warning' %}
-                    <div class="display-1 mb-4 text-warning">!</div>
-                    <h2 class="fw-bold">Cuenta suspendida</h2>
-                    <p class="lead text-muted mb-4">{{ message }}</p>
-                {% else %}
-                    <div class="display-1 mb-4 text-warning">&hellip;</div>
-                    <h2 class="fw-bold">Cuenta recibida correctamente</h2>
-                    <p class="lead text-muted mb-4">Un administrador revisará tus datos. Podrás ingresar cuando tu cuenta sea aprobada.</p>
-                {% endif %}
-            {% endfor %}
+    <div class="col-md-8">
+        {% if perfil.estado == 'suspendido' %}
+            <h2 class="fw-bold">Cuenta suspendida</h2>
+            <p>{{ perfil.nota_admin }}</p>
+        {% elif perfil.estado == 'rechazado' %}
+            <h2 class="fw-bold text-danger">Solicitud rechazada</h2>
+            <p>{{ perfil.nota_admin }}</p>
+        {% elif form %}
+            <h2 class="fw-bold">Información adicional solicitada</h2>
+            <p>Tu cuenta sigue pendiente de aprobación. Respondé al administrador para que pueda continuar la revisión.</p>
+            <div class="alert alert-info">{{ perfil.nota_admin|linebreaksbr }}</div>
+            <form method="post" enctype="multipart/form-data" class="mb-4">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary rounded-pill">Enviar información</button>
+            </form>
+        {% elif perfil.estado == 'aprobado' %}
+            <h2 class="fw-bold">Cuenta aprobada</h2>
+            <p>Ya podés iniciar sesión.</p>
         {% else %}
-            <div class="display-1 mb-4 text-warning">&hellip;</div>
             <h2 class="fw-bold">Cuenta pendiente de aprobación</h2>
-            <p class="lead text-muted mb-4">Un administrador revisará tus datos. Intentá ingresar más tarde.</p>
+            <p>Un administrador revisará tus datos. Iniciá sesión para consultar el estado y responder si solicita más información.</p>
         {% endif %}
-        <a href="{% url 'login' %}" class="btn btn-primary rounded-pill px-5">Volver al inicio</a>
+        {% include 'usuarios/respuestas_moderacion.html' %}
+        <a href="{% url 'login' %}" class="btn btn-outline-secondary rounded-pill">Volver al inicio</a>
     </div>
 </div>
 {% endblock %}

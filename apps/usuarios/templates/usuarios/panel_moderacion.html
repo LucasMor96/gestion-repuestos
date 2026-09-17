@@ -49,7 +49,8 @@
                 <tbody>
                     {% for t in tecnicos_pendientes %}
                     <tr>
-                        <td class="fw-bold">{{ t.usuario.get_full_name }}</td>
+                        <td><span class="fw-bold">{{ t.usuario.get_full_name }}</span>
+{% if t.usuario.respuestas_moderacion.all %}<details class="mt-2"><summary>Ver respuestas e imágenes</summary>{% include "usuarios/respuestas_moderacion.html" with respuestas=t.usuario.respuestas_moderacion.all %}</details>{% endif %}</td>
                         <td>{{ t.usuario.email }}</td>
                         <td>{{ t.cuit }}</td>
                         <td>{{ t.get_especialidad_display }}</td>
@@ -89,7 +90,8 @@
                 <tbody>
                     {% for p in proveedores_pendientes %}
                     <tr>
-                        <td class="fw-bold">{{ p.nombre_negocio }}</td>
+                        <td><span class="fw-bold">{{ p.nombre_negocio }}</span>
+{% if p.usuario.respuestas_moderacion.all %}<details class="mt-2"><summary>Ver respuestas e imágenes</summary>{% include "usuarios/respuestas_moderacion.html" with respuestas=p.usuario.respuestas_moderacion.all %}</details>{% endif %}</td>
                         <td>{{ p.usuario.email }}</td>
                         <td>{{ p.cuit }}</td>
                         <td>{{ p.get_rubro_display }}</td>
@@ -134,7 +136,8 @@
                 <tbody>
                     {% for t in tecnicos_activos %}
                     <tr>
-                        <td class="fw-bold">{{ t.usuario.get_full_name }}</td>
+                        <td><span class="fw-bold">{{ t.usuario.get_full_name }}</span>
+{% if t.usuario.respuestas_moderacion.all %}<details class="mt-2"><summary>Ver respuestas e imágenes</summary>{% include "usuarios/respuestas_moderacion.html" with respuestas=t.usuario.respuestas_moderacion.all %}</details>{% endif %}</td>
                         <td>{{ t.usuario.email }}</td>
                         <td>{{ t.get_especialidad_display }}</td>
                         <td>{% if t.calificacion_promedio %}{{ t.calificacion_promedio }} ★{% else %}-{% endif %}</td>
@@ -159,7 +162,8 @@
                 <tbody>
                     {% for p in proveedores_activos %}
                     <tr>
-                        <td class="fw-bold">{{ p.nombre_negocio }}</td>
+                        <td><span class="fw-bold">{{ p.nombre_negocio }}</span>
+{% if p.usuario.respuestas_moderacion.all %}<details class="mt-2"><summary>Ver respuestas e imágenes</summary>{% include "usuarios/respuestas_moderacion.html" with respuestas=p.usuario.respuestas_moderacion.all %}</details>{% endif %}</td>
                         <td>{{ p.usuario.email }}</td>
                         <td>{{ p.get_rubro_display }}</td>
                         <td>{% if p.calificacion_promedio %}{{ p.calificacion_promedio }} ★{% else %}-{% endif %}</td>
@@ -191,7 +195,8 @@
                 <tbody>
                     {% for t in tecnicos_inactivos %}
                     <tr>
-                        <td class="fw-bold">{{ t.usuario.get_full_name }}</td>
+                        <td><span class="fw-bold">{{ t.usuario.get_full_name }}</span>
+{% if t.usuario.respuestas_moderacion.all %}<details class="mt-2"><summary>Ver respuestas e imágenes</summary>{% include "usuarios/respuestas_moderacion.html" with respuestas=t.usuario.respuestas_moderacion.all %}</details>{% endif %}</td>
                         <td>{{ t.usuario.email }}</td>
                         <td>
                             <span class="badge {% if t.estado == 'rechazado' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
@@ -224,7 +229,8 @@
                 <tbody>
                     {% for p in proveedores_inactivos %}
                     <tr>
-                        <td class="fw-bold">{{ p.nombre_negocio }}</td>
+                        <td><span class="fw-bold">{{ p.nombre_negocio }}</span>
+{% if p.usuario.respuestas_moderacion.all %}<details class="mt-2"><summary>Ver respuestas e imágenes</summary>{% include "usuarios/respuestas_moderacion.html" with respuestas=p.usuario.respuestas_moderacion.all %}</details>{% endif %}</td>
                         <td>{{ p.usuario.email }}</td>
                         <td>
                             <span class="badge {% if p.estado == 'rechazado' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
