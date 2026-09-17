@@ -174,7 +174,7 @@ def confirmar_pago_credito(request, pk):
         return redirect('dashboard')
     pago = get_object_or_404(PagoCredito, pk=pk, credito__proveedor=proveedor)
     resolver_pago(pago=pago, confirmado=True)
-    messages.success(request, 'Pago confirmado. La deuda fue saldada y el crédito quedó disponible.')
+    messages.success(request, 'Pago confirmado. El saldo de crédito fue actualizado.')
     return redirect('gestionar_creditos_proveedor')
 
 

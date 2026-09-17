@@ -7,7 +7,7 @@ from .exceptions import DeudaInexistente, SaldoInsuficiente
 from .models import Credito, PagoCredito
 from .services import (
     asignar_credito, reservar_saldo, resolver_pago, revocar_credito,
-    saldar_deuda, solicitar_pago,
+    liberar_saldo, saldar_deuda, solicitar_pago,
 )
 
 
@@ -76,3 +76,63 @@ class CreditoServiceTests(TestCase):
         solicitar_pago(credito=credito)
         with self.assertRaises(ValueError):
             solicitar_pago(credito=credito)
+
+    def test_confirmar_pago_conserva_compras_posteriores(self):
+        credito = Credito.objects.create(
+            proveedor=self.proveedor, tecnico=self.tecnico, limite=2000, saldo_usado=1000
+        )
+        pago = solicitar_pago(credito=credito)
+        compra = reservar_saldo(proveedor=self.proveedor, tecnico=self.tecnico, monto=500)
+
+        resolver_pago(pago=pago, confirmado=True)
+        credito.refresh_from_db()
+        self.assertEqual(pago.monto, 1000)
+        self.assertEqual(credito.saldo_usado, 500)
+        self.assertEqual(credito.saldo_disponible, 1500)
+        self.assertEqual(credito.ciclo, compra.ciclo)
+
+        # Confirmar nuevamente no descuenta el pago dos veces.
+        resolver_pago(pago=pago, confirmado=True)
+        credito.refresh_from_db()
+        self.assertEqual(credito.saldo_usado, 500)
+
+        # La compra posterior conserva su ciclo para poder cancelarse.
+        liberar_saldo(
+            proveedor=self.proveedor, tecnico=self.tecnico, monto=500, ciclo=compra.ciclo
+        )
+        credito.refresh_from_db()
+        self.assertEqual(credito.saldo_usado, 0)
+
+    def test_confirmar_pago_no_genera_saldo_negativo(self):
+        credito = Credito.objects.create(
+            proveedor=self.proveedor, tecnico=self.tecnico, limite=2000, saldo_usado=1000
+        )
+        pago = solicitar_pago(credito=credito)
+        liberar_saldo(proveedor=self.proveedor, tecnico=self.tecnico, monto=500, ciclo=credito.ciclo)
+        resolver_pago(pago=pago, confirmado=True)
+        credito.refresh_from_db()
+        self.assertEqual(credito.saldo_usado, 0)
+        self.assertEqual(credito.ciclo, 1)
+
+    def test_rechazar_pago_conserva_toda_la_deuda(self):
+        credito = Credito.objects.create(
+            proveedor=self.proveedor, tecnico=self.tecnico, limite=2000, saldo_usado=1000
+        )
+        pago = solicitar_pago(credito=credito)
+        reservar_saldo(proveedor=self.proveedor, tecnico=self.tecnico, monto=500)
+        resolver_pago(pago=pago, confirmado=False)
+        credito.refresh_from_db()
+        self.assertEqual(credito.saldo_usado, 1500)
+        self.assertEqual(credito.ciclo, 0)
+
+    def test_pago_de_ciclo_saldado_no_descuenta_compras_nuevas(self):
+        credito = Credito.objects.create(
+            proveedor=self.proveedor, tecnico=self.tecnico, limite=2000, saldo_usado=1000
+        )
+        pago = solicitar_pago(credito=credito)
+        saldar_deuda(credito=credito)
+        reservar_saldo(proveedor=self.proveedor, tecnico=self.tecnico, monto=500)
+        resolver_pago(pago=pago, confirmado=True)
+        credito.refresh_from_db()
+        self.assertEqual(credito.saldo_usado, 500)
+        self.assertEqual(credito.ciclo, 1)

@@ -96,8 +96,10 @@ def resolver_pago(*, pago, confirmado):
         return pago
     credito = Credito.objects.select_for_update().get(pk=pago.credito_id)
     if confirmado and pago.ciclo == credito.ciclo and credito.saldo_usado > 0:
-        credito.saldo_usado = Decimal('0')
-        credito.ciclo += 1
+        credito.saldo_usado = max(Decimal('0'), credito.saldo_usado - pago.monto)
+        # Las compras posteriores siguen pendientes en el mismo ciclo.
+        if credito.saldo_usado == 0:
+            credito.ciclo += 1
         credito.save(update_fields=['saldo_usado', 'ciclo'])
     pago.estado = 'confirmado' if confirmado else 'rechazado'
     pago.fecha_resolucion = timezone.now()
