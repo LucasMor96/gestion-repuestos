@@ -167,7 +167,7 @@ El login de la aplicacion se realiza con email y password.
 | `/login/` | Inicio de sesion |
 | `/password-reset/` | Recuperacion de contrasena |
 | `/dashboard/` | Panel principal |
-| `/buscar/` | Busqueda de repuestos |
+| `/buscar/` | Catalogo publico y busqueda de repuestos sin iniciar sesion |
 | `/catalogo/` | Catalogo del proveedor |
 | `/pedidos/` | Pedidos del tecnico |
 | `/pedidos/recibidos/` | Pedidos recibidos por proveedor |
@@ -177,6 +177,12 @@ El login de la aplicacion se realiza con email y password.
 | `/admin/` | Administracion de Django |
 
 ## Flujo basico de uso
+
+Desde el inicio, el boton **Ver catálogo** permite consultar repuestos sin una
+cuenta. Los visitantes ven imagen, nombre, categoria y precio de referencia; al abrir
+un proveedor se les solicita iniciar sesion. Los tecnicos habilitados conservan
+los datos comerciales y la solicitud de pedidos. Si la consulta falla, el buscador
+muestra un error y permite reintentar conservando los filtros.
 
 1. Un tecnico o proveedor se registra.
 2. El usuario queda pendiente de aprobacion.

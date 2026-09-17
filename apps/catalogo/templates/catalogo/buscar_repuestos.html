@@ -1,12 +1,15 @@
 {% extends "core/base.html" %}
 {% load moneda rubros %}
-{% block title %}Buscar Repuestos{% endblock %}
+{% block title %}{% if es_tecnico %}Buscar Repuestos{% else %}Catálogo público{% endif %}{% endblock %}
 {% block content %}
 
 <div class="row mb-4">
     <div class="col-12">
-        <h2 class="fw-bold">Buscar Repuestos</h2>
-        <p class="text-muted">Encontrá repuestos por nombre, modelo o categoría.</p>
+        <h2 class="fw-bold">{% if es_tecnico %}Buscar Repuestos{% else %}Catálogo público de repuestos{% endif %}</h2>
+        <p class="text-muted">Encontrá repuestos por nombre, modelo o categoría.{% if not es_tecnico %} Consultá precios de referencia y compará tu presupuesto sin iniciar sesión.{% endif %}</p>
+        {% if not es_tecnico %}
+        <p class="small text-muted">Para contactar a un proveedor, <a href="{% url 'login' %}">iniciá sesión</a> o <a href="{% url 'registro_tipo' %}">registrate</a>.</p>
+        {% endif %}
     </div>
 </div>
 
@@ -15,22 +18,25 @@
     <form method="get" id="formBusqueda">
         <div class="row g-3 align-items-end">
             <div class="col-md-5">
-                <label class="form-label fw-bold small text-secondary">Buscar</label>
-                <input type="text" name="q" value="{{ query }}"
+                <label for="busqueda" class="form-label fw-bold small text-secondary">Buscar</label>
+                <input type="text" name="q" id="busqueda" value="{{ query }}"
                        class="form-control rounded-pill border-2"
                        placeholder="Nombre, modelo o categoría...">
             </div>
             <div class="col-md-3">
-                <label class="form-label fw-bold small text-secondary">Categoría</label>
-                <select name="categoria" class="form-select rounded-pill border-2">
+                <label for="categoria" class="form-label fw-bold small text-secondary">Categoría</label>
+                <select name="categoria" id="categoria" class="form-select rounded-pill border-2">
                     <option value="">Todas las categorías</option>
+                    {% if error_busqueda and categoria_sel %}
+                        <option value="{{ categoria_sel }}" selected>{{ categoria_sel|rubro_display }}</option>
+                    {% endif %}
                     {% for cat in categorias %}
                         <option value="{{ cat }}" {% if cat == categoria_sel %}selected{% endif %}>{{ cat|rubro_display }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label fw-bold small text-secondary">Ordenar por</label>
+                <label for="selectOrden" class="form-label fw-bold small text-secondary">Ordenar por</label>
                 <select name="orden" id="selectOrden" class="form-select rounded-pill border-2">
                     <option value="" {% if not orden %}selected{% endif %}>Relevancia</option>
                     <option value="precio_asc" {% if orden == 'precio_asc' %}selected{% endif %}>Precio ↑</option>
@@ -73,6 +79,7 @@
                 <!-- Encabezado: nombre + badge stock -->
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <h5 class="fw-bold mb-0">{{ producto.nombre }}</h5>
+                    {% if es_tecnico %}
                     {% if producto.stock > 5 %}
                         <span class="badge bg-success rounded-pill ms-2">Stock: {{ producto.stock }}</span>
                     {% elif producto.stock > 0 %}
@@ -80,18 +87,21 @@
                     {% else %}
                         <span class="badge bg-danger rounded-pill ms-2">Sin stock</span>
                     {% endif %}
+                    {% endif %}
                 </div>
 
-                {% if producto.modelo %}
+                {% if es_tecnico and producto.modelo %}
                     <p class="text-muted small mb-1">Modelo: <strong>{{ producto.modelo }}</strong></p>
                 {% endif %}
                 <p class="text-muted small mb-2">
                     <span class="badge bg-light text-dark border">{{ producto.get_categoria_display }}</span>
                 </p>
 
+                {% if not es_tecnico %}<p class="text-muted small mb-1">Precio de referencia</p>{% endif %}
                 <p class="fs-4 fw-bold text-primary mb-3">{{ producto.precio|ars }}</p>
 
                 <!-- Proveedor -->
+                {% if es_tecnico %}
                 <div class="border-top pt-3">
                     <p class="small fw-bold mb-0">{{ producto.proveedor.nombre_negocio }}</p>
                     <p class="text-muted small mb-0">{{ producto.proveedor.direccion }}</p>
@@ -108,6 +118,7 @@
                         <p class="text-warning small mb-0">{{ producto.proveedor.calificacion_promedio }} ★</p>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
             <div class="card-footer bg-transparent border-0 px-4 pb-4">
                 {% if es_tecnico and producto.stock > 0 %}
@@ -127,6 +138,11 @@
     {% endfor %}
 </div>
 
+{% elif error_busqueda %}
+<div class="alert alert-danger rounded-4" role="alert">
+    {{ error_busqueda }}
+    <button type="submit" form="formBusqueda" class="btn btn-outline-danger rounded-pill ms-2">Reintentar búsqueda</button>
+</div>
 {% else %}
 <div class="text-center py-5">
     <div class="display-4 text-muted mb-3">🔍</div>
@@ -134,7 +150,7 @@
         {% if query or categoria_sel %}
             No se encontraron repuestos para tu búsqueda.
         {% else %}
-            Ingresá un término para comenzar a buscar.
+            No hay repuestos publicados por el momento.
         {% endif %}
     </h4>
     {% if query or categoria_sel %}

@@ -167,6 +167,7 @@
                         <a href="{% url 'password_change' %}" class="btn btn-link text-muted btn-sm text-decoration-none">Cambiar contraseña</a>
                         <a href="{% url 'logout' %}" class="btn btn-link text-muted btn-sm text-decoration-none">Salir</a>
                     {% else %}
+                        <a href="{% url 'buscar_repuestos' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-4 me-lg-2">Ver catálogo</a>
                         <a href="{% url 'login' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4 me-lg-2">Ingresar</a>
                         <a href="{% url 'registro_tipo' %}" class="btn btn-primary btn-sm rounded-pill px-4">Registrarse</a>
                     {% endif %}
