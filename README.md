@@ -56,7 +56,7 @@ Para una guia de onboarding con el mapa interno de archivos, vistas, modelos y f
 - PostgreSQL instalado y corriendo.
 - Una base de datos PostgreSQL creada para el proyecto.
 
-> Nota: el archivo de dependencias se llama `requeriments.txt`. El proyecto usa `python-dotenv` desde `config/settings.py`; si tu entorno nuevo no lo tiene instalado, instalalo junto con las dependencias.
+> Nota: el archivo de dependencias se llama `requeriments.txt` e incluye `python-dotenv`, Pillow y los datos de zonas horarias para Windows.
 
 ## Instalacion
 
@@ -77,7 +77,7 @@ source venv/bin/activate
 2. Instalar dependencias:
 
 ```bash
-pip install -r requeriments.txt python-dotenv Pillow
+pip install -r requeriments.txt
 ```
 
 3. Crear el archivo de variables de entorno:

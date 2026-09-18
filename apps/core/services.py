@@ -31,10 +31,14 @@ def estadisticas_dashboard(*, perfil, es_tecnico, es_proveedor):
     else:
         pedidos = pedidos.none()
     completados = pedidos.filter(estado='completado')
+    totales = completados.aggregate(
+        ventas_total=Sum('monto_total'),
+        unidades_vendidas=Sum('cantidad'),
+    )
     return {
         'total_pedidos': pedidos.count(),
-        'ventas_total': completados.aggregate(total=Sum('monto_total'))['total'] or 0,
-        'unidades_vendidas': completados.aggregate(total=Sum('cantidad'))['total'] or 0,
+        'ventas_total': totales['ventas_total'] or 0,
+        'unidades_vendidas': totales['unidades_vendidas'] or 0,
         'tiempo_respuesta': formatear_tiempo_respuesta(_promedio_respuesta(pedidos)),
         'productos_mas_pedidos': pedidos.values('producto__nombre').annotate(
             cantidad_total=Sum('cantidad'), pedidos_total=Count('id')
