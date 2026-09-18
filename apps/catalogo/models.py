@@ -19,13 +19,15 @@ class ProductoQuerySet(models.QuerySet):
     def buscar(self, *, texto='', categoria='', orden=''):
         from django.db.models import Q, Sum
 
-        queryset = self.publicados().select_related('proveedor').annotate(
-            unidades_vendidas=Sum(
-                'pedidos__cantidad',
-                filter=Q(pedidos__estado='completado'),
-                default=0,
+        queryset = self.publicados().select_related('proveedor')
+        if orden == 'mas_vendidos':
+            queryset = queryset.annotate(
+                unidades_vendidas=Sum(
+                    'pedidos__cantidad',
+                    filter=Q(pedidos__estado='completado'),
+                    default=0,
+                )
             )
-        )
         if texto:
             queryset = queryset.filter(
                 Q(nombre__icontains=texto)
@@ -40,8 +42,18 @@ class ProductoQuerySet(models.QuerySet):
             'mas_vendidos': '-unidades_vendidas',
         }
         if orden in ordenes:
-            queryset = queryset.order_by(ordenes[orden], 'nombre')
-        return queryset
+            return queryset.order_by(ordenes[orden], 'nombre', 'pk')
+        return queryset.order_by('nombre', 'pk')
+
+    def con_calificacion_proveedor(self):
+        from django.db.models import Avg, OuterRef, Subquery
+        from apps.calificaciones.models import CalificacionProveedor
+
+        promedio = CalificacionProveedor.objects.filter(
+            proveedor_id=OuterRef('proveedor_id'),
+        ).order_by().values('proveedor_id').annotate(promedio=Avg('estrellas')).values('promedio')
+        # Una subconsulta evita multiplicar las ventas por cada calificación.
+        return self.annotate(calificacion_proveedor=Subquery(promedio))
 
 
 class Producto(models.Model):

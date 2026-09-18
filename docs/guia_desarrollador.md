@@ -79,6 +79,28 @@ El contador global de pedidos pendientes se configura desde
 - `/logout/` solo acepta POST. El boton de la plantilla base envia el token CSRF;
   un GET no cierra la sesion. El cierre tambien elimina el acceso de moderacion.
 
+## Edicion y paginacion del catalogo
+
+La edicion de productos, tanto del proveedor como del admin, incluye una huella
+firmada del estado que se mostro al abrir el formulario. En POST se bloquea la
+fila del producto antes de validar y guardar. Si cambio stock, precio u otro
+campo, se rechaza el formulario antiguo y se pide recargar; no se sobrescribe el
+descuento de una compra. Los formularios abiertos antes de incorporar esta
+proteccion tambien deben recargarse. No requiere cambios de esquema.
+
+`apps/catalogo/paginacion.py` define 24 productos por pagina para la busqueda
+publica, la busqueda del tecnico y el catalogo propio del proveedor. Los enlaces
+conservan los filtros y el orden usa el ID para desempatar. La busqueda evalua
+solo la pagina solicitada dentro del manejo de errores de base de datos.
+
+Para tecnicos, `ProductoQuerySet.con_calificacion_proveedor()` anota el promedio
+con una subconsulta; el template no consulta la propiedad del proveedor por cada
+tarjeta. Las unidades vendidas se calculan solo al ordenar por mas vendidos,
+sin unir calificaciones y pedidos de una manera que multiplique los totales.
+
+Las regresiones de edicion, bloqueo simultaneo, paginacion y cantidad de
+consultas se cubren en `apps/catalogo/test_edicion_paginacion.py`.
+
 ## Templates, static y media
 
 Los templates usan el namespace de su app, por ejemplo

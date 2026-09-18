@@ -9,6 +9,7 @@ from apps.usuarios.utils import get_proveedor_o_403
 
 from .forms import ProductoForm
 from .models import Producto
+from .paginacion import paginar_productos
 from .selectors import productos_proveedor
 
 
@@ -19,8 +20,12 @@ def catalogo_proveedor(request):
     if proveedor is None:
         return redirect('dashboard')
 
-    productos = productos_proveedor(proveedor)
-    return render(request, 'catalogo/catalogo_proveedor.html', {'productos': productos})
+    pagina, parametros = paginar_productos(request, productos_proveedor(proveedor))
+    return render(request, 'catalogo/catalogo_proveedor.html', {
+        'productos': pagina.object_list,
+        'pagina': pagina,
+        'parametros_paginacion': parametros,
+    })
 
 
 @login_required(login_url='login')
@@ -51,15 +56,20 @@ def editar_producto(request, pk):
     if proveedor is None:
         return redirect('dashboard')
 
-    producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
-
     if request.method == 'POST':
-        form = ProductoForm(request.POST, request.FILES, instance=producto)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f'Producto "{producto.nombre}" actualizado.')
-            return redirect('catalogo_proveedor')
+        # El bloqueo cubre lectura, validación de versión y escritura: una
+        # aceptación simultánea no puede intercalarse y perder su stock.
+        with transaction.atomic():
+            producto = get_object_or_404(
+                Producto.objects.select_for_update(), pk=pk, proveedor=proveedor,
+            )
+            form = ProductoForm(request.POST, request.FILES, instance=producto)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'Producto "{producto.nombre}" actualizado.')
+                return redirect('catalogo_proveedor')
     else:
+        producto = get_object_or_404(Producto, pk=pk, proveedor=proveedor)
         form = ProductoForm(instance=producto)
 
     return render(request, 'catalogo/producto_form.html', {'form': form, 'accion': 'Editar', 'producto': producto})

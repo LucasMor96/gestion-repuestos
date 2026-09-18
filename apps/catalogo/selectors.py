@@ -2,7 +2,7 @@ from .models import Producto
 
 
 def productos_proveedor(proveedor):
-    return Producto.objects.del_proveedor(proveedor).order_by('nombre')
+    return Producto.objects.del_proveedor(proveedor).order_by('nombre', 'pk')
 
 
 def buscar_productos(*, texto='', categoria='', orden=''):

@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-0">Mi Catálogo</h2>
-        <p class="text-muted small mb-0">{{ productos|length }} producto{% if productos|length != 1 %}s{% endif %} publicado{% if productos|length != 1 %}s{% endif %}</p>
+        <p class="text-muted small mb-0">{{ pagina.paginator.count }} producto{% if pagina.paginator.count != 1 %}s{% endif %} en tu catálogo</p>
     </div>
     <a href="{% url 'agregar_producto' %}" class="btn btn-primary rounded-pill px-4 fw-bold">
         + Agregar producto
@@ -99,6 +99,7 @@
 </div>
 {% endif %}
 
+{% include "catalogo/includes/paginacion.html" %}
 
 <!-- Modales de confirmación de eliminación -->
 {% for p in productos %}

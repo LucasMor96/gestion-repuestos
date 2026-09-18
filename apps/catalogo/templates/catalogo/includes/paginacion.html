@@ -1,0 +1,13 @@
+{% if pagina and pagina.has_other_pages %}
+<nav class="d-flex justify-content-center align-items-center gap-3 my-4" aria-label="Páginas del catálogo">
+    {% if pagina.has_previous %}
+    <a class="btn btn-outline-primary rounded-pill"
+       href="?{% if parametros_paginacion %}{{ parametros_paginacion }}&amp;{% endif %}page={{ pagina.previous_page_number }}">Anterior</a>
+    {% endif %}
+    <span class="text-muted small" aria-current="page">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}
+    <a class="btn btn-outline-primary rounded-pill"
+       href="?{% if parametros_paginacion %}{{ parametros_paginacion }}&amp;{% endif %}page={{ pagina.next_page_number }}">Siguiente</a>
+    {% endif %}
+</nav>
+{% endif %}

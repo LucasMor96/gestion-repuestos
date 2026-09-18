@@ -58,7 +58,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <span class="text-muted small">
         {% if productos %}
-            {{ productos|length }} resultado{% if productos|length != 1 %}s{% endif %}
+            {{ pagina.paginator.count }} resultado{% if pagina.paginator.count != 1 %}s{% endif %}
             {% if query %}para "<strong>{{ query }}</strong>"{% endif %}
         {% endif %}
     </span>
@@ -114,8 +114,8 @@
                             unidad{{ producto.unidades_vendidas|pluralize }} vendida{{ producto.unidades_vendidas|pluralize }}
                         </p>
                     {% endif %}
-                    {% if producto.proveedor.calificacion_promedio %}
-                        <p class="text-warning small mb-0">{{ producto.proveedor.calificacion_promedio }} ★</p>
+                    {% if producto.calificacion_proveedor is not None %}
+                        <p class="text-warning small mb-0">{{ producto.calificacion_proveedor }} ★</p>
                     {% endif %}
                 </div>
                 {% endif %}
@@ -159,6 +159,8 @@
     {% endif %}
 </div>
 {% endif %}
+
+{% include "catalogo/includes/paginacion.html" %}
 
 {% endblock %}
 

@@ -111,9 +111,19 @@ class CatalogoPublicoTests(TestCase):
             raise OperationalError('Detalle interno de base de datos')
             yield  # Simula un QuerySet que falla recién al ser evaluado.
 
+        class ConsultaFallida:
+            def count(self):
+                return 1
+
+            def __getitem__(self, _slice):
+                return consulta_fallida()
+
+            def __iter__(self):
+                return consulta_fallida()
+
         for selector in ('buscar_productos', 'categorias_publicadas'):
             with self.subTest(selector=selector):
-                with patch(f'apps.catalogo.search.{selector}', return_value=consulta_fallida()):
+                with patch(f'apps.catalogo.search.{selector}', return_value=ConsultaFallida()):
                     with self.assertLogs('apps.catalogo.search', level='ERROR'):
                         response = self.client.get(reverse('buscar_repuestos'), {
                             'q': 'Filtro', 'categoria': 'mecanica_automotriz', 'orden': 'precio_asc',
