@@ -1,6 +1,11 @@
 from django.contrib import messages
 
 
+def normalizar_email(email):
+    """El identificador de acceso no distingue mayusculas ni espacios externos."""
+    return email.strip().lower()
+
+
 def solo_staff(request):
     if not request.user.is_active or not request.user.is_staff:
         messages.error(request, 'No tenes permisos para acceder a esta seccion.')

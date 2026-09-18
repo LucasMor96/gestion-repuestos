@@ -45,7 +45,6 @@
                                 <input type="{{ field.field.widget.input_type }}"
                                        id="{{ field.id_for_label }}"
                                        name="{{ field.name }}"
-                                       value="{{ field.value|default_if_none:'' }}"
                                        class="form-control rounded-pill border-2 {% if field.errors %}is-invalid{% endif %}"
                                        placeholder="{{ field.label }}"
                                        autocomplete="new-password">

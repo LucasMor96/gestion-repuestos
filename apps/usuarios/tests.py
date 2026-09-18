@@ -157,7 +157,7 @@ class RegistroViewTests(TestCase):
         self.assertContains(response, 'value="conserva-tecnico@example.com"')
         self.assertContains(response, 'value="27-44444444-4"')
         self.assertContains(response, 'value="Rawson, Chubut"')
-        self.assertContains(response, 'value="password123"')
+        self.assertNotContains(response, 'password123')
 
     def test_registro_proveedor_conserva_datos_si_falla(self):
         response = self.client.post(reverse('registro_proveedor'), {
@@ -184,7 +184,7 @@ class RegistroViewTests(TestCase):
         self.assertContains(response, 'value="Av Corrientes 1234, CABA"')
         self.assertContains(response, 'value="9"')
         self.assertContains(response, 'value="18"')
-        self.assertContains(response, 'value="password123"')
+        self.assertNotContains(response, 'password123')
 
 
 class PasswordRecoveryTests(TestCase):

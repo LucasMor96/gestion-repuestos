@@ -17,7 +17,7 @@
                 {{ form.as_p }}
                 <button type="submit" class="btn btn-primary rounded-pill">Enviar información</button>
             </form>
-        {% elif perfil.estado == 'aprobado' %}
+        {% elif perfil_habilitado %}
             <h2 class="fw-bold">Cuenta aprobada</h2>
             <p>Ya podés iniciar sesión.</p>
         {% else %}

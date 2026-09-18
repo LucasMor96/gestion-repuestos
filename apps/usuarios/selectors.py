@@ -1,6 +1,15 @@
+from django.contrib.auth.models import User
 from django.db.models import Sum
+from django.db.models.functions import Lower, Trim
 
 from .models import Proveedor, Tecnico
+from .utils import normalizar_email
+
+
+def usuarios_por_email(email):
+    return User.objects.exclude(email='').alias(
+        email_normalizado=Lower(Trim('email')),
+    ).filter(email_normalizado=normalizar_email(email))
 
 
 def contexto_moderacion():

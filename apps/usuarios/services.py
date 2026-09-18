@@ -4,6 +4,9 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db import transaction
 
+from .selectors import usuarios_por_email
+from .utils import perfil_aprobado
+
 
 @dataclass(frozen=True)
 class ResultadoAutenticacion:
@@ -13,12 +16,20 @@ class ResultadoAutenticacion:
 
 
 def autenticar_por_email(*, email, password):
-    usuario = User.objects.filter(email=email).first()
-    if usuario is None or not usuario.check_password(password):
+    try:
+        usuario = usuarios_por_email(email).get()
+    except (User.DoesNotExist, User.MultipleObjectsReturned):
         return ResultadoAutenticacion(None, 'credenciales_invalidas')
-    if not usuario.is_active:
-        perfil = getattr(usuario, 'tecnico', None) or getattr(usuario, 'proveedor', None)
-        estado = perfil.estado if perfil else 'pendiente'
+    if not usuario.check_password(password):
+        return ResultadoAutenticacion(None, 'credenciales_invalidas')
+    perfil = getattr(usuario, 'tecnico', None) or getattr(usuario, 'proveedor', None)
+    habilitado = usuario.is_active and (
+        usuario.is_staff or (perfil is not None and perfil_aprobado(perfil))
+    )
+    if not habilitado:
+        estado = 'pendiente'
+        if perfil and perfil.estado in {'pendiente', 'rechazado', 'suspendido'}:
+            estado = perfil.estado
         nota = perfil.nota_admin if perfil else ''
         mensajes = {
             'rechazado': 'Tu solicitud fue rechazada.',
@@ -27,6 +38,8 @@ def autenticar_por_email(*, email, password):
         mensaje = mensajes.get(
             estado, 'Tu cuenta está pendiente de aprobación por el administrador.'
         )
+        if perfil is None or perfil.estado == 'aprobado':
+            mensaje = 'Tu cuenta no está habilitada. Contactá al administrador.'
         if nota and estado in mensajes:
             mensaje += f' Motivo: {nota}'
         return ResultadoAutenticacion(usuario, estado, mensaje)

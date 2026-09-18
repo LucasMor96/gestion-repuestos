@@ -3,8 +3,6 @@ from django.utils.translation import gettext as _
 
 
 class ConventionalPasswordValidator:
-    """Require the usual mix expected from non-simple passwords."""
-
     def validate(self, password, user=None):
         missing_requirements = []
         if not any(char.islower() for char in password):

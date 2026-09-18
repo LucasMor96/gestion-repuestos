@@ -3,9 +3,10 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core import signing
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from .forms import (
     EditarPerfilProveedorForm,
@@ -16,7 +17,7 @@ from .forms import (
     RespuestaModeracionForm,
 )
 from .models import ImagenModeracion, Proveedor, RespuestaModeracion, Tecnico
-from .selectors import articulos_vendidos_proveedor
+from .selectors import articulos_vendidos_proveedor, usuarios_por_email
 from .services import autenticar_por_email
 from .utils import get_proveedor_o_403, get_tecnico_o_403, perfil_aprobado
 
@@ -27,12 +28,27 @@ def registro_tipo(request):
     return render(request, 'usuarios/registro_tipo.html')
 
 
+def _guardar_registro(form, modelo_perfil):
+    try:
+        form.save()
+    except IntegrityError:
+        # Form.save() ya revirtio ambas escrituras antes de consultar el conflicto.
+        email = form.cleaned_data['email']
+        if usuarios_por_email(email).exists() or User.objects.filter(username__iexact=email).exists():
+            form.add_error('email', 'Este email ya está registrado.')
+        elif modelo_perfil.objects.filter(cuit=form.cleaned_data['cuit']).exists():
+            form.add_error('cuit', 'Este CUIT ya está registrado.')
+        else:
+            raise
+        return False
+    return True
+
+
 def registro_tecnico(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     form = RegistroTecnicoForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
+    if request.method == 'POST' and form.is_valid() and _guardar_registro(form, Tecnico):
         messages.success(
             request,
             'Registro exitoso. Espera la aprobación del administrador para poder ingresar.',
@@ -45,8 +61,7 @@ def registro_proveedor(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     form = RegistroProveedorForm(request.POST or None, request.FILES or None)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
+    if request.method == 'POST' and form.is_valid() and _guardar_registro(form, Proveedor):
         messages.success(
             request,
             'Registro exitoso. Espera la aprobación del administrador para poder ingresar.',
@@ -82,6 +97,7 @@ def login_view(request):
     return render(request, 'usuarios/login.html', {'form': form})
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     messages.success(request, 'Sesión cerrada correctamente.')
@@ -128,6 +144,7 @@ def espera_aprobacion(request):
         return redirect('login')
     return render(request, 'usuarios/espera_aprobacion.html', {
         'perfil': perfil, 'form': form,
+        'perfil_habilitado': perfil is not None and perfil_aprobado(perfil),
         'respuestas': usuario.respuestas_moderacion.prefetch_related('imagenes').all() if usuario else [],
     })
 

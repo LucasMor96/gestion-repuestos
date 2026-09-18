@@ -1,9 +1,12 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.db import transaction
 
 from .choices import RUBROS_CHOICES
 from .models import Proveedor, Tecnico
+from .selectors import usuarios_por_email
+from .utils import normalizar_email
 
 
 class MultipleImageInput(forms.ClearableFileInput):
@@ -42,11 +45,19 @@ class RespuestaModeracionForm(forms.Form):
         return cleaned
 
 
-class RegistroTecnicoForm(UserCreationForm):
+class RegistroEmailMixin:
+    def clean_email(self):
+        email = normalizar_email(self.cleaned_data['email'])
+        if usuarios_por_email(email).exists() or User.objects.filter(username__iexact=email).exists():
+            raise forms.ValidationError("Este email ya está registrado.")
+        return email
+
+
+class RegistroTecnicoForm(RegistroEmailMixin, UserCreationForm):
     """Formulario de registro para técnicos"""
     first_name = forms.CharField(max_length=30, required=True, label="Nombre")
     last_name = forms.CharField(max_length=150, required=True, label="Apellido")
-    email = forms.EmailField(required=True)
+    email = forms.EmailField(required=True, max_length=User._meta.get_field('username').max_length)
     cuit = forms.CharField(max_length=13, required=True, label="CUIT (XX-XXXXXXXX-X)")
     especialidad = forms.ChoiceField(choices=RUBROS_CHOICES, required=True, label="Especialidad")
     latitud = forms.FloatField(required=False, widget=forms.HiddenInput())
@@ -61,18 +72,13 @@ class RegistroTecnicoForm(UserCreationForm):
             'ubicacion', 'latitud', 'longitud', 'password1', 'password2',
         )
 
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Este email ya está registrado.")
-        return email
-
     def clean_cuit(self):
         cuit = self.cleaned_data.get('cuit')
         if Tecnico.objects.filter(cuit=cuit).exists():
             raise forms.ValidationError("Este CUIT ya está registrado.")
         return cuit
 
+    @transaction.atomic
     def save(self, commit=True):
         user = super().save(commit=False)
         user.username = self.cleaned_data['email']
@@ -91,11 +97,11 @@ class RegistroTecnicoForm(UserCreationForm):
             )
         return user
 
-class RegistroProveedorForm(UserCreationForm):
+class RegistroProveedorForm(RegistroEmailMixin, UserCreationForm):
     """Formulario de registro para proveedores"""
     first_name = forms.CharField(max_length=30, required=True, label="Nombre")
     last_name = forms.CharField(max_length=150, required=True, label="Apellido")
-    email = forms.EmailField(required=True)
+    email = forms.EmailField(required=True, max_length=User._meta.get_field('username').max_length)
     cuit = forms.CharField(max_length=13, required=True, label="CUIT (XX-XXXXXXXX-X)")
     nombre_negocio = forms.CharField(max_length=150, required=True, label="Nombre del Negocio")
     direccion = forms.CharField(max_length=255, required=True, label="Dirección")
@@ -119,18 +125,13 @@ class RegistroProveedorForm(UserCreationForm):
             'horario_hasta', 'password1', 'password2',
         )
 
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Este email ya está registrado.")
-        return email
-
     def clean_cuit(self):
         cuit = self.cleaned_data.get('cuit')
         if Proveedor.objects.filter(cuit=cuit).exists():
             raise forms.ValidationError("Este CUIT ya está registrado.")
         return cuit
 
+    @transaction.atomic
     def save(self, commit=True):
         user = super().save(commit=False)
         user.username = self.cleaned_data['email']
@@ -157,6 +158,9 @@ class LoginForm(forms.Form):
     """Formulario de login con email"""
     email = forms.EmailField(label="Email")
     password = forms.CharField(widget=forms.PasswordInput(), label="Contraseña")
+
+    def clean_email(self):
+        return normalizar_email(self.cleaned_data['email'])
 
 class EditarPerfilTecnicoForm(forms.ModelForm):
     """Formulario para que el técnico edite su perfil"""

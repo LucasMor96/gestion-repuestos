@@ -55,6 +55,30 @@ Los helpers de rol y aprobacion viven en `apps/usuarios/utils.py`.
 El contador global de pedidos pendientes se configura desde
 `apps/pedidos/context_processors.py`.
 
+## Registro, autenticacion y sesiones
+
+- Los formularios de registro heredan de `UserCreationForm`. Su `save()` es
+  atomico: crea el `User` inactivo y su perfil pendiente en la misma transaccion.
+  Si falla el perfil, tampoco queda creada la cuenta. Las vistas convierten los
+  conflictos de email o CUIT posteriores a la validacion en errores de formulario.
+- Los emails se guardan sin espacios externos y en minusculas. Registro y login
+  usan la misma normalizacion; `usuarios_por_email()` tambien contempla emails
+  historicos con otra capitalizacion o espacios. El registro limita el email a
+  la longitud de `username`, porque usa ese valor como nombre de usuario.
+- `usuarios.0003_email_unico_normalizado` normaliza los emails existentes y agrega
+  un indice unico funcional sobre `auth_user`, administrado por esta migracion.
+  No cambia el modelo de Django, usernames, IDs, claves ni relaciones. Permite
+  varias cuentas sin email. Si encuentra emails equivalentes, detiene la
+  migracion sin modificar ni eliminar cuentas: se deben corregir antes de reintentar.
+  Al revertirla se quita el indice; la normalizacion de emails se conserva.
+- El login comercial exige `is_active`, `estado='aprobado'` e `is_approved`.
+  El staff activo puede ingresar sin perfil comercial. Las cuentas no habilitadas
+  con credenciales validas solo reciben acceso firmado de moderacion por una hora.
+- Los templates de registro conservan los datos de entrada ante errores, salvo
+  las contrasenas, cuyos campos siempre quedan vacios.
+- `/logout/` solo acepta POST. El boton de la plantilla base envia el token CSRF;
+  un GET no cierra la sesion. El cierre tambien elimina el acceso de moderacion.
+
 ## Templates, static y media
 
 Los templates usan el namespace de su app, por ejemplo
